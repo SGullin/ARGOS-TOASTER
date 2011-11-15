@@ -1,6 +1,6 @@
 create table if not exists telescopes (
-	telescope_id bigint not null auto increment primary key,
-	name varchar(128) not null,
+	telescope_id bigint not null auto_increment primary key,
+	name varchar(64) not null,
 	latitude double not null,
 	longitude double not null,
 	datum varchar(64) not null,
