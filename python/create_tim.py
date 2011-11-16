@@ -142,7 +142,7 @@ def main():
      f_tim.write("FORMAT 1\n\n")
      
      # Run MySQL query to select TOAs with user-specified restrictions
-     columns = "psr_name, obs, freq, imjd, fmjd, mjd_err"
+     columns = "psr_name, obs, freq, imjd, fmjd, toa_unc_us"
   
      # Now get constraints on query, one by one, based on command-line arguments:
      constraints = ["psr_name = '%s'"%args.psr[0]]
@@ -159,7 +159,7 @@ def main():
 
      # MJD ERR
      if(args.mjderr):
-          constraints.append('mjderr >= '+repr(args.mjderr[0])+' AND mjderr <= '+repr(args.mjderr[1]))
+          constraints.append('toa_unc_us >= '+repr(args.mjderr[0])+' AND toa_unc_us <= '+repr(args.mjderr[1]))
 
      # FREQ
      if(args.freq):
@@ -185,7 +185,7 @@ def main():
      freq = []
      imjd = []
      fmjd = []
-     mjd_err = []
+     toa_unc_us = []
      obs = []
      for i_row in range(len(DBOUT)):
           psr_name.append(DBOUT[i_row][0])
@@ -193,11 +193,11 @@ def main():
           freq.append("%.2lf"%(DBOUT[i_row][2]))
           imjd.append("%5d"%(DBOUT[i_row][3]))
           fmjd.append("%.15lf"%(DBOUT[i_row][4]))
-          mjd_err.append("%.4lf"%(DBOUT[i_row][5]))
+          toa_unc_us.append("%.4lf"%(DBOUT[i_row][5]))
 
     
 
-     # print "psr_name\tobs\tfreq\timjd\tfmjd\t\tmjd_err"
+     # print "psr_name\tobs\tfreq\timjd\tfmjd\t\ttoa_unc_us"
      #  print "psrfits_id\tfile_name\tnbin\tnchan\tnpol\tnsubint\tsite"
      #for i_row in range(len(DBOUT)):
           #print "\t".join("%s" % val for val in DBOUT[i_row])
@@ -209,7 +209,7 @@ def main():
           cur_line = [" %s "%psr_name[i_row], \
                       freq[i_row],     \
                       "%s%s  "%(imjd[i_row], fmjd[i_row][1:]), \
-                      mjd_err[i_row], \
+                      toa_unc_us[i_row], \
                       obs[i_row]]
           #print cur_line
           cur_line_str = "  ".join(cur_line)+"\n"
