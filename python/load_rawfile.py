@@ -5,19 +5,15 @@ VERSION = 0.1
 ####################
 
 #Imported modules
-from sys import argv, exit
+import sys
 from os import system, popen
 from MySQLdb import *
 import os.path
 import datetime
-import argparse
+import glob
 
 # import pipeline utilities
 import epta_pipeline_utils as epu
-
-##############################################################################
-# CONFIG PARAMS
-##############################################################################
 
 #Database parameters
 DB_HOST = "localhost"
@@ -36,14 +32,12 @@ VERBOSE = 1 #Print extra output
 TEST = 0 #Prints commands and other actions without running them
 
 def Help():
-    #Print usage
     print "\nLoad raw files to database"
     print "Version: %.2f"%(VERSION)+"\n"
     print ("'%s' accepts only raw files. Wildcard is allowed.\n")% sys.argv[0]
-    exit(0)
+    sys.exit(0)
 
 def Parse_psrfits_header(file):
-    #Parses out the psrfits header info using psredit
     param_names = []
     param_values = []
     system("psredit %s > psredit.tmp"%file)
@@ -60,8 +54,8 @@ def Parse_psrfits_header(file):
         param_values.append(param_val)
     return param_names, param_values
 
+#Maps psrfits header values to the DB column names
 def Map_param_2_DB(param_name,param_val):
-    #Maps psrfits header values to the DB column names
     if "*:" in param_name:
         param_name = param_name.replace("*:","_")
     if ":" in param_name:
@@ -78,8 +72,8 @@ def Map_param_2_DB(param_name,param_val):
         param_val = [Remove_units(param_val)]
     return zip(param_name, param_val)
 
+#Parses out the parfile info from the psrfits file
 def Parse_psrfits_parfile(file):
-    #Parses out the parfile info from the psrfits file
     parfile_names = []
     parfile_values = []
     system("vap -E %s > parfile.tmp"%file)
@@ -90,13 +84,12 @@ def Parse_psrfits_parfile(file):
         parfile_values.append(line_split[1].strip())
     return zip(parfile_names,parfile_values)
 
+#Remove units from a parameter... may need to be extended
 def Remove_units(param):
-    #Remove units from a parameter... may need to be extended
     param = param.strip('deg')
     return param
 
 def DB_injest_psrfits(file,data_type,proc_id,DBcursor,DBconn,verbose=0):
-
     #Determine path (will retrieve absolute path)
     file_path, file_name = Verify_file_path(file, verbose=VERBOSE)
 
@@ -183,8 +176,8 @@ def DB_pam(psrfits_id,proc_id,pipeline_id,DBcursor,DBconn,data_type='intermediat
     result = DBcursor.fetchall()[0]
     file = os.path.join(result[0],result[1])
     filepath, filename = os.path.split(file)
-
-    interfile_base = os.path.join(interfile_path,filename.strip(".IT")) 
+    extn = filename[ filename.rindex( '.' ):len( filename ) ]
+    interfile_base = os.path.join(interfile_path,filename.strip( extn )) 
 
     # Frequency scrunched
     COMMAND = "pam -u %s -F -e Ft %s"%(interfile_path,file)
@@ -300,9 +293,24 @@ def Run_loader(file,proc_id,std_prof_id):
 
 def main():
 
-    if len(argv) > 1:
+    if len(sys.argv) > 1:
 
-        #Make DB connection
+        flist0=[];
+        flist1=[];
+        # Check if raw files exist. If wildcard was entered, check validity of all files. 
+        # If there is "*" or "?" character that was not interpreted by shell,
+        # use glob interpret it.
+        for i in range(len(sys.argv)):
+            if ("*" in sys.argv[i]) or ("?" in sys.argv[i]):
+                flist0 = glob.glob(sys.argv[i])
+            else:
+                flist1.append(sys.argv[i])
+        flist = flist0 + flist1;
+
+        for file in flist:
+            epn.Verify_file_path(file)
+        
+        # Make DB connection
         DBcursor, DBconn = DBconnect(DB_HOST,DB_NAME,DB_USER,DB_PASS)
 
         # Load files and populate the tables
