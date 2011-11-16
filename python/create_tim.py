@@ -6,6 +6,7 @@ from os import system, popen
 from MySQLdb import *
 import os.path
 import argparse
+import epta_pipeline_utils as epta
 
 # define an exception that will be used if the arguments are bad:
 class ArgError(Exception):
@@ -31,23 +32,11 @@ class ArgError(Exception):
                self.output = prog + ": Unidentified error with argument "+\
                name +"."
 
-def DBconnect(Host,DBname,Username,Password):
-    #To make a connection to the database
-    try:
-        connection = connect(host=Host,db=DBname,user=Username,passwd=Password)
-        cursor = connection.cursor()
-        print "Successfully connected to database %s.%s as %s"%(Host,DBname,Username)
-    except OperationalError:
-        print "Could not connect to database!  Exiting..."
-        exit(0)
-    return cursor, connection
-
-
 def get_tim_opt(progname):
      #parse command line
      parser = argparse.ArgumentParser(
               prog=progname, 
-              description='Extracts TOA informtion from table, and creates a tim file for use with tempo2.')
+              description='Extracts TOA information from table, and creates a tim file for use with tempo2.')
 
      parser.add_argument('--psr',
                          nargs=1, 
@@ -134,13 +123,13 @@ def get_tim_opt(progname):
 def main():
      progname = 'create_tim'
      #Make DB connection
-     DBcursor, DBconn = DBconnect("localhost","epta","epta","mysqlaccess")
+     DBcursor, DBconn = epta.DBconnect(epta.DB_HOST, epta.DB_NAME, epta.DB_USER, epta.DB_PASS)
 
      # Get command line arguments
      args = get_tim_opt(progname) 
 
 
-# Open output tim file
+     # Open output tim file
      # outfile='output.tim'
      outfile=args.outfile[0]
 
