@@ -6,7 +6,7 @@ create table if not exists rawfiles (
 	add_time DATETIME not null,
 	user_id bigint not null,
 	comments text,
-	psr_id bigint not null,	
+	pulsar_id bigint not null,	
 	obssystem_id bigint not null,
 	nbin mediumint unsigned,
 	nchan mediumint unsigned,
