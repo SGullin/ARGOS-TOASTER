@@ -1,8 +1,6 @@
 #!/usr/bin/python
 ####################
 # epta_pipeline.py #
-PIPE_NAME = "epta_pipeline"
-VERSION = 0.1
 ####################
 
 #Imported modules
@@ -12,26 +10,6 @@ from MySQLdb import *
 import os.path
 import datetime
 import argparse
-
-##############################################################################
-# CONFIG PARAMS
-##############################################################################
-
-#Database parameters
-DB_HOST = "localhost"
-DB_NAME = "epta"
-DB_USER = "epta"
-DB_PASS = "mysqlaccess"
-
-#Python version to use
-PYTHON = "/usr/bin/python"
-
-#Storage directories
-interfile_path="/home/epta/database/data/interfiles"
-
-#Debugging flags
-VERBOSE = 1 #Print extra output
-TEST = 0 #Prints commands and other actions without running them
 
 ###############################################################################
 # DO NOT EDIT BELOW HERE

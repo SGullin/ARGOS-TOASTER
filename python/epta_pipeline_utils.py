@@ -13,7 +13,32 @@ import os.path
 import datetime
 import argparse
 
-#Functions
+##############################################################################
+# CONFIG PARAMS
+#############################################################################
+
+PIPE_NAME = "epta_pipeline"
+VERSION = 0.1
+
+#Database parameters
+DB_HOST = "epta.jb.man.ac.uk"
+DB_NAME = "epta"
+DB_USER = "epta"
+DB_PASS = "mysqlaccess"
+
+#Python version to use
+PYTHON = "/usr/bin/python"
+
+#Storage directories
+interfile_path="/home/epta/database/data/interfiles"
+
+#Debugging flags
+VERBOSE = 1 #Print extra output
+TEST = 0 #Prints commands and other actions without running them
+
+##############################################################################
+# Functions
+##############################################################################
 
 def DBconnect(Host,DBname,Username,Password):
     #To make a connection to the database
