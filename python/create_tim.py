@@ -173,14 +173,14 @@ def main():
      # print "constraints = ", ' AND '.join(constraints)
      constraints = ' AND '.join(constraints)
 
-# Now perform query on desired toas:
+     # Now perform query on desired toas:
      QUERY = "SELECT "+columns+" FROM toa WHERE "+constraints
      print "Constructing TOA tempo2-compatible file %s for pulsar PSR J%s, with the following query:\n\n%s\n"%(outfile, args.psr[0], QUERY)
-# Run the query 
+     # Run the query 
      DBcursor.execute(QUERY)
-# Get query output
+     # Get query output
      DBOUT = DBcursor.fetchall()
-# Assign each DBOUT element to a separate array
+     # Assign each DBOUT element to a separate array
      psr_name = []
      freq = []
      imjd = []
@@ -218,7 +218,7 @@ def main():
      # print "DBOUT = ", DBOUT
 
 
-# Close profile file
+     # Close profile file
      f_tim.close()
 
      print "File", outfile, "closed."
