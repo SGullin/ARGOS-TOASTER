@@ -1,0 +1,76 @@
+#!/usr/bin/python
+################################
+# epta_pipeline_utils.py    
+# Useful, general functions 
+################################
+
+#Imported modules
+
+from sys import argv, exit
+from os import system, popen
+from MySQLdb import *
+import os.path
+import datetime
+import argparse
+
+#Functions
+
+def DBconnect(Host,DBname,Username,Password):
+    #To make a connection to the database
+    try:
+        connection = connect(host=Host,db=DBname,user=Username,passwd=Password)
+        cursor = connection.cursor()
+        print "Successfully connected to database %s.%s as %s"%(Host,DBname,Username)
+    except OperationalError:
+        print "Could not connect to database!  Exiting..."
+        exit(0)
+    return cursor, connection
+                    
+def Run_python_script(script, args_list, verbose=0, test=0):
+    #Use to run an external python script in the shell
+    COMMAND = PYTHON+" "+script+" "+" ".join("%s" % arg for arg in args_list)
+    if verbose:
+        print "Running command: "+COMMAND
+    if not test:
+        system(COMMAND)
+
+def Run_shell_command(command, verbose=0, test=0):
+    #Use to run an external program in the shell
+    COMMAND = command
+    if verbose:
+        print "Running command: "+COMMAND
+    if not test:
+        system(COMMAND)        
+
+def Verify_file_path(file, verbose=0):
+    #Verify that file exists
+    if not os.path.isfile(file):
+        print "File %s does not exist, you dumb dummy!"%(file)
+        exit(0)
+    elif  os.path.isfile(file) and verbose:
+        print "File %s exists!"%(file)
+    #Determine path (will retrieve absolute path)
+    file_path, file_name = os.path.split(os.path.abspath(file))
+    if verbose:
+        print "Path: %s Filename: %s"%(file_path, file_name)
+    return file_path, file_name
+
+def Fill_pipeline_table(DBcursor,DBconn):
+    #Calculate md5sum of pipeline script
+    MD5SUM = popen("md5sum %s"%argv[0],"r").readline().split()[0].strip()
+    QUERY = "INSERT INTO pipeline (pipeline_name, pipeline_version, md5sum) VALUES ('%s','%s','%s')"%(PIPE_NAME,VERSION,MD5SUM)
+    DBcursor.execute(QUERY)
+    #Get pipeline_id
+    QUERY = "SELECT LAST_INSERT_ID()"
+    DBcursor.execute(QUERY)
+    pipeline_id = DBcursor.fetchall()[0][0]
+    print "Added pipeline name and version to pipeline table with pipeline_id = %s"%pipeline_id
+    return pipeline_id
+    
+def Make_Proc_ID():
+    utcnow = datetime.datetime.utcnow()
+    return "%d%02d%02d_%02d%02d%02d.%d"%(utcnow.year,utcnow.month,utcnow.day,utcnow.hour,utcnow.minute,utcnow.second,utcnow.microsecond)
+
+def Give_UTC_now():
+    utcnow = datetime.datetime.utcnow()
+    return "UTC %d:%02d:%02d on %d%02d%02d"%(utcnow.hour,utcnow.minute,utcnow.second,utcnow.year,utcnow.month,utcnow.day)
