@@ -67,7 +67,7 @@ def Parse_command_line():
                         default=None,
                         help="psrfits_id of standard profile to use for running the full pipeline.")
     parser.add_argument('--full_pipeline',
-                        nargs=1,
+                        nargs='+',
                         type=str,
                         default=None,
                         help="File name of raw archive to run full pipeline on.")
@@ -158,8 +158,10 @@ def Parse_psrfits_parfile(file):
     lines = open("parfile.tmp","r").readlines()
     for line in lines[1:]:
         line_split = line.split()
-        parfile_names.append(line_split[0].strip())
-        parfile_values.append(line_split[1].strip())
+        if len( line_split ) > 0:
+            parfile_names.append(line_split[0].strip())
+            parfile_values.append(line_split[1].strip())
+            
     return zip(parfile_names,parfile_values)
 
 def Remove_units(param):
@@ -256,7 +258,8 @@ def DB_pam(psrfits_id,proc_id,pipeline_id,DBcursor,DBconn,data_type='intermediat
     file = os.path.join(result[0],result[1])
     filepath, filename = os.path.split(file)
 
-    interfile_base = os.path.join(interfile_path,filename.strip(".ar")) 
+    extn = filename[ filename.rindex( '.' ):len( filename ) ]
+    interfile_base = os.path.join(interfile_path,filename.strip( extn )) 
 
     # Frequency scrunched
     COMMAND = "pam -u %s -F -e Ft %s"%(interfile_path,file)
