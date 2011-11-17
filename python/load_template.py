@@ -1,6 +1,8 @@
 #!/usr/bin/python
 ####################
-# epta_pipeline.py #
+# load_template.py #
+SCRIPT_NAME = "load_template"
+VERSION = 0.1
 ####################
 
 #Imported modules
@@ -11,6 +13,26 @@ import os.path
 import datetime
 import argparse
 
+##############################################################################
+# CONFIG PARAMS
+##############################################################################
+
+#Database parameters
+DB_HOST = "localhost"
+DB_NAME = "epta"
+DB_USER = "epta"
+DB_PASS = "mysqlaccess"
+
+#Python version to use
+PYTHON = "/usr/bin/python"
+
+#Storage directories
+interfile_path="/home/epta/database/data/interfiles"
+
+#Debugging flags
+VERBOSE = 1 #Print extra output
+TEST = 0 #Prints commands and other actions without running them
+
 ###############################################################################
 # DO NOT EDIT BELOW HERE
 ###############################################################################
@@ -18,37 +40,38 @@ import argparse
 #Functions
 def Help():
     #Print basic description and usage
-    print "\nThe EPTA Timing Pipeline"
+    print "\nPython script to upload templates"
     print "Version: %.2f"%(VERSION)+"\n"
         
-    print "Please use 'epta_pipeline.py -h' for a full list of command line options. \n"
+    print "Please use '%s"%(SCRIPT_NAME)+".py -h' for a full list of command line options. \n"
 
-    print "Runs:"
-    print "DB_injest_psrfits: reads in raw psrfits archive header info and parfile"
-    print "DB_pam: scrunches the archive in various ways"
-    print "DB_pat: creates TOAs"
     print "\n"
     exit(0)
 
 def Parse_command_line():
     parser = argparse.ArgumentParser(
-        prog='epta_pipeline',
+        prog=SCRIPT_NAME+'.py',
         description='')
-    parser.add_argument('--std_prof',
+    parser.add_argument('--template',
                         nargs=1,
                         type=str,
                         default=None,
-                        help="File name of standard profile to upload.")
-    parser.add_argument('--std_prof_id',
+                        help="File name of the template to upload.")
+    parser.add_argument('--pulsar',
                         nargs=1,
-                        type=int,
-                        default=None,
-                        help="psrfits_id of standard profile to use for running the full pipeline.")
-    parser.add_argument('--full_pipeline',
-                        nargs='+',
                         type=str,
                         default=None,
-                        help="File name of raw archive to run full pipeline on.")
+                        help="Pulsar name (if not specified in template header).")
+    parser.add_argument('--system',
+                        nargs=1,
+                        type=str,
+                        default=None,
+                        help="Observing system (if not specified in template header).")
+    parser.add_argument('--comments',
+                        nargs=1,
+                        type=str,
+                        default=None,
+                        help="Provide comments describing the template.")
     args=parser.parse_args()
     return args
 
@@ -136,10 +159,8 @@ def Parse_psrfits_parfile(file):
     lines = open("parfile.tmp","r").readlines()
     for line in lines[1:]:
         line_split = line.split()
-        if len( line_split ) > 0:
-            parfile_names.append(line_split[0].strip())
-            parfile_values.append(line_split[1].strip())
-            
+        parfile_names.append(line_split[0].strip())
+        parfile_values.append(line_split[1].strip())
     return zip(parfile_names,parfile_values)
 
 def Remove_units(param):
@@ -236,8 +257,7 @@ def DB_pam(psrfits_id,proc_id,pipeline_id,DBcursor,DBconn,data_type='intermediat
     file = os.path.join(result[0],result[1])
     filepath, filename = os.path.split(file)
 
-    extn = filename[ filename.rindex( '.' ):len( filename ) ]
-    interfile_base = os.path.join(interfile_path,filename.strip( extn )) 
+    interfile_base = os.path.join(interfile_path,filename.strip(".ar")) 
 
     # Frequency scrunched
     COMMAND = "pam -u %s -F -e Ft %s"%(interfile_path,file)
@@ -398,7 +418,7 @@ def Run_EPTA_pipeline(file,proc_id,std_prof_id):
 def Fill_pipeline_table(DBcursor,DBconn):
     #Calculate md5sum of pipeline script
     MD5SUM = popen("md5sum %s"%argv[0],"r").readline().split()[0].strip()
-    QUERY = "INSERT INTO pipeline (pipeline_name, pipeline_version, md5sum) VALUES ('%s','%s','%s')"%(PIPE_NAME,VERSION,MD5SUM)
+    QUERY = "INSERT INTO pipeline (pipeline_name, pipeline_version, md5sum) VALUES ('%s','%s','%s')"%(SCRIPT_NAME,VERSION,MD5SUM)
     DBcursor.execute(QUERY)
     #Get pipeline_id
     QUERY = "SELECT LAST_INSERT_ID()"
@@ -422,49 +442,63 @@ def main():
 
     args = Parse_command_line()
 
-    if args.full_pipeline and args.std_prof_id:
-        print "###################################################"
-        print "Starting EPTA Timing Pipeline Version %.2f"%VERSION
-        proc_id = Make_Proc_ID()
-        print "Proc ID (UTC start datetime): %s"%proc_id
-        print "Start time: %s"%Give_UTC_now()
-        print "###################################################"
+    if args.template:
+        print "%s"%args.template
 
-        file = args.full_pipeline[0]
-        std_prof_id = args.std_prof_id[0]
-        file_path, file_name = Verify_file_path(file, verbose=VERBOSE)
-        print "Running on %s"%os.path.join(file_path, file_name)
-        Run_EPTA_pipeline(file,proc_id,std_prof_id)
+        #Determine path (will retrieve absolute path)
+        file_path, file_name = Verify_file_path(args.template, verbose=VERBOSE)
 
-        print "###################################################"
-        print "Finished EPTA Timing Pipeline Version %.2f"%VERSION
-        print "End time: %s"%Give_UTC_now()
-        print "###################################################"
-    elif args.std_prof:
-        std_prof = args.std_prof[0]
-        print "########################################################"
-        print "Uploading a standard profile %s to the EPTA DB"%std_prof
-        proc_id = Make_Proc_ID()
-        print "Proc ID (UTC start datetime): %s"%proc_id
-        print "Start time: %s"%Give_UTC_now()
-        print "########################################################"
+        print "%s %s"%(file_path,file_name)
+
+        #Parse the psredit output
+#        print "Importing header information for %s"%file
+#        print "This file has type: %s"%data_type
+#        param_names, param_values = Parse_psrfits_header(file)
+
+        
+#    if args.full_pipeline and args.std_prof_id:
+#        print "###################################################"
+#        print "Starting EPTA Timing Pipeline Version %.2f"%VERSION
+#        proc_id = Make_Proc_ID()
+#        print "Proc ID (UTC start datetime): %s"%proc_id
+#        print "Start time: %s"%Give_UTC_now()
+#        print "###################################################"
+
+#        file = args.full_pipeline[0]
+#        std_prof_id = args.std_prof_id[0]
+#        file_path, file_name = Verify_file_path(file, verbose=VERBOSE)
+#        print "Running on %s"%os.path.join(file_path, file_name)
+#        Run_EPTA_pipeline(file,proc_id,std_prof_id)
+
+#        print "###################################################"
+#        print "Finished EPTA Timing Pipeline Version %.2f"%VERSION
+#        print "End time: %s"%Give_UTC_now()
+#        print "###################################################"
+#    elif args.std_prof:
+#        std_prof = args.std_prof[0]
+#        print "########################################################"
+#        print "Uploading a standard profile %s to the EPTA DB"%std_prof
+#        proc_id = Make_Proc_ID()
+#        print "Proc ID (UTC start datetime): %s"%proc_id
+#        print "Start time: %s"%Give_UTC_now()
+#        print "########################################################"
         
         #Make DB connection
-        DBcursor, DBconn = DBconnect(DB_HOST,DB_NAME,DB_USER,DB_PASS)
+#        DBcursor, DBconn = DBconnect(DB_HOST,DB_NAME,DB_USER,DB_PASS)
 
         #Fill pipeline table
-        pipeline_id = Fill_pipeline_table(DBcursor,DBconn)
+#        pipeline_id = Fill_pipeline_table(DBcursor,DBconn)
 
-        psrfits_id, par_id = DB_injest_psrfits(std_prof,'std_prof',proc_id,DBcursor,DBconn,verbose=VERBOSE)
+#        psrfits_id, par_id = DB_injest_psrfits(std_prof,'std_prof',proc_id,DBcursor,DBconn,verbose=VERBOSE)
 
         #Close DB connection
-        DBconn.close()
+#        DBconn.close()
 
-        print "########################################################"
-        print "Successfully uploaded standard profile %s to the EPTA DB"%std_prof
-        print "This standard profile has psrfits_id = %d"%psrfits_id
-        print "End time: %s"%Give_UTC_now()
-        print "########################################################"
+#        print "########################################################"
+#        print "Successfully uploaded standard profile %s to the EPTA DB"%std_prof
+#        print "This standard profile has psrfits_id = %d"%psrfits_id
+#        print "End time: %s"%Give_UTC_now()
+#        print "########################################################"
     else:
         print "\nYou haven't specified a valid set of command line options.  Exiting..."
         Help()

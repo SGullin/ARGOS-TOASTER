@@ -1,9 +1,10 @@
 create table if not exists parfiles (
 	parfile_id BIGINT UNSIGNED not NULL AUTO_INCREMENT primary key, 
+	pulsar_id BIGINT not null,
 	md5sum varchar(64) not null,
         add_time DATETIME not null,
-        name varchar(512) not null,
-        path varchar(512) not null,
+        filename varchar(512) not null,
+        filepath varchar(512) not null,
 	PSRJ VARCHAR(12), 
 	PSRB CHAR(7), 
 	RAJ VARCHAR(32),

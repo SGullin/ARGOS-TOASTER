@@ -1,99 +1,43 @@
 #!/usr/bin/python
 ####################
-# epta_pipeline.py #
+# load_rawfile.py #
+VERSION = 0.1
 ####################
 
 #Imported modules
-from sys import argv, exit
+import sys
 from os import system, popen
 from MySQLdb import *
 import os.path
 import datetime
-import argparse
+import glob
 
-###############################################################################
-# DO NOT EDIT BELOW HERE
-###############################################################################
+# import pipeline utilities
+import epta_pipeline_utils as epu
 
-#Functions
+#Database parameters
+DB_HOST = "localhost"
+DB_NAME = "epta"
+DB_USER = "epta"
+DB_PASS = "mysqlaccess"
+
+#Python version to use
+PYTHON = "/usr/bin/python"
+
+#Storage directories
+interfile_path="/home/epta/database/data/interfiles"
+
+#Debugging flags
+VERBOSE = 1 #Print extra output
+TEST = 0 #Prints commands and other actions without running them
+
 def Help():
-    #Print basic description and usage
-    print "\nThe EPTA Timing Pipeline"
+    print "\nLoad raw files to database"
     print "Version: %.2f"%(VERSION)+"\n"
-        
-    print "Please use 'epta_pipeline.py -h' for a full list of command line options. \n"
-
-    print "Runs:"
-    print "DB_injest_psrfits: reads in raw psrfits archive header info and parfile"
-    print "DB_pam: scrunches the archive in various ways"
-    print "DB_pat: creates TOAs"
-    print "\n"
-    exit(0)
-
-def Parse_command_line():
-    parser = argparse.ArgumentParser(
-        prog='epta_pipeline',
-        description='')
-    parser.add_argument('--std_prof',
-                        nargs=1,
-                        type=str,
-                        default=None,
-                        help="File name of standard profile to upload.")
-    parser.add_argument('--std_prof_id',
-                        nargs=1,
-                        type=int,
-                        default=None,
-                        help="psrfits_id of standard profile to use for running the full pipeline.")
-    parser.add_argument('--full_pipeline',
-                        nargs='+',
-                        type=str,
-                        default=None,
-                        help="File name of raw archive to run full pipeline on.")
-    args=parser.parse_args()
-    return args
-
-def DBconnect(Host,DBname,Username,Password):
-    #To make a connection to the database
-    try:
-        connection = connect(host=Host,db=DBname,user=Username,passwd=Password)
-        cursor = connection.cursor()
-        print "Successfully connected to database %s.%s as %s"%(Host,DBname,Username)
-    except OperationalError:
-        print "Could not connect to database!  Exiting..."
-        exit(0)
-    return cursor, connection
-                    
-def Run_python_script(script, args_list, verbose=0, test=0):
-    #Use to run an external python script in the shell
-    COMMAND = PYTHON+" "+script+" "+" ".join("%s" % arg for arg in args_list)
-    if verbose:
-        print "Running command: "+COMMAND
-    if not test:
-        system(COMMAND)
-
-def Run_shell_command(command, verbose=0, test=0):
-    #Use to run an external program in the shell
-    COMMAND = command
-    if verbose:
-        print "Running command: "+COMMAND
-    if not test:
-        system(COMMAND)        
-
-def Verify_file_path(file, verbose=0):
-    #Verify that file exists
-    if not os.path.isfile(file):
-        print "File %s does not exist, you dumb dummy!"%(file)
-        exit(0)
-    elif  os.path.isfile(file) and verbose:
-        print "File %s exists!"%(file)
-    #Determine path (will retrieve absolute path)
-    file_path, file_name = os.path.split(os.path.abspath(file))
-    if verbose:
-        print "Path: %s Filename: %s"%(file_path, file_name)
-    return file_path, file_name
+    print ("'%s' accepts only raw files. Wildcard is allowed.\n")% sys.argv[0]
+    sys.exit(0)
 
 def Parse_psrfits_header(file):
-    #Parses out the psrfits header info using psredit
     param_names = []
     param_values = []
     system("psredit %s > psredit.tmp"%file)
@@ -110,8 +54,8 @@ def Parse_psrfits_header(file):
         param_values.append(param_val)
     return param_names, param_values
 
+#Maps psrfits header values to the DB column names
 def Map_param_2_DB(param_name,param_val):
-    #Maps psrfits header values to the DB column names
     if "*:" in param_name:
         param_name = param_name.replace("*:","_")
     if ":" in param_name:
@@ -128,27 +72,24 @@ def Map_param_2_DB(param_name,param_val):
         param_val = [Remove_units(param_val)]
     return zip(param_name, param_val)
 
+#Parses out the parfile info from the psrfits file
 def Parse_psrfits_parfile(file):
-    #Parses out the parfile info from the psrfits file
     parfile_names = []
     parfile_values = []
     system("vap -E %s > parfile.tmp"%file)
     lines = open("parfile.tmp","r").readlines()
     for line in lines[1:]:
         line_split = line.split()
-        if len( line_split ) > 0:
-            parfile_names.append(line_split[0].strip())
-            parfile_values.append(line_split[1].strip())
-            
+        parfile_names.append(line_split[0].strip())
+        parfile_values.append(line_split[1].strip())
     return zip(parfile_names,parfile_values)
 
+#Remove units from a parameter... may need to be extended
 def Remove_units(param):
-    #Remove units from a parameter... may need to be extended
     param = param.strip('deg')
     return param
 
 def DB_injest_psrfits(file,data_type,proc_id,DBcursor,DBconn,verbose=0):
-
     #Determine path (will retrieve absolute path)
     file_path, file_name = Verify_file_path(file, verbose=VERBOSE)
 
@@ -235,13 +176,12 @@ def DB_pam(psrfits_id,proc_id,pipeline_id,DBcursor,DBconn,data_type='intermediat
     result = DBcursor.fetchall()[0]
     file = os.path.join(result[0],result[1])
     filepath, filename = os.path.split(file)
-
     extn = filename[ filename.rindex( '.' ):len( filename ) ]
     interfile_base = os.path.join(interfile_path,filename.strip( extn )) 
 
     # Frequency scrunched
     COMMAND = "pam -u %s -F -e Ft %s"%(interfile_path,file)
-    Run_shell_command(COMMAND, verbose=VERBOSE, test=TEST)
+    epu.Run_shell_command(COMMAND, verbose=VERBOSE, test=TEST)
     # Injest
     interfile_id, par_id = DB_injest_psrfits("%s.Ft"%interfile_base,data_type,proc_id,DBcursor,DBconn,verbose=0)
     # Store process
@@ -252,7 +192,7 @@ def DB_pam(psrfits_id,proc_id,pipeline_id,DBcursor,DBconn,data_type='intermediat
 
     # Time scrunched
     COMMAND = "pam -u %s -T -e fT %s"%(interfile_path,file)
-    Run_shell_command(COMMAND, verbose=VERBOSE, test=TEST)
+    epu.Run_shell_command(COMMAND, verbose=VERBOSE, test=TEST)
     # Injest
     interfile_id, par_id = DB_injest_psrfits("%s.fT"%interfile_base,data_type,proc_id,DBcursor,DBconn,verbose=0)
     # Store process
@@ -262,7 +202,7 @@ def DB_pam(psrfits_id,proc_id,pipeline_id,DBcursor,DBconn,data_type='intermediat
 
     # 8x8 scrunched
     COMMAND = "pam -u %s --setnsub 8 --setnchn 8 -e 88 %s"%(interfile_path,file)
-    Run_shell_command(COMMAND, verbose=VERBOSE, test=TEST)
+    epu.Run_shell_command(COMMAND, verbose=VERBOSE, test=TEST)
     # Injest
     interfile_id, par_id = DB_injest_psrfits("%s.88"%interfile_base,data_type,proc_id,DBcursor,DBconn,verbose=0)
     # Store process
@@ -272,60 +212,27 @@ def DB_pam(psrfits_id,proc_id,pipeline_id,DBcursor,DBconn,data_type='intermediat
 
     # Frequency and time scrunched
     COMMAND = "pam -u %s -FT -e FT %s"%(interfile_path,file)
-    Run_shell_command(COMMAND, verbose=VERBOSE, test=TEST)
+    epu.Run_shell_command(COMMAND, verbose=VERBOSE, test=TEST)
     # Injest
     interfile_id, par_id = DB_injest_psrfits("%s.FT"%interfile_base,data_type,proc_id,DBcursor,DBconn,verbose=0)
     # Store process
     QUERY = "insert into process (psrfits_id,product_id,pipeline_id) values (%s,%s,%s)"%(psrfits_id,interfile_id,pipeline_id)
     DBcursor.execute(QUERY)
     #Grab the psrfits_id of the scrunched .FT file
-    scrunched_id = interfile_id
     intermediate_ids.append(interfile_id)
 
     # Fully scrunched
     COMMAND = "pam -u %s -FTp -e FTp %s"%(interfile_path,file)
-    Run_shell_command(COMMAND, verbose=VERBOSE, test=TEST)
+    epu.Run_shell_command(COMMAND, verbose=VERBOSE, test=TEST)
     # Injest
     interfile_id, par_id = DB_injest_psrfits("%s.FTp"%interfile_base,data_type,proc_id,DBcursor,DBconn,verbose=0)
     # Store process
     QUERY = "insert into process (psrfits_id,product_id,pipeline_id) values (%s,%s,%s)"%(psrfits_id,interfile_id,pipeline_id)
     DBcursor.execute(QUERY)
     intermediate_ids.append(interfile_id)
+    scrunched_id = interfile_id
 
     return scrunched_id, intermediate_ids
-
-
-def DB_pat(std_id,scrunched_id,DBcursor,DBconn):
-
-    #Gets paths and file name of the STANDARD file  
-    QUERY ="select file_path, file_name from psrfits where psrfits_id=%s"%(std_id)
-    DBcursor.execute(QUERY)
-    # Fetch the result
-    result = DBcursor.fetchall()[0]
-    std_file = os.path.join(result[0],result[1])
-    
-    #Gets paths and file name of the INTER file (SCRUNCHED FILE)  
-    QUERY ="select file_path, file_name, name from psrfits where psrfits_id=%s"%(scrunched_id)
-    DBcursor.execute(QUERY)
-    # Fetch the result
-    result = DBcursor.fetchall()[0]
-    scrunched_file = os.path.join(result[0],result[1])
-    psr_name = result[2]
-    
-    # The pat command:
-    patc = "pat -s %s %s"%(std_file,scrunched_file)
-    
-    # Runs the pat command and gets values
-    toa = popen(patc,"r").readlines()[0]
-    freq = toa.split()[1]
-    imjd = toa.split()[2].split(".")[0]
-    fmjd = "0." + toa.split()[2].split(".")[1]
-    errmjd = toa.split()[4]
-    obs = toa.split()[5]
-
-    # Writes values to the toa table
-    QUERY = "insert into toa (std_id,psrfits_id,psr_name,imjd,fmjd,freq,mjd_err,obs,pat_command) values ('%s','%s','%s','%s','%s','%s','%s','%s','%s')"%(std_id,scrunched_id,psr_name,imjd,fmjd,freq,errmjd,obs,patc)
-    DBcursor.execute(QUERY)
 
 def DB_pav(psrfits_ids,DBcursor,DBconn):
     for psrfits_id in psrfits_ids:
@@ -345,128 +252,80 @@ def DB_pav(psrfits_ids,DBcursor,DBconn):
             file_ext = filename.split(".")[-1]
             if file_ext == "fT":
                 command = "pav -dG %s -g %s.png/png"%(file,file)
-                Run_shell_command(command, verbose=VERBOSE, test=TEST)
+                epu.Run_shell_command(command, verbose=VERBOSE, test=TEST)
             if file_ext == "Ft":
                 command = "pav -Y %s -g %s.png/png"%(file,file)
-                Run_shell_command(command, verbose=VERBOSE, test=TEST)
+                epu.Run_shell_command(command, verbose=VERBOSE, test=TEST)
             if file_ext == "FT":
                 command = "pav -S %s -g %s.png/png"%(file,file)
-                Run_shell_command(command, verbose=VERBOSE, test=TEST)
+                epu.Run_shell_command(command, verbose=VERBOSE, test=TEST)
             if file_ext == "FTp":
                 command = "pav -DFTp %s -g%s.png/png"%(file,file)
-                Run_shell_command(command, verbose=VERBOSE, test=TEST)
+                epu.Run_shell_command(command, verbose=VERBOSE, test=TEST)
 
-def Run_EPTA_pipeline(file,proc_id,std_prof_id):
+def Run_loader(file,proc_id,std_prof_id):
 
     #Make DB connection
-    DBcursor, DBconn = DBconnect(DB_HOST,DB_NAME,DB_USER,DB_PASS)
+    DBcursor, DBconn = epu.DBconnect(DB_HOST,DB_NAME,DB_USER,DB_PASS)
 
     #Fill pipeline table
-    pipeline_id = Fill_pipeline_table(DBcursor,DBconn)
+    pipeline_id = epu.Fill_pipeline_table(DBcursor,DBconn)
 
     #Run DB_injest_psrfits
-    print "\n*** Starting %s at %s"%(DB_injest_psrfits.__name__,Give_UTC_now())
+    print "\n*** Starting %s at %s"%(DB_injest_psrfits.__name__,epu.Give_UTC_now())
     psrfits_id, par_id = DB_injest_psrfits(file,'raw',proc_id,DBcursor,DBconn,verbose=VERBOSE)
-    print "*** Finished %s at %s\n"%(DB_injest_psrfits.__name__,Give_UTC_now())
+    print "*** Finished %s at %s\n"%(DB_injest_psrfits.__name__,epu.Give_UTC_now())
     print "*** %s returned psrfits_id: %s and par_id: %s"%(DB_injest_psrfits.__name__,psrfits_id,par_id)
 
-    #Run Zap
-
-    #Update parfile?
-
     #Run DB_pam
-    print "\n*** Starting %s at %s"%(DB_pam.__name__,Give_UTC_now())
+    print "\n*** Starting %s at %s"%(DB_pam.__name__,epu.Give_UTC_now())
     scrunched_id, intermediate_ids = DB_pam(psrfits_id,proc_id,pipeline_id,DBcursor,DBconn)
-    #DB_pam(2,proc_id,DBcursor,DBconn)
-    print "*** Finished %s at %s\n"%(DB_pam.__name__,Give_UTC_now())
+    print "*** Finished %s at %s\n"%(DB_pam.__name__,epu.Give_UTC_now())
     print "*** %s returned scrunched_id: %s and intermediate_ids: "%(DB_injest_psrfits.__name__,scrunched_id)+",".join("%s" % val for val in intermediate_ids)
 
     #Run DB_pav
-    print "\n*** Starting %s at %s"%(DB_pav.__name__,Give_UTC_now())
+    print "\n*** Starting %s at %s"%(DB_pav.__name__,epu.Give_UTC_now())
     DB_pav(intermediate_ids,DBcursor,DBconn)
-    print "*** Finished %s at %s\n"%(DB_pav.__name__,Give_UTC_now())
-
-    #Run DB_pat
-    print "\n*** Starting %s at %s"%(DB_pat.__name__,Give_UTC_now())
-    DB_pat(std_prof_id,scrunched_id,DBcursor,DBconn)
-    #DB_pat(2,2,DBcursor,DBconn)
-    print "*** Finished %s at %s\n"%(DB_pat.__name__,Give_UTC_now())
+    print "*** Finished %s at %s\n"%(DB_pav.__name__,epu.Give_UTC_now())
 
     #Close DB connection
     DBconn.close()
 
-def Fill_pipeline_table(DBcursor,DBconn):
-    #Calculate md5sum of pipeline script
-    MD5SUM = popen("md5sum %s"%argv[0],"r").readline().split()[0].strip()
-    QUERY = "INSERT INTO pipeline (pipeline_name, pipeline_version, md5sum) VALUES ('%s','%s','%s')"%(PIPE_NAME,VERSION,MD5SUM)
-    DBcursor.execute(QUERY)
-    #Get pipeline_id
-    QUERY = "SELECT LAST_INSERT_ID()"
-    DBcursor.execute(QUERY)
-    pipeline_id = DBcursor.fetchall()[0][0]
-    print "Added pipeline name and version to pipeline table with pipeline_id = %s"%pipeline_id
-    return pipeline_id
-    
-def Make_Proc_ID():
-    utcnow = datetime.datetime.utcnow()
-    return "%d%02d%02d_%02d%02d%02d.%d"%(utcnow.year,utcnow.month,utcnow.day,utcnow.hour,utcnow.minute,utcnow.second,utcnow.microsecond)
-
-def Give_UTC_now():
-    utcnow = datetime.datetime.utcnow()
-    return "UTC %d:%02d:%02d on %d%02d%02d"%(utcnow.hour,utcnow.minute,utcnow.second,utcnow.year,utcnow.month,utcnow.day)
-
 def main():
 
-    if len(argv) < 2:
-        Help()
+    if len(sys.argv) > 1:
 
-    args = Parse_command_line()
+        flist0=[];
+        flist1=[];
+        # Check if raw files exist. If wildcard was entered, check validity of all files. 
+        # If there is "*" or "?" character that was not interpreted by shell,
+        # use glob interpret it.
+        for i in range(len(sys.argv)):
+            if ("*" in sys.argv[i]) or ("?" in sys.argv[i]):
+                flist0 = glob.glob(sys.argv[i])
+            else:
+                flist1.append(sys.argv[i])
+        flist = flist0 + flist1;
 
-    if args.full_pipeline and args.std_prof_id:
-        print "###################################################"
-        print "Starting EPTA Timing Pipeline Version %.2f"%VERSION
-        proc_id = Make_Proc_ID()
-        print "Proc ID (UTC start datetime): %s"%proc_id
-        print "Start time: %s"%Give_UTC_now()
-        print "###################################################"
-
-        file = args.full_pipeline[0]
-        std_prof_id = args.std_prof_id[0]
-        file_path, file_name = Verify_file_path(file, verbose=VERBOSE)
-        print "Running on %s"%os.path.join(file_path, file_name)
-        Run_EPTA_pipeline(file,proc_id,std_prof_id)
-
-        print "###################################################"
-        print "Finished EPTA Timing Pipeline Version %.2f"%VERSION
-        print "End time: %s"%Give_UTC_now()
-        print "###################################################"
-    elif args.std_prof:
-        std_prof = args.std_prof[0]
-        print "########################################################"
-        print "Uploading a standard profile %s to the EPTA DB"%std_prof
-        proc_id = Make_Proc_ID()
-        print "Proc ID (UTC start datetime): %s"%proc_id
-        print "Start time: %s"%Give_UTC_now()
-        print "########################################################"
+        for file in flist:
+            epn.Verify_file_path(file)
         
-        #Make DB connection
+        # Make DB connection
         DBcursor, DBconn = DBconnect(DB_HOST,DB_NAME,DB_USER,DB_PASS)
 
-        #Fill pipeline table
-        pipeline_id = Fill_pipeline_table(DBcursor,DBconn)
-
-        psrfits_id, par_id = DB_injest_psrfits(std_prof,'std_prof',proc_id,DBcursor,DBconn,verbose=VERBOSE)
-
+        # Load files and populate the tables
+        Run_loader();
+        
         #Close DB connection
         DBconn.close()
 
         print "########################################################"
-        print "Successfully uploaded standard profile %s to the EPTA DB"%std_prof
-        print "This standard profile has psrfits_id = %d"%psrfits_id
-        print "End time: %s"%Give_UTC_now()
+        print "Successfully uploaded raw files to the EPTA DB"
+        print "End time: %s"%epu.Give_UTC_now()
         print "########################################################"
     else:
-        print "\nYou haven't specified a valid set of command line options.  Exiting..."
+        print "\nNo files to process.  Exiting..."
         Help()
         
 main()
+
