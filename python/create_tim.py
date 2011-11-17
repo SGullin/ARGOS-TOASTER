@@ -45,6 +45,9 @@ def get_tim_opt(progname):
      parser.add_argument('--obs', 
                          nargs='+',
                          help='observatory code(s)')
+     parser.add_argument('--inst', 
+                         nargs='+',
+                         help='specific instrument/backend')
      parser.add_argument('--toa_id', 
                          nargs='+',
                          type=int,
@@ -164,6 +167,10 @@ def main():
           constraints.append('(' + ' OR '.join("S.code = '%s'"% args.obs[i_obs] for i_obs in range(len(args.obs))) + ')')
           # for i_obs in range(len(args.obs)-1):
             #   constraints.append('obs = '+args.obs[i_obs])
+
+     # INST
+     if(args.inst):
+          constraints.append('(' + ' OR '.join("S.backend = '%s'"% args.inst[i_inst] for i_inst in range(len(args.inst))) + ')')
 
      # MJD
      if(args.mjd):
