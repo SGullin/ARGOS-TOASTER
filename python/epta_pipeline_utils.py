@@ -21,10 +21,10 @@ PIPE_NAME = "epta_pipeline"
 VERSION = 0.1
 
 #Database parameters
-DB_HOST = "epta.jb.man.ac.uk"
+DB_HOST = "eptadata.jb.man.ac.uk"
 DB_NAME = "epta"
 DB_USER = "epta"
-DB_PASS = "mysqlaccess"
+DB_PASS = "psr1937"
 
 #Python version to use
 PYTHON = "/usr/bin/python"
