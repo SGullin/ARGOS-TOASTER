@@ -142,28 +142,36 @@ def main():
      f_tim.write("FORMAT 1\n\n")
      
      # Run MySQL query to select TOAs with user-specified restrictions
-     columns = "psr_name, obs, freq, imjd, fmjd, toa_unc_us"
-  
+     # Tables : P = pulsars, S = obssystems, T = toa
+     columns = "P.pulsar_name"\
+             + ", S.code"\
+             + ", T.freq, T.imjd, T.fmjd, T.toa_unc_us" # toa table
+
+     #fromtables = "toa AS T LEFT JOIN obssystems AS S ON T.obssystem_id=T.obssystem_id"\
+     #	        + " LEFT JOIN pulsars as P ON T.pulsar_id=P.pulsar_id" 
+     fromtables = "toa AS T LEFT JOIN obssystems AS S ON T.obssystem_id=S.obssystem_id "\
+	        + "LEFT JOIN pulsars as P ON T.pulsar_id=P.pulsar_id" 
+
      # Now get constraints on query, one by one, based on command-line arguments:
-     constraints = ["psr_name = '%s'"%args.psr[0]]
+     constraints = ["pulsar_name = '%s'"%args.psr[0]]
      
      # OBS
      if(args.obs):
-          constraints.append('(' + ' OR '.join("obs = '%s'"% args.obs[i_obs] for i_obs in range(len(args.obs))) + ')')
+          constraints.append('(' + ' OR '.join("S.code = '%s'"% args.obs[i_obs] for i_obs in range(len(args.obs))) + ')')
           # for i_obs in range(len(args.obs)-1):
             #   constraints.append('obs = '+args.obs[i_obs])
 
      # MJD
      if(args.mjd):
-          constraints.append('imjd+fmjd >= '+repr(args.mjd[0])+' AND imjd+fmjd <= '+repr(args.mjd[1]))
+          constraints.append('T.imjd+T.fmjd >= '+repr(args.mjd[0])+' AND T.imjd+T.fmjd <= '+repr(args.mjd[1]))
 
      # MJD ERR
      if(args.mjderr):
-          constraints.append('toa_unc_us >= '+repr(args.mjderr[0])+' AND toa_unc_us <= '+repr(args.mjderr[1]))
+          constraints.append('T.toa_unc_us >= '+repr(args.mjderr[0])+' AND T.toa_unc_us <= '+repr(args.mjderr[1]))
 
      # FREQ
      if(args.freq):
-          constraints.append('freq >= '+repr(args.freq[0])+' AND freq <= '+repr(args.freq[1]))
+          constraints.append('T.freq >= '+repr(args.freq[0])+' AND T.freq <= '+repr(args.freq[1]))
 
      #TOA_ID
      if(args.toa_id):
@@ -174,7 +182,8 @@ def main():
      constraints = ' AND '.join(constraints)
 
      # Now perform query on desired toas:
-     QUERY = "SELECT "+columns+" FROM toa WHERE "+constraints
+     #QUERY = "SELECT "+columns+" FROM toa WHERE "+constraints
+     QUERY = "SELECT "+columns+" FROM "+fromtables+" WHERE "+constraints
      print "Constructing TOA tempo2-compatible file %s for pulsar PSR J%s, with the following query:\n\n%s\n"%(outfile, args.psr[0], QUERY)
      # Run the query 
      DBcursor.execute(QUERY)
