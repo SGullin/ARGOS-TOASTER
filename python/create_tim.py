@@ -6,6 +6,7 @@ from os import system, popen
 from MySQLdb import *
 import os.path
 import argparse
+import epta_pipeline_utils as epta
 
 # define an exception that will be used if the arguments are bad:
 class ArgError(Exception):
@@ -31,23 +32,11 @@ class ArgError(Exception):
                self.output = prog + ": Unidentified error with argument "+\
                name +"."
 
-def DBconnect(Host,DBname,Username,Password):
-    #To make a connection to the database
-    try:
-        connection = connect(host=Host,db=DBname,user=Username,passwd=Password)
-        cursor = connection.cursor()
-        print "Successfully connected to database %s.%s as %s"%(Host,DBname,Username)
-    except OperationalError:
-        print "Could not connect to database!  Exiting..."
-        exit(0)
-    return cursor, connection
-
-
 def get_tim_opt(progname):
      #parse command line
      parser = argparse.ArgumentParser(
               prog=progname, 
-              description='Extracts TOA informtion from table, and creates a tim file for use with tempo2.')
+              description='Extracts TOA information from table, and creates a tim file for use with tempo2.')
 
      parser.add_argument('--psr',
                          nargs=1, 
@@ -56,6 +45,9 @@ def get_tim_opt(progname):
      parser.add_argument('--obs', 
                          nargs='+',
                          help='observatory code(s)')
+     parser.add_argument('--inst', 
+                         nargs='+',
+                         help='specific instrument/backend')
      parser.add_argument('--toa_id', 
                          nargs='+',
                          type=int,
@@ -75,7 +67,7 @@ def get_tim_opt(progname):
      parser.add_argument('--outfile',
                          nargs=1, 
                        #  type=argparse.FileType('w'),
-                         default='output.tim', 
+                         #default='output.tim', 
                          help='Name of output file')
      
      args=parser.parse_args()
@@ -134,15 +126,17 @@ def get_tim_opt(progname):
 def main():
      progname = 'create_tim'
      #Make DB connection
-     DBcursor, DBconn = DBconnect("localhost","epta","epta","mysqlaccess")
+     DBcursor, DBconn = epta.DBconnect(epta.DB_HOST, epta.DB_NAME, epta.DB_USER, epta.DB_PASS)
 
      # Get command line arguments
      args = get_tim_opt(progname) 
 
 
-# Open output tim file
-     # outfile='output.tim'
-     outfile=args.outfile[0]
+     # Open output tim file
+     if args.outfile:
+          outfile = args.outfile[0]
+     else:
+          outfile = args.psr[0]+".tim"
 
      try:
          f_tim = open(outfile,'w')
@@ -153,28 +147,42 @@ def main():
      f_tim.write("FORMAT 1\n\n")
      
      # Run MySQL query to select TOAs with user-specified restrictions
-     columns = "psr_name, obs, freq, imjd, fmjd, mjd_err"
-  
+     # Tables : P = pulsars, S = obssystems, T = toa, R = rawfiles
+     columns = "P.pulsar_name"\
+             + ", S.code"\
+             + ", T.freq, T.imjd, T.fmjd, T.toa_unc_us"\
+             + ", R.filename"
+
+     #fromtables = "toa AS T LEFT JOIN obssystems AS S ON T.obssystem_id=T.obssystem_id"\
+     #	        + " LEFT JOIN pulsars as P ON T.pulsar_id=P.pulsar_id" 
+     fromtables = "toa AS T LEFT JOIN obssystems AS S ON T.obssystem_id=S.obssystem_id "\
+	        + "LEFT JOIN pulsars as P ON T.pulsar_id=P.pulsar_id "\
+	        + "LEFT JOIN rawfiles as R ON T.rawfile_id=R.rawfile_id" 
+
      # Now get constraints on query, one by one, based on command-line arguments:
-     constraints = ["psr_name = '%s'"%args.psr[0]]
+     constraints = ["pulsar_name = '%s'"%args.psr[0]]
      
      # OBS
      if(args.obs):
-          constraints.append('(' + ' OR '.join("obs = '%s'"% args.obs[i_obs] for i_obs in range(len(args.obs))) + ')')
+          constraints.append('(' + ' OR '.join("S.code = '%s'"% args.obs[i_obs] for i_obs in range(len(args.obs))) + ')')
           # for i_obs in range(len(args.obs)-1):
             #   constraints.append('obs = '+args.obs[i_obs])
 
+     # INST
+     if(args.inst):
+          constraints.append('(' + ' OR '.join("S.backend = '%s'"% args.inst[i_inst] for i_inst in range(len(args.inst))) + ')')
+
      # MJD
      if(args.mjd):
-          constraints.append('imjd+fmjd >= '+repr(args.mjd[0])+' AND imjd+fmjd <= '+repr(args.mjd[1]))
+          constraints.append('T.imjd+T.fmjd >= '+repr(args.mjd[0])+' AND T.imjd+T.fmjd <= '+repr(args.mjd[1]))
 
      # MJD ERR
      if(args.mjderr):
-          constraints.append('mjderr >= '+repr(args.mjderr[0])+' AND mjderr <= '+repr(args.mjderr[1]))
+          constraints.append('T.toa_unc_us >= '+repr(args.mjderr[0])+' AND T.toa_unc_us <= '+repr(args.mjderr[1]))
 
      # FREQ
      if(args.freq):
-          constraints.append('freq >= '+repr(args.freq[0])+' AND freq <= '+repr(args.freq[1]))
+          constraints.append('T.freq >= '+repr(args.freq[0])+' AND T.freq <= '+repr(args.freq[1]))
 
      #TOA_ID
      if(args.toa_id):
@@ -184,31 +192,34 @@ def main():
      # print "constraints = ", ' AND '.join(constraints)
      constraints = ' AND '.join(constraints)
 
-# Now perform query on desired toas:
-     QUERY = "SELECT "+columns+" FROM toa WHERE "+constraints
+     # Now perform query on desired toas:
+     #QUERY = "SELECT "+columns+" FROM toa WHERE "+constraints
+     QUERY = "SELECT "+columns+" FROM "+fromtables+" WHERE "+constraints
      print "Constructing TOA tempo2-compatible file %s for pulsar PSR J%s, with the following query:\n\n%s\n"%(outfile, args.psr[0], QUERY)
-# Run the query 
+     # Run the query 
      DBcursor.execute(QUERY)
-# Get query output
+     # Get query output
      DBOUT = DBcursor.fetchall()
-# Assign each DBOUT element to a separate array
+     # Assign each DBOUT element to a separate array
      psr_name = []
      freq = []
      imjd = []
      fmjd = []
-     mjd_err = []
+     toa_unc_us = []
      obs = []
+     rawfilename = []
      for i_row in range(len(DBOUT)):
           psr_name.append(DBOUT[i_row][0])
           obs.append(str(DBOUT[i_row][1]))
           freq.append("%.2lf"%(DBOUT[i_row][2]))
           imjd.append("%5d"%(DBOUT[i_row][3]))
           fmjd.append("%.15lf"%(DBOUT[i_row][4]))
-          mjd_err.append("%.4lf"%(DBOUT[i_row][5]))
+          toa_unc_us.append("%.4lf"%(DBOUT[i_row][5]))
+          rawfilename.append(DBOUT[i_row][6])
 
     
 
-     # print "psr_name\tobs\tfreq\timjd\tfmjd\t\tmjd_err"
+     # print "psr_name\tobs\tfreq\timjd\tfmjd\t\ttoa_unc_us"
      #  print "psrfits_id\tfile_name\tnbin\tnchan\tnpol\tnsubint\tsite"
      #for i_row in range(len(DBOUT)):
           #print "\t".join("%s" % val for val in DBOUT[i_row])
@@ -217,10 +228,10 @@ def main():
 
      # Construct simple TOA lines in accordance with tempo2 format
      for i_row in range(len(DBOUT)):
-          cur_line = [" %s "%psr_name[i_row], \
+          cur_line = [" %s "%rawfilename[i_row], \
                       freq[i_row],     \
                       "%s%s  "%(imjd[i_row], fmjd[i_row][1:]), \
-                      mjd_err[i_row], \
+                      toa_unc_us[i_row], \
                       obs[i_row]]
           #print cur_line
           cur_line_str = "  ".join(cur_line)+"\n"
@@ -229,7 +240,7 @@ def main():
      # print "DBOUT = ", DBOUT
 
 
-# Close profile file
+     # Close profile file
      f_tim.close()
 
      print "File", outfile, "closed."
