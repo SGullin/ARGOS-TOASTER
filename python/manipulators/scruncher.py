@@ -3,7 +3,7 @@ import psrchive
 
 plugin_name = 'scruncher'
 
-def manipulate(self, archives, nsub=1, nchan=1, nbin=None):
+def manipulate(archives, nsub=1, nchan=1, nbin=None):
     """Scrunch the given archive in polarization, as well as
         in frequency to 'self.nchan' channels, and in time to 
         'self.nsub' subints. Also bin scrunch to 'self.nbin'.
@@ -26,12 +26,12 @@ def manipulate(self, archives, nsub=1, nchan=1, nbin=None):
         Outputs:
             scrunched: The scrunched archive.
     """
-    scrunched = copy.deepcopy(archives[0])
+    scrunched = archives[0].clone()
     scrunched.pscrunch()
-    scrunched.fscrunch_to_nchan(self.nchan)
-    scrunched.tscrunch_to_nsub(self.nsub)
-    if self.nbin is not None:
-        scrunched.bscrunch_to_nbin(self.nbin)
+    scrunched.fscrunch_to_nchan(nchan)
+    scrunched.tscrunch_to_nsub(nsub)
+    if nbin is not None:
+        scrunched.bscrunch_to_nbin(nbin)
     return scrunched
 
 def add_arguments(parser):
