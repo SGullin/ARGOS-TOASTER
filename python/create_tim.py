@@ -144,15 +144,17 @@ def main():
      f_tim.write("FORMAT 1\n\n")
      
      # Run MySQL query to select TOAs with user-specified restrictions
-     # Tables : P = pulsars, S = obssystems, T = toa
+     # Tables : P = pulsars, S = obssystems, T = toa, R = rawfiles
      columns = "P.pulsar_name"\
              + ", S.code"\
-             + ", T.freq, T.imjd, T.fmjd, T.toa_unc_us" # toa table
+             + ", T.freq, T.imjd, T.fmjd, T.toa_unc_us"\
+             + ", R.filename"
 
      #fromtables = "toa AS T LEFT JOIN obssystems AS S ON T.obssystem_id=T.obssystem_id"\
      #	        + " LEFT JOIN pulsars as P ON T.pulsar_id=P.pulsar_id" 
      fromtables = "toa AS T LEFT JOIN obssystems AS S ON T.obssystem_id=S.obssystem_id "\
-	        + "LEFT JOIN pulsars as P ON T.pulsar_id=P.pulsar_id" 
+	        + "LEFT JOIN pulsars as P ON T.pulsar_id=P.pulsar_id "\
+	        + "LEFT JOIN rawfiles as R ON T.rawfile_id=R.rawfile_id" 
 
      # Now get constraints on query, one by one, based on command-line arguments:
      constraints = ["pulsar_name = '%s'"%args.psr[0]]
@@ -198,6 +200,7 @@ def main():
      fmjd = []
      toa_unc_us = []
      obs = []
+     rawfilename = []
      for i_row in range(len(DBOUT)):
           psr_name.append(DBOUT[i_row][0])
           obs.append(str(DBOUT[i_row][1]))
@@ -205,6 +208,7 @@ def main():
           imjd.append("%5d"%(DBOUT[i_row][3]))
           fmjd.append("%.15lf"%(DBOUT[i_row][4]))
           toa_unc_us.append("%.4lf"%(DBOUT[i_row][5]))
+          rawfilename.append(DBOUT[i_row][6])
 
     
 
@@ -217,7 +221,7 @@ def main():
 
      # Construct simple TOA lines in accordance with tempo2 format
      for i_row in range(len(DBOUT)):
-          cur_line = [" %s "%psr_name[i_row], \
+          cur_line = [" %s "%rawfilename[i_row], \
                       freq[i_row],     \
                       "%s%s  "%(imjd[i_row], fmjd[i_row][1:]), \
                       toa_unc_us[i_row], \
