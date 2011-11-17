@@ -64,7 +64,7 @@ def get_tim_opt(progname):
      parser.add_argument('--outfile',
                          nargs=1, 
                        #  type=argparse.FileType('w'),
-                         default='output.tim', 
+                         #default='output.tim', 
                          help='Name of output file')
      
      args=parser.parse_args()
@@ -130,8 +130,10 @@ def main():
 
 
      # Open output tim file
-     # outfile='output.tim'
-     outfile=args.outfile[0]
+     if args.outfile:
+          outfile = args.outfile[0]
+     else:
+          outfile = args.psr[0]+".tim"
 
      try:
          f_tim = open(outfile,'w')
