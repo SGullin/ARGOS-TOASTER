@@ -30,5 +30,6 @@ if __name__=='__main__':
         m.add_arguments(m_parser)
         m_parser.set_defaults(func=m.manipulate)
     args = parser.parse_args()
-    print args
+    # Debugging
+    # print args
     main()

@@ -43,7 +43,7 @@ def manipulate(infns, outname, ctrfreq, dm=None):
     ar.fscrunch()
 
     # Unload the archive
-    manipulators.unload_achive(ar, outname)   
+    manipulators.unload_archive(ar, outname)   
 
 
 def add_arguments(parser):

@@ -46,7 +46,7 @@ def manipulate(infns, outname, nsub=1, nchan=1, nbin=None):
         scrunched.bscrunch_to_nbin(nbin)
 
     # Unload the archive
-    manipulators.unload_achive(scrunched, outname)   
+    manipulators.unload_archive(scrunched, outname)   
 
 
 def add_arguments(parser):

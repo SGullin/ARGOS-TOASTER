@@ -30,6 +30,7 @@ def load_archives(fns):
     archives = []
     for fn in fns:
         archives.append(psrchive.Archive_load(fn))
+    return archives
 
 
 def unload_archive(archive, outname):
@@ -84,13 +85,15 @@ def run_manipulator(manipulator_func, infns, cmdopts, \
         shutil.copy(fn, newfn)
         newfns.append(newfn)
     try:
-        print "Running %s" % cmdopts.manipulator
-        print "With %s archives" % len(archives)
-        print "And arguments %s" % cmdopts
+        # Debugging
+        # print "Running %s" % cmdopts.manipulator
+        # print "With %s archives" % len(newfns)
+        # print "And arguments %s" % cmdopts
         args = inspect.getargspec(manipulator_func)[0]
         kwargs = {}
         for arg in args:
-            if arg != "archives":
+            # Don't pass along arguments that we include explicitly
+            if arg not in ("infns", "outname"):
                 kwargs[arg] = getattr(cmdopts, arg)
         manipulator_func(newfns, outname, **kwargs)
     finally:
