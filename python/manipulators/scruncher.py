@@ -3,19 +3,19 @@ import psrchive
 
 plugin_name = 'scruncher'
 
-def manipulate(archives, nsub=1, nchan=1, nbin=None):
+def manipulate(infns, outname, nsub=1, nchan=1, nbin=None):
     """Scrunch the given archive in polarization, as well as
         in frequency to 'self.nchan' channels, and in time to 
         'self.nsub' subints. Also bin scrunch to 'self.nbin'.
         
         **Note: The Scruncher manipulation only works on
-            one archive, so if the list 'archive_fns' 
-            contains more than one entry an exception is
-            raised
+            one archive, so if the list 'infns' contains 
+            more than one entry an exception is raised.
 
         Inputs:
-            archives: A list of psrchive.Archive objects. NOTE:
-                only the first entry in this list is used.
+            infns: A list of file names of input archvies. 
+                NOTE: Only the first entry in this list is used.
+            outname: File name of the manipulated archive.
             nsub: Number of output subints requested.
                 (Default: 1)
             nchan: Number of output channels requested.
@@ -24,22 +24,37 @@ def manipulate(archives, nsub=1, nchan=1, nbin=None):
                 (Default: Don't bin scrunch.)
 
         Outputs:
-            scrunched: The scrunched archive.
+            None
     """
-    scrunched = archives[0].clone()
+    # Ensure there is only a single input file
+    if len(infns) != 1:
+        raise manipulators.ManipulatorError("Scruncher manipulator " \
+                    "accepts/requires only a single input file "\
+                    "(%d provided)." % len(infns))
+
+    # Load the input archives into python as Archive objects
+    archives = manipulators.load_archives(infns)
+
+    # Archives is a list of one (we ensure this above)
+    scrunched = archives[0]
+
+    # Scrunch the heck out of it
     scrunched.pscrunch()
     scrunched.fscrunch_to_nchan(nchan)
     scrunched.tscrunch_to_nsub(nsub)
     if nbin is not None:
         scrunched.bscrunch_to_nbin(nbin)
-    return scrunched
+
+    # Unload the archive
+    manipulators.unload_achive(scrunched, outname)   
+
 
 def add_arguments(parser):
     """Add any arguments to subparser that are required 
         by the manipulator.
 
         Inputs:
-            parser: a argparse subparser for which arguments should
+            parser: An argparse subparser for which arguments should
                 be added in-place.
         
         Outputs:
