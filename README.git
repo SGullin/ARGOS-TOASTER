@@ -52,9 +52,9 @@ The user is prompted for a commit message.
 Keeping your local repository up-to-date:
 ----------------------------------------
 
-Developers should periodically "pull" changes that are newly commited to the central repository. Use git pull:
+Developers should periodically "pull" changes that are newly commited to the 'central' repository's 'master' branch. Use git pull:
 
-git pull central
+git pull central master
 
 Getting your changes into the central repository:
 ------------------------------------------------
