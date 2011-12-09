@@ -40,11 +40,12 @@ TEST = 0 #Prints commands and other actions without running them
 # Functions
 ##############################################################################
 
-def DBconnect(Host,DBname,Username,Password):
+def DBconnect(Host=DB_HOST,DBname=DB_NAME,Username=DB_USER,Password=DB_PASS, \
+                cursor_class=cursors.Cursor):
     #To make a connection to the database
     try:
         connection = connect(host=Host,db=DBname,user=Username,passwd=Password)
-        cursor = connection.cursor()
+        cursor = connection.cursor(cursor_class)
         print "Successfully connected to database %s.%s as %s"%(Host,DBname,Username)
     except OperationalError:
         print "Could not connect to database!  Exiting..."
