@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.6
 ################################
 # epta_pipeline_utils.py    
 # Useful, general functions 
@@ -12,6 +12,7 @@ from MySQLdb import *
 import os.path
 import datetime
 import argparse
+import hashlib
 
 ##############################################################################
 # CONFIG PARAMS
@@ -96,6 +97,22 @@ def Make_Proc_ID():
     utcnow = datetime.datetime.utcnow()
     return "%d%02d%02d_%02d%02d%02d.%d"%(utcnow.year,utcnow.month,utcnow.day,utcnow.hour,utcnow.minute,utcnow.second,utcnow.microsecond)
 
+def Make_Tstamp():
+        utcnow = datetime.datetime.utcnow()
+        return "%04d-%02d-%02d %02d:%02d:%02d"%(utcnow.year,utcnow.month,utcnow.day,utcnow.hour,utcnow.minute,utcnow.second)
+
 def Give_UTC_now():
     utcnow = datetime.datetime.utcnow()
     return "UTC %d:%02d:%02d on %d%02d%02d"%(utcnow.hour,utcnow.minute,utcnow.second,utcnow.year,utcnow.month,utcnow.day)
+
+def Get_md5sum(fname, block_size=16*8192):
+    f=open(fname)
+    md5 = hashlib.md5()
+    while True:
+        data = f.read(block_size)
+        if not data:
+            break
+        md5.update(data)
+    f.close()
+    return md5.hexdigest()
+                                        
