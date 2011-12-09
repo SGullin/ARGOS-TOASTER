@@ -59,27 +59,30 @@ def get_parfiles(psr, start=None, end=None):
         query += "AND add_time <= %s "
         query_args.append(end)
 
-   conn, cursor = epta_pipeline_utils.DBconnect(cursor_class=MySQLdb.cursors.DictCursor)
-   cursor.execute(query, query_args)
-   parfiles = cursor.fetchall()
-   conn.close()
-   return parfiles
+    cursor, conn = epta_pipeline_utils.DBconnect(cursor_class=MySQLdb.cursors.DictCursor)
+    cursor.execute(query, query_args)
+    parfiles = cursor.fetchall()
+    conn.close()
+    return parfiles
 
 
 def show_parfiles(parfiles, verbose=False):
-    for pardict in parfiles:
-        print "- "*25
-        print "Parfile ID: %d" % pardict['parfile_id']
-        fn = os.path.join(pardict['filepath'], parfile['filename'])
-        print "    Parfile: %s" % fn
-        print "    Pulsar J-name: %s; Pulsar B-name: %s" % \
-                (parfile['PSRJ'], psarfile['PSRB'])
-        print "    Date parfile was added: %s" % parfile['add_time'].isoformat()
-        if verbose:
-            print "    Parfile contents:"
-            for line in open(fn, 'r'):
-                print "        %s" % line.strip()
-        print " -"*25
+    if len(parfiles):
+        for pardict in parfiles:
+            print "- "*25
+            print "Parfile ID: %d" % pardict['parfile_id']
+            fn = os.path.join(pardict['filepath'], pardict['filename'])
+            print "    Parfile: %s" % fn
+            print "    Pulsar J-name: %s; Pulsar B-name: %s" % \
+                    (pardict['PSRJ'], pardict['PSRB'])
+            print "    Date and time parfile was added: %s" % pardict['add_time'].isoformat(' ')
+            if verbose:
+                print "    Parfile contents:"
+                for line in open(fn, 'r'):
+                    print "        %s" % line.strip()
+            print " -"*25
+    else:
+        print "*** NO MATCHING PARFILES! ***"
 
 
 if __name__=='__main__':
@@ -99,7 +102,7 @@ if __name__=='__main__':
                         help="Do not return parfiles added to the DB " \
                             "after this date.")
     parser.add_argument('-v', '--verbose', dest='verbose', \
-                        type=bool, default=False, \
+                        default=False, action='store_true', \
                         help="Be verbose; show the contents of the parfiles " \
                             "matching the search criteria provided. " \
                             "(Default: Don't be verbose.)")
