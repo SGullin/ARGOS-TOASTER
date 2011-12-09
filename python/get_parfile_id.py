@@ -67,19 +67,22 @@ def get_parfiles(psr, start=None, end=None):
 
 
 def show_parfiles(parfiles, verbose=False):
-    for pardict in parfiles:
-        print "- "*25
-        print "Parfile ID: %d" % pardict['parfile_id']
-        fn = os.path.join(pardict['filepath'], pardict['filename'])
-        print "    Parfile: %s" % fn
-        print "    Pulsar J-name: %s; Pulsar B-name: %s" % \
-                (pardict['PSRJ'], pardict['PSRB'])
-        print "    Date and time parfile was added: %s" % pardict['add_time'].isoformat(' ')
-        if verbose:
-            print "    Parfile contents:"
-            for line in open(fn, 'r'):
-                print "        %s" % line.strip()
-        print " -"*25
+    if len(parfiles):
+        for pardict in parfiles:
+            print "- "*25
+            print "Parfile ID: %d" % pardict['parfile_id']
+            fn = os.path.join(pardict['filepath'], pardict['filename'])
+            print "    Parfile: %s" % fn
+            print "    Pulsar J-name: %s; Pulsar B-name: %s" % \
+                    (pardict['PSRJ'], pardict['PSRB'])
+            print "    Date and time parfile was added: %s" % pardict['add_time'].isoformat(' ')
+            if verbose:
+                print "    Parfile contents:"
+                for line in open(fn, 'r'):
+                    print "        %s" % line.strip()
+            print " -"*25
+    else:
+        print "*** NO MATCHING PARFILES! ***"
 
 
 if __name__=='__main__':
