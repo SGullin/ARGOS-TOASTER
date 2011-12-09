@@ -1,0 +1,21 @@
+This document contains a basic outline to the manipulators. First, a "manipulator" is a piece of code that given some input archives manipulates them and returns an output archive. These manipulators are used to reduce, scrunch, combine, etc. data files uploaded to the EPTA archive before TOAs are generated. The manipulators are provided to the EPTA pipeline using a plug-in framework. This interface is described below.
+
+The goal of the manipulators is to provide an easily extensible, modular, framework to modify input files to produce the best TOAs possible.
+
+Each manipulator is written into a separate python file. For example consider a new manipulator, "newmanip", written into the file "newmanip.py". 
+
+The minimum implementation of a manipulator requires the folowing:
+1) A global variable 'plugin_name' containing a string value, the name of the plug-in. (e.g. "plugin_name = 'newmanip'").
+2) A function called 'manipulate' whose first argument is 'infns' a list of input archive file name, and whose second argument is 'outname' the desired file name of the output archive. The function can take additional arguments. The values provided to these arguments are taken from the command line.
+3) A function called 'add_arguments' that takes only one argument 'parser', which is an argparse parser. This function should add any command line arguments relevant to the manipulator. These arguments will be passed to the 'manipulate' function. The destination of the command line arguments must have the same name as the corresponding arguments to 'manipulate'.
+
+The __init__.py file is imported under the name 'manipulators', the name of the directory in which it is situated. This file defines the manipulator framework and utility functions that can be used by many manipulator implementations.
+
+Here is a description of the most important contents of __init__.py:
+1) registered_manipulators:
+2) load_archives:
+3) unload_archive:
+4) run_manipulator:
+5) ManipulatorError:
+
+Finally, along with the manipulators is a simple script to call a manipulator, 'manipulate.py'. This can be used for testing purposes.

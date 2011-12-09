@@ -1,0 +1,89 @@
+Here are a few useful notes on how to use git when developing the EPTA pipeline:
+
+The 'master' repository is maintained by Patrick Lazarus (plazarus@mpifr-bonn.mpg.de). It is located at eptadata.jb.man.ac.uk:/raid1/home/lazarus/research/epta/pipeline.central.
+
+Setting Up:
+----------
+
+Developers should start by making a clone of this repository (for simplicity, this should be done on eptadata):
+
+git clone /raid1/home/lazarus/research/epta/pipeline.central epta_pipeline
+
+This is create a sub-directory called epta_pipeline containing the pipeline code. If you already have a working version of repository you should skip the "clone". However, the rest of the instructions should still apply.
+
+An alias to the central repository should be set up for convenience:
+
+git remote add central /raid1/home/lazarus/research/epta/pipeline.central
+
+Git can be configured. At the very least developers should add the following information:
+
+git config user.name "<first name> <last name>"
+git config user.email "<email address>"
+
+Optionally a user can set their preferred text editor (this is used when prompted to add commit messages):
+
+git config core.editor <editor>
+
+To make git's output more readable colours can be added to the user interface:
+
+git config ui.color True
+
+Development:
+-----------
+
+Developers should modify/add files to the in the epta_pipeline directory. To check what files have been modified/added use git status:
+
+git status
+
+To check how file(s) have changed use git diff:
+
+git diff [<filename>]
+
+To commit changes the files must first be added to the "staging area". This applied both to new files, and to old files. Use git add:
+
+git add <file> [<file> ...]
+
+Next to commit the staged files to the local (i.e. not centrally maintained) repository use git commit:
+
+git commit
+
+The user is prompted for a commit message.
+
+Keeping your local repository up-to-date:
+----------------------------------------
+
+Developers should periodically "pull" changes that are newly commited to the 'central' repository's 'master' branch. Use git pull:
+
+git pull central master
+
+Getting your changes into the central repository:
+------------------------------------------------
+
+For changes to be added to the centrally maintained repository first pull any new changes from the central repository and make sure your code still works. If everything checks out email Patrick and let him know you have made significant modifications. He will pull your changes into the central repository.
+
+Merging and branching:
+---------------------
+
+I've tried to keep these notes simple. However, merging and branching may come up if there are conflicting changes being pulled in from the central repository to the local repository. If you have trouble merging changes when doing a pull. Contact Patrick (or Google) for more info.
+
+If you want to work with multiple parallel branches (say for an independant line of development that may require code to be "broken" before the modifications are complete) you can create a new branch using checkout:
+
+git checkout -b <new branch name>
+
+You are automatically switched to the new branch.
+
+To list all branches:
+
+git branch
+
+The current branch is indicated with '*'.
+
+To switch branches:
+
+git checkout <branch name>
+
+To merge changes another branch with the current branch:
+
+git merge <other branch name>
+
+Note that both branches still exist, and if branch A is merged into branch B (you ran "git merge A" which in branch B) then branch B contains all modifications from branch A, but branch A still does not contain modications unique to branch B.
