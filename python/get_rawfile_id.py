@@ -18,7 +18,7 @@ import MySQLdb
 
 
 def main():
-    rawfiles = get_rawfiles(args.pulsar_name, args.start_date, args.end_date)
+    rawfiles = get_rawfiles(args)
     show_rawfiles(rawfiles, verbose=args.verbose)
 
 
@@ -50,16 +50,16 @@ def get_rawfiles(args):
             "LEFT JOIN obssystems AS obs " \
                 "ON obs.obssystem_id=r.obssystem_id " \
             "LEFT JOIN telescopes AS t " \
-                "ON t.telescope_id=obs.telescope_id "
+                "ON t.telescope_id=obs.telescope_id " \
             "WHERE (psr.pulsar_name LIKE %s) "
     query_args = [args.pulsar_name]
 
-    if args.start is not None:
+    if args.start_date is not None:
         query += "AND r.add_time >= %s "
-        query_args.append(args.start)
-    if args.end is not None:
+        query_args.append(args.start_date)
+    if args.end_date is not None:
         query += "AND r.add_time <= %s "
-        query_args.append(args.end)
+        query_args.append(args.end_date)
 
     # TODO: Implement MJD selection criteria 
     # when MJDs are added to rawfiles table
@@ -135,13 +135,13 @@ if __name__=='__main__':
                         type=float, default=None, \
                         help="Do not return rawfiles from observations " \
                             "after this MJD.")
-    prarse.add_argument('--obssystem-id', dest='obssys_id', \
+    parser.add_argument('--obssystem-id', dest='obssys_id', \
                         type=int, default=None, \
                         help="Grab rawfiles from a specific observing system. " \
                             "NOTE: the argument should be the obssystem_id " \
                             "from the database. " \
                             "(Default: No constraint on obssystem_id.)")
-    prarse.add_argument('--obssystem-name', dest='obssystem_name', \
+    parser.add_argument('--obssystem-name', dest='obssystem_name', \
                         type=int, default=None, \
                         help="Grab rawfiles from a specific observing system. " \
                             "NOTE: the argument should be the name of the " \
