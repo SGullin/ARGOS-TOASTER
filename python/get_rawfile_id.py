@@ -19,7 +19,7 @@ import MySQLdb
 
 def main():
     rawfiles = get_rawfiles(args)
-    show_rawfiles(rawfiles, verbose=args.verbose)
+    show_rawfiles(rawfiles, verbosity=args.verbosity)
 
 
 def get_rawfiles(args):
@@ -37,6 +37,14 @@ def get_rawfiles(args):
                    "r.add_time, " \
                    "r.filename, " \
                    "r.filepath, " \
+                   "r.nbin, " \
+                   "r.nchan, " \
+                   "r.npol, " \
+                   "r.nsub, " \
+                   "r.freq, " \
+                   "r.bw, " \
+                   "r.dm, " \
+                   "r.length, " \
                    "psr.pulsar_name, " \
                    "t.name AS telescope_name, " \
                    "obs.obssystem_id, " \
@@ -91,7 +99,7 @@ def get_rawfiles(args):
     return rawfiles
 
 
-def show_rawfiles(rawfiles, verbose=False):
+def show_rawfiles(rawfiles, verbosity=0):
     if len(rawfiles):
         for rawdict in rawfiles:
             print "- "*25
@@ -100,13 +108,22 @@ def show_rawfiles(rawfiles, verbose=False):
             print "    Rawfile: %s" % fn
             print "    Pulsar name: %s" % rawdict['pulsar_name']
             print "    Date and time rawfile was added: %s" % rawdict['add_time'].isoformat(' ')
-            if verbose:
+            if verbosity:
                 print "    Observing System ID: %d" % rawdict['obssystem_id']
                 print "    Observing System Name: %s" % rawdict['obssys_name']
                 print "    Telescope: %s" % rawdict['telescope_name']
                 print "    Frontend: %s" % rawdict['frontend']
                 print "    Backend: %s" % rawdict['backend']
                 print "    Clock: %s" % rawdict['clock']
+            if verbosity > 1:
+                print "\n    Number of phase bins: %d" % rawdict['nbin']
+                print "    Number of channels: %d" % rawdict['nchan']
+                print "    Number of polarisations: %d" % rawdict['npol']
+                print "    Number of sub-integrations: %d" % rawdict['nsub']
+                print "    Centre frequency (MHz): %g" % rawdict['freq']
+                print "    Bandwidth (MHz): %g" % rawdict['bw']
+                print "    Dispersion measure (pc cm^-3): %g" % rawdict['dm']
+                print "    Integration time (s): %g" % rawdict['length']
             print " -"*25
     else:
         print "*** NO MATCHING RAWFILES! ***"
@@ -169,10 +186,11 @@ if __name__=='__main__':
                         help="Grab rawfiles from specific clocks. " \
                             "NOTE: SQL regular expression syntax may be used " \
                             "(Default: No constraint on clock name.)") 
-    parser.add_argument('-v', '--verbose', dest='verbose', \
-                        default=False, action='store_true', \
-                        help="Be verbose; show the contents of the rawfiles " \
-                            "matching the search criteria provided. " \
+    parser.add_argument('-v', '--verbose', dest='verbosity', \
+                        default=0, action='count', \
+                        help="Be more verbose; Level 1: show some contents " \
+                            "of the matching rawfiles; Level 2: show all " \
+                            "info in the DB for the matching rawfiles. " \
                             "(Default: Don't be verbose.)")
     args = parser.parse_args()
     main()
