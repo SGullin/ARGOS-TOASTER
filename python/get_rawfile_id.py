@@ -63,7 +63,7 @@ def get_rawfiles(args):
 
     # TODO: Implement MJD selection criteria 
     # when MJDs are added to rawfiles table
-    warnings.warn("MJD selectioin criteria are _not_ implemented.")
+    warnings.warn("MJD selection criteria are _not_ implemented.")
 
     if args.obssys_id:
         query += "AND (obs.obssystem_id = %s) "

@@ -29,7 +29,7 @@ PYTHON = "/usr/bin/python"
 interfile_path="/home/epta/database/data/interfiles"
 
 #Debugging flags
-VERBOSE = 1 #Print extra output
+VERBOSE = 0 #Print extra output
 TEST = 0 #Prints commands and other actions without running them
 
 def Help():
@@ -39,18 +39,18 @@ def Help():
     sys.exit(0)
 
 def parse_psrfits_header(file):
-    tmpbuf = []
-    hdritems = ["nbin", "nchan", "npol", "sub:nrows", "type", "site", "name", "type",
-                "coord", "freq", "bw", "dm", "rm", "dmc", "rmc", "polc", "scale",
-                "state", "length", "rcvr:name", "rcvr:basis", "be:name"]
-    for item in hdritems:
-        tmpbuf.append("-c")
-        tmpbuf.append(item)
-
-    tmpbuf.insert(0,"psredit")
-    tmpbuf.insert(1,"-q")
+    tmpbuf = ["psredit", "-q"]
+    tmpbuf.append("-c")
+    hdritems = ["nbin", "nchan", "npol", "sub:nrows", "type", "site", \
+		"name", "type", "coord", "freq", "bw", "dm", "rm", \
+		"dmc", "rmc", "polc", "scale", "state", "length", \
+		"rcvr:name", "rcvr:basis", "be:name"]
+    tmpbuf.append(",".join(hdritems))
     tmpbuf.append(file)
-    #sys.stderr.write(" ".join(tmpbuf));
+    
+    if VERBOSE:
+        print "Parsing file header:"
+        print " ".join(tmpbuf) 
     hdrparams = Popen(tmpbuf, stdout=PIPE, stderr=PIPE).communicate()
 
     if not 'error' in hdrparams[1]:
@@ -110,7 +110,8 @@ def populate_rawfiles_table(fname, DBcursor, DBconn, verbose=0):
     else:     
         # check if the file is indeed in psrfits format
         # Parse the psredit output
-        print "Importing header information for %s \n" % fname
+        if VERBOSE:
+            print "Importing header information for %s \n" % fname
         param_names = parse_psrfits_header(fname)
         if "BAD PSRFITS FILE" in param_names:
             sys.stderr.write("Bad PSRFITS file. Trying running psredit manually on file\n")
@@ -200,14 +201,18 @@ def create_diagnostics(rawfile_ids,DBcursor,DBconn):
 def run_loader(file, DBcursor, DBconn):
 
     # Fill rawfile table
-    sys.stderr.write("\nStarted %s at %s\n"%(populate_rawfiles_table.__name__,epu.Give_UTC_now()))
+    if VERBOSE:
+        print "Started %s at %s" % (populate_rawfiles_table.__name__, \
+                                        epu.Give_UTC_now())
     rawfile_id = populate_rawfiles_table(file, DBcursor, DBconn, 1)
 
     if rawfile_id == -1:
         sys.stderr.write("Error loading file. %s returned %d\n"%(populate_rawfiles_table.__name__, rawfile_id))
     else:
-        sys.stderr.write("Finished %s at %s\n"%(populate_rawfiles_table.__name__,epu.Give_UTC_now()))
-        sys.stderr.write("rawfile_id: %s %s\n"%(populate_rawfiles_table.__name__, rawfile_id))
+        if VERBOSE:
+            print "Finished %s at %s" % (populate_rawfiles_table.__name__,\
+                                            epu.Give_UTC_now())
+        print "File successfully loaded - rawfile_id: %s\n" % rawfile_id
 
     # fill-in parfiles table? This is to keep track of the
     # ephermeris used to fold the data.
