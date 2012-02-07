@@ -13,7 +13,7 @@ create table if not exists rawfiles (
 	npol tinyint unsigned,
 	nsub tinyint unsigned,
 	type varchar(32),
-	site varchar(8),
+	site varchar(16),
 	name varchar(16),
 	datatype varchar(32),
 	coord char(32),
