@@ -17,9 +17,10 @@ import hashlib
 
 # Database configuration parameters
 DB_HOST = "localhost"
-DB_NAME = "epta2" 
+DB_NAME = "epta"
 DB_USER = "epta"
-DB_PASS = "mysqlaccess"
+DB_PASS = "psr1937"
+
 
 # Debugging flags
 VERBOSE = 1 # Verbosity flag
@@ -52,12 +53,13 @@ def Parse_command_line():
                          help = 'Use if the par files should be master files\
                           for the respective pulsars.' )
     parser.add_argument( '--comments',
-                         nargs = '+',
+                         nargs = 1,
                          type = str,
                          default = None,
                          help = 'Provide comments describing the par files.\
                           These comments will be identical for all \
-                         simultaneously uploaded templates.')
+                         simultaneously uploaded templates. \
+                         It should be a single quoted string.')
     args = parser.parse_args()
     return args
 
@@ -124,7 +126,7 @@ def Parse_parfile( file ):
 
     return zip( parfile_names, parfile_values )
 
-def Add_Parfile( file_path, file_name, checksum, DBcursor ):
+def Add_Parfile( file_path, file_name, checksum, DBcursor, args ):
     if VERBOSE:
         print "Importing parfile information for %s" %(
             os.path.join( file_path, file_name ) )
@@ -181,21 +183,22 @@ def Add_Parfile( file_path, file_name, checksum, DBcursor ):
         print "par_id\tPSRJ\tFO\tDM"
         print "\t".join( "%s" %val for val in DBOUT[0:4] )
 
-    PSR_Name = DBout[1]
+    PSR_Name = DBOUT[1]
     # Find pulsar ID:
-    QUERY = 'select PSRJ, count (*) from pulsars where PSRJ = \'%s\'' %(
-        PSR_Name )
+    QUERY = 'select pulsar_name,count(*) from pulsars where pulsar_name = \'%s\'' %( PSR_Name )
     DBcursor.execute( QUERY )
     Have_Jfile = DBcursor.fetchall()[0][1]
 
     if( Have_Jfile == 0 ):
+        print "WARNING: pulsar is not in the database\n"
         # Pulsar not in database yet.
-        QUERY = 'INSERT INTO pulsars SET PSRJ = \'%s\'' %( PSR_Name )
+        QUERY = 'INSERT INTO pulsars SET pulsar_name = \'%s\'' %( PSR_Name )
         DBcursor.execute( QUERY )
         PSR_ID = DBcursor.execute( "SELECT LAST_INSERTED_ID()" )
         Make_master( PSR_ID, par_id )
     else:
-        QUERY = 'select pulsar_id from pulsars where PSRJ = \'%s\'' %(
+        print "This pulsar is in the database\n"
+        QUERY = 'select pulsar_id from pulsars where pulsar_name = \'%s\'' %(
             PSR_Name )
         DBcursor.execute( QUERY )
         # We'll select the first pulsar with this name (in case of duplication)
@@ -229,7 +232,7 @@ def Check_and_Load_Parfile( file_path, file_name, proc_id, args ):
 
     if( Have_file == 0 ):
         par_id, PSR_ID = Add_Parfile( file_path, file_name, checksum,
-                                      DBcursor )
+                                      DBcursor, args )
     else:
         print 'File %s already existant in database!\n'\
               %( os.path.join( file_path, file_name ) )
