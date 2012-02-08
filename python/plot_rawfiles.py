@@ -64,7 +64,7 @@ def main():
     cursor.execute(query)
     psrs, counts = zip(*cursor.fetchall())
     labels = []
-    for p, cnt in zip(telescopes, counts):
+    for p, cnt in zip(psrs, counts):
         labels.append("%s: %d" % (p, cnt))
 
     ax = plt.axes((0.55, 0.55, 0.4, 0.4))
