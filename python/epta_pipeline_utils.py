@@ -107,13 +107,23 @@ def Give_UTC_now():
     return "UTC %d:%02d:%02d on %d%02d%02d"%(utcnow.hour,utcnow.minute,utcnow.second,utcnow.year,utcnow.month,utcnow.day)
 
 def Get_md5sum(fname, block_size=16*8192):
-    f=open(fname)
+    """Compute and return the MD5 sum for the given file.
+        The file is read in blocks of 'block_size' bytes.
+
+        Inputs:
+            fname: The name of the file to get the md5 for.
+            block_size: The number of bytes to read at a time.
+                (Default: 16*8192)
+
+        Output:
+            md5: The hexidecimal string of the MD5 checksum.
+    """
+    f = open(fname, 'rb')
     md5 = hashlib.md5()
-    while True:
-        data = f.read(block_size)
-        if not data:
-            break
-        md5.update(data)
+    block = f.read(block_size)
+    while block:
+        md5.update(block)
+        block = f.read(block_size)
     f.close()
     return md5.hexdigest()
                                         
