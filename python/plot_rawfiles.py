@@ -1,4 +1,5 @@
 import datetime
+import os.path
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -14,7 +15,7 @@ def main():
     cursor.execute(query)
     add_times = np.asarray([row[0] for row in cursor.fetchall()])
     
-    fig = plt.figure()
+    fig = plt.figure(figsize=(10,8))
     ax = plt.axes((0.1, 0.15, 0.85, 0.35))
     times = np.concatenate((np.repeat(add_times, 2), [datetime.datetime.now()]))
     num = np.concatenate(([0], np.repeat(np.arange(1, len(add_times)+1), 2)))
@@ -49,7 +50,7 @@ def main():
     for t, cnt in zip(telescopes, counts):
         labels.append("%s: %d" % (t, cnt))
 
-    ax = plt.axes((0.1, 0.55, 0.4, 0.4))
+    ax = plt.axes((0.3, 0.55, 0.3, 0.3))
     plt.axis('equal')
     tel_pie = plt.pie(counts, labels=labels, autopct='%.1f %%')
     plt.setp(tel_pie[1]+tel_pie[2], size='xx-small')
@@ -67,12 +68,25 @@ def main():
     for p, cnt in zip(psrs, counts):
         labels.append("%s: %d" % (p, cnt))
 
-    ax = plt.axes((0.55, 0.55, 0.4, 0.4))
+    ax = plt.axes((0.65, 0.55, 0.3, 0.3))
     plt.axis('equal')
     psr_pie = plt.pie(counts, labels=labels, autopct='%.1f %%')
     plt.setp(psr_pie[1]+psr_pie[2], size='xx-small')
     plt.title("Num. raw files by pulsar", size='small')
-    
+   
+    # Get file sizes
+    query = "SELECT filepath, filename, length FROM rawfiles"
+    cursor.execute(query)
+    rawfiles = cursor.fetchall()
+    fns = [os.path.join(path, fn) for (path, fn, length) in rawfiles]
+    numgb = sum([os.path.getsize(fn) for fn in fns])/(1024.0**3)
+    length = sum([row[2] for row in rawfiles])
+    plt.figtext(0.05, 0.75, "Total number of files archived: %d" % len(fns), \
+                ha='left', size='x-small')
+    plt.figtext(0.05, 0.73, "Total disk space used: %.2g GB" % numgb, \
+                ha='left', size='x-small')
+    plt.figtext(0.05, 0.71, "Total integration time: %.2g hr" % (length/3600), \
+                ha='left', size='x-small')
     plt.savefig('archived_rawfile_status.png')
 
 
