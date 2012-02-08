@@ -15,6 +15,8 @@ import datetime
 import argparse
 import hashlib
 
+import epta_pipeline_utils as epu
+
 # Database configuration parameters
 DB_HOST = "localhost"
 DB_NAME = "epta"
@@ -84,34 +86,6 @@ def Make_Proc_ID():
                                            utcnow.minute, utcnow.second,
                                            utcnow.microsecond )
 
-def Get_Checksum( file ):
-    # Returns the MD5 checksum for the input file
-    m = hashlib.md5()
-    # open the file
-    f = open( file, 'r' )
-    # Read contents of file
-    m.update( f.read() )
-    # Close file
-    f.close()
-    # Determine the checksum
-    checksum = m.hexdigest()
-    return checksum
-
-def DBconnect( Host, DBname, Username, Password ):
-    # To make a connection to the database
-    try:
-        connection = connect( host = Host,
-                              db = DBname,
-                              user = Username,
-                              passwd = Password )
-        cursor = connection.cursor()
-        print "Successfully connected to database %s.%s as %s" %( Host,
-                                                                  DBname,
-                                                                  Username )
-    except OperationalError:
-        print "ERROR! Could not connect to database! Exiting..."
-        exit( 0 )
-    return cursor, connection
 
 def Parse_parfile( file ):
     # Parses the parfile info from the psrfits file
@@ -192,7 +166,7 @@ def Add_Parfile( file_path, file_name, checksum, DBcursor, args ):
     if( Have_Jfile == 0 ):
         print "WARNING: pulsar is not in the database\n"
         # Pulsar not in database yet.
-        QUERY = 'INSERT INTO pulsars SET pulsar_name = \'%s\'' %( PSR_Name )
+        QUERY = "INSERT INTO pulsars SET pulsar_name = '%s'" % PSR_Name
         DBcursor.execute( QUERY )
         PSR_ID = DBcursor.execute( "SELECT LAST_INSERTED_ID()" )
         Make_master( PSR_ID, par_id )
@@ -219,10 +193,10 @@ def Make_master( PSR_ID, par_id ):
 def Check_and_Load_Parfile( file_path, file_name, proc_id, args ):
 
     # Make DB connection
-    DBcursor, DBconn = DBconnect( DB_HOST, DB_NAME, DB_USER, DB_PASS )
+    DBcursor, DBconn = epu.DBconnect()
 
     # Determine md5 sum for given par file:
-    checksum = Get_Checksum( os.path.join( file_path, file_name ) )
+    checksum = epu.Get_md5sum(os.path.join(file_path, file_name))
 
     # Check for presence of checksum in database:
     QUERY = "select md5sum, count(*) from parfiles where md5sum = '%s';"%(
