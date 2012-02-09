@@ -8,6 +8,11 @@ import matplotlib.dates
 import epta_pipeline_utils
 import MySQLdb
 
+telescope_colours = {'Effelsberg': '#FFCE00',
+                     'Jodrell': '#CE1124', 
+                     'Nancay': '#0055A4', 
+                     'WSRT': '#FF7F00', 
+                     'Sardinia': '#007FFF'}
 
 def main():
     # Get data
@@ -52,7 +57,8 @@ def main():
 
     ax = plt.axes((0.3, 0.55, 0.3, 0.3))
     plt.axis('equal')
-    tel_pie = plt.pie(counts, labels=labels, autopct='%.1f %%')
+    colours = [telescope_colours[tel] for tel in telescopes]
+    tel_pie = plt.pie(counts, labels=labels, colors=colours, autopct='%.1f %%')
     plt.setp(tel_pie[1]+tel_pie[2], size='xx-small')
     plt.title("Num. raw files by telescope", size='small')
 
