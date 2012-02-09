@@ -16,18 +16,6 @@ from subprocess import *
 # import pipeline utilities
 import epta_pipeline_utils as epu
 
-#Database parameters
-DB_HOST = "eptadata"
-DB_NAME = "epta"
-DB_USER = "epta"
-DB_PASS = "psr1937"
-
-#Python version to use
-PYTHON = "/usr/bin/python"
-
-#Storage directories
-interfile_path="/home/epta/database/data/interfiles"
-
 #Debugging flags
 VERBOSE = 0 #Print extra output
 TEST = 0 #Prints commands and other actions without running them
@@ -87,7 +75,9 @@ def get_obssystemid(DBcursor, DBconn, frontend, backend):
     DBcursor.execute(QUERY)
     result = DBcursor.fetchall()
     if len(result) == 0:
-        sys.stderr.write(("%s/%s not found in obssystems table\n")%(frontend, backend))
+        sys.stderr.write(("Frontend/backend combination (%s/%s) " \
+                            "not found in obssystems table\n") % \
+                            (frontend, backend))
         return -1
     else:
         return result[0][0]
@@ -125,21 +115,15 @@ def populate_rawfiles_table(fname, DBcursor, DBconn, verbose=0):
             tmpitem=item.split("=")
             if tmpitem[0] == "name":
                 psr = tmpitem[1]
-                
-        for item in tmplist:
-            tmpitem=item.split("=")
-            if tmpitem[0] == "be_name":
+            elif tmpitem[0] == "be_name":
                 backend = tmpitem[1]
-                
-        for item in tmplist:
-            tmpitem=item.split("=")
-            if tmpitem[0] == "rcvr_name":
+            elif tmpitem[0] == "rcvr_name":
                 frontend = tmpitem[1]
 
-        pulsar_id = get_pulsarid(DBcursor, DBconn, psr); 
-        obssystem_id = get_obssystemid(DBcursor, DBconn, frontend, backend);
-        user_id = get_userid(DBcursor, DBconn);
-        add_time = epu.Make_Tstamp();
+        pulsar_id = get_pulsarid(DBcursor, DBconn, psr)
+        obssystem_id = get_obssystemid(DBcursor, DBconn, frontend, backend)
+        user_id = get_userid(DBcursor, DBconn)
+        add_time = epu.Make_Tstamp()
 
         if pulsar_id == -1 or obssystem_id == -1 or user_id == -1:
             sys.stderr.write("psr: %s frontend: %s backend: %s\n"%(psr, frontend, backend))
@@ -220,23 +204,22 @@ def run_loader(file, DBcursor, DBconn):
 
 def main():
 
-    if len(sys.argv) > 1:
-
+    if sys.argv[1:]:
         flist0=[];
         flist1=[];
         # Check if raw files exist. If wildcard was entered, check validity of all files. 
         # If there is "*" or "?" character that was not interpreted by shell,
         # use glob interpret it.
-        for i in range(1,len(sys.argv)):
-            if ("*" in sys.argv[i]) or ("?" in sys.argv[i]):
-                flist0 = glob.glob(sys.argv[i])
+        for arg in sys.argv[1:]:
+            if ("*" in arg) or ("?" in arg):
+                flist0 = glob.glob(arg)
             else:
-                flist1.append(sys.argv[i])
+                flist1.append(arg)
 
         flist = flist0 + flist1;
 
         # Create DB connection instance
-        DBcursor, DBconn = epu.DBconnect(DB_HOST,DB_NAME,DB_USER,DB_PASS)
+        DBcursor, DBconn = epu.DBconnect()
 
         # Enter information in rawfiles table
         # create diagnostic plots and metrics.
