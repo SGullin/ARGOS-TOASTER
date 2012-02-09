@@ -45,8 +45,9 @@ def main():
     infiles = set(args.infiles)
     for glob_expr in args.glob_exprs:
         infiles.update(glob.glob(glob_expr))
+    infiles = list(infiles)
 
-    for fn in sorted(list(infiles)):
+    for fn in sorted(infiles):
         params = get_header_params(fn)
         print "%s:" % fn
         made_changes = False
