@@ -14,6 +14,8 @@ dbpass = "psr1937"
 #Python version to use
 python = "/usr/bin/python"
 
+data_archive_location = '/raid1/database/data/'
+
 #Debugging flags
 verbosity = 0 # Print extra output
 import debug
