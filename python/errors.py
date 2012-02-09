@@ -10,3 +10,7 @@ class EptaPipelineError(Exception):
 
 class SystemCallError(EptaPipelineError):
     pass
+
+
+class FileExistenceError(EptaPipelineError):
+    pass
