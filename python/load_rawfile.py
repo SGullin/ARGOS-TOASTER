@@ -24,60 +24,55 @@ def Help():
     print ("'%s' accepts only raw files. Wildcard allowed.\n")% sys.argv[0]
     sys.exit(0)
 
-def parse_psrfits_header(file):
-    tmpbuf = ["psredit", "-q"]
-    tmpbuf.append("-c")
-    hdritems = ["nbin", "nchan", "npol", "nsubint", "type", "site", \
-		"name", "type", "coord", "freq", "bw", "dm", "rm", \
-		"dmc", "rmc", "polc", "scale", "state", "length", \
-		"rcvr:name", "rcvr:basis", "be:name"]
-    tmpbuf.append(",".join(hdritems))
-    tmpbuf.append(file)
-    
-    hdrparams, errstr = epu.execute(" ".join(tmpbuf))
-    #hdrparams = Popen(tmpbuf, stdout=PIPE, stderr=PIPE).communicate()
-    return hdrparams
-    
-
-def get_userid(DBcursor, DBconn):
-    uname=os.getlogin();
+def get_userid(DBcursor):
+    uname = os.getlogin()
     QUERY = "SELECT user_id FROM users WHERE user_name = '%s'" % uname
     DBcursor.execute(QUERY)
     result = DBcursor.fetchall()
-    if len(result) == 0:
-        sys.stderr.write("user not found\n")
-        return -1
-    else:
+    if len(result) == 1:
         return result[0][0]
+    elif len(result) == 0:
+        raise errors.UnrecognizedValueError("There is no entry in the DB's " \
+                                "'users' table with user_name='%s'" % uname)
+    else:
+        raise errors.UnrecognizedValueError("Multiple entries in the DB's " \
+                                "'users' table with user_name='%s'" % uname)
 
-def get_pulsarid(DBcursor, DBconn, psrname):
-    # added an extra '%' sign to pass a wildcard to mysql - so 1937+21 and B1937+21 are identified properly
+def get_pulsarid(DBcursor, psrname):
+    # added an extra '%' sign to pass a wildcard to mysql
+    # so 1937+21 and B1937+21 are identified properly
     QUERY = "SELECT pulsar_id FROM pulsars WHERE pulsar_name like '%%%s'" % psrname
     DBcursor.execute(QUERY)
     result = DBcursor.fetchall()
-    if len(result) == 0:
-        sys.stderr.write("pulsar not found\n")
-        return -1
-    else:
+    if len(result) == 1:
         return result[0][0]
+    elif len(result) == 0:
+        raise errors.UnrecognizedValueError("There is no entry in the DB's " \
+                                        "'pulsars' table like '%%%s'" % psrname)
+    else:
+        raise error.UnrecognizedValueError("Multiple DB entries like '%%%s' " \
+                                        "in 'pulsars' table" % psrname)
     
-
-def get_obssystemid(DBcursor, DBconn, frontend, backend):
-    QUERY = "SELECT obssystem_id FROM obssystems WHERE frontend = '%s' AND backend = '%s'" % (frontend, backend)
+def get_obssystemid(DBcursor, frontend, backend):
+    QUERY = "SELECT obssystem_id FROM obssystems " \
+            "WHERE frontend = '%s' AND backend = '%s'" % (frontend, backend)
     DBcursor.execute(QUERY)
     result = DBcursor.fetchall()
-    if len(result) == 0:
-        sys.stderr.write(("Frontend/backend combination (%s/%s) " \
-                            "not found in obssystems table\n") % \
-                            (frontend, backend))
-        return -1
-    else:
+    if len(result) == 1:
         return result[0][0]
+    elif len(result) == 0:
+        raise error.UnrecognizedValueError("There are no DB entries with " \
+                                        "frontend='%s' and backend='%s' in " \
+                                        "'obssystems' table" % \
+                                        (frontend, backend)
+    else:
+        raise error.UnrecognizedValueError("Multiple DB entries with " \
+                                        "frontend='%s' and backend='%s' "\
+                                        "in 'obssystems' table" % \
+                                        (frontend, backend)
+    
                                         
 def populate_rawfiles_table(fname, DBcursor, DBconn, verbose=0):
-    psr=''
-    frontend=''
-    backend=''
     # md5sum helper function in epu
     md5 = epu.Get_md5sum(fname);
     filepath, filename = os.path.split(os.path.abspath(fname))
@@ -94,43 +89,41 @@ def populate_rawfiles_table(fname, DBcursor, DBconn, verbose=0):
         # Parse the psredit output
         if config.verbosity:
             print "Importing header information for %s \n" % fname
-        param_names = parse_psrfits_header(fname)
-        if "BAD PSRFITS FILE" in param_names:
-            sys.stderr.write("Bad PSRFITS file. Trying running psredit manually on file\n")
-            return -1
+        
+        hdritems = ["nbin", "nchan", "npol", "nsubint", "type", "site", \
+	    	    "name", "type", "coord", "freq", "bw", "dm", "rm", \
+	    	    "dmc", "rmc", "polc", "scale", "state", "length", \
+		    "rcvr:name", "rcvr:basis", "be:name"]
+        params = parse_psrfits_header(fname, hdritems)
+        
         # psredit reports sub:rows instead of nsub. Also change revr/be identifiers
-        tmplist = param_names.replace("nsubint","nsub").replace("rcvr:","rcvr_").\
-                  replace("be:","be_").replace("type","datatype").split()
+        params['nsub'] = params.pop('nsubint')
+        params['be_name'] = params.pop('be:name')
+        params['rcvr_name'] = params.pop('rcvr:name')
+        params['rcvr_basis'] = params.pop('rcvr_basis')
+        params['datatype'] = params.pop('type')
 
-        # find pulsar/backend and frontend
-        for item in tmplist:
-            tmpitem=item.split("=")
-            if tmpitem[0] == "name":
-                psr = tmpitem[1]
-            elif tmpitem[0] == "be_name":
-                backend = tmpitem[1]
-            elif tmpitem[0] == "rcvr_name":
-                frontend = tmpitem[1]
-
-        pulsar_id = get_pulsarid(DBcursor, DBconn, psr)
-        obssystem_id = get_obssystemid(DBcursor, DBconn, frontend, backend)
-        user_id = get_userid(DBcursor, DBconn)
+        pulsar_id = get_pulsarid(DBcursor, params['name'])
+        obssystem_id = get_obssystemid(DBcursor, params['rcvr_name'], params['be_name'])
+        user_id = get_userid(DBcursor)
         add_time = epu.Make_Tstamp()
 
-        if pulsar_id == -1 or obssystem_id == -1 or user_id == -1:
-            sys.stderr.write("psr: %s frontend: %s backend: %s\n"%(psr, frontend, backend))
-            sys.stderr.write("Not enough information\n")
-            return -1
-
         # insert basic data, to get a rawfile_id
-        QUERY = ( "INSERT INTO rawfiles SET md5sum = '%s', filename = '%s', filepath = '%s', \
-        user_id = '%s', add_time ='%s', pulsar_id = '%s', obssystem_id = '%s'") \
-        %(md5, filename, filepath, user_id, add_time, pulsar_id, obssystem_id)
+        QUERY = "INSERT INTO rawfiles " \
+                "SET md5sum = '%s', " \
+                    "filename = '%s', " \
+                    "filepath = '%s', "\
+                    "user_id = '%s', " \
+                    "add_time ='%s', " \
+                    "pulsar_id = '%s', " \
+                    "obssystem_id = '%s'" % 
+                (md5, filename, filepath, user_id, \
+                    add_time, pulsar_id, obssystem_id)
 
         DBcursor.execute(QUERY)
         QUERY = "SELECT LAST_INSERT_ID()"
         DBcursor.execute(QUERY)
-        rawfile_id = DBcursor.fetchall()[0][0]
+        rawfile_id = DBcursor.fetchone()[0]
         # from the result extracted from psrfits header, construct a query
         aa = [];
         for item in tmplist:
@@ -172,7 +165,6 @@ def create_diagnostics(rawfile_ids,DBcursor,DBconn):
             epu.execute(command)
 
 def run_loader(file, DBcursor, DBconn):
-
     # Fill rawfile table
     if config.verbosity:
         print "Started %s at %s" % (populate_rawfiles_table.__name__, \
@@ -190,6 +182,11 @@ def run_loader(file, DBcursor, DBconn):
     # fill-in parfiles table? This is to keep track of the
     # ephermeris used to fold the data.
     # New entry in parfiles is tables is needed to distinguish these parfiles.
+
+
+def move_file(file):
+    # get some information from the file header
+    
 
 def main():
     # Collect input files
@@ -211,7 +208,9 @@ def main():
         for file in infiles:
             try:
                 epu.Verify_file_path(file)
-                run_loader(file, DBcursor, DBconn);
+                check_file_header(file)
+                move_file(file)
+                run_loader(file, DBcursor, DBconn)
                 #create_diagnostics(rawfile_id,DBcursor,DBconn)
             except errors.FileExistenceError:
                 sys.stderr.write("File (%s) not found. Skipping..." % file)
