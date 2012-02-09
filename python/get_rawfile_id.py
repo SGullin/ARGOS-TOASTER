@@ -13,7 +13,7 @@ import os.path
 import datetime
 import warnings
 
-import epta_pipeline_utils
+import epta_pipeline_utils as epu
 import MySQLdb
 
 
@@ -92,7 +92,7 @@ def get_rawfiles(args):
         query += "AND (obs.clock LIKE %s) "
         query_args.append(args.clock)
 
-    cursor, conn = epta_pipeline_utils.DBconnect(cursor_class=MySQLdb.cursors.DictCursor)
+    cursor, conn = epu.DBconnect(cursor_class=MySQLdb.cursors.DictCursor)
     cursor.execute(query, query_args)
     rawfiles = cursor.fetchall()
     conn.close()
@@ -129,7 +129,7 @@ def show_rawfiles(rawfiles, verbosity=0):
         print "*** NO MATCHING RAWFILES! ***"
 
 if __name__=='__main__':
-    parser = argparse.ArgumentParser(description="Get a listing of rawfile_id " \
+    parser = epu.DefaultArguments(description="Get a listing of rawfile_id " \
                                         "values from the DB to help the user" \
                                         "find the appropriate one to use.")
     parser.add_argument('-p', '--psr', dest='pulsar_name', \
@@ -186,11 +186,5 @@ if __name__=='__main__':
                         help="Grab rawfiles from specific clocks. " \
                             "NOTE: SQL regular expression syntax may be used " \
                             "(Default: No constraint on clock name.)") 
-    parser.add_argument('-v', '--verbose', dest='verbosity', \
-                        default=0, action='count', \
-                        help="Be more verbose; Level 1: show some contents " \
-                            "of the matching rawfiles; Level 2: show all " \
-                            "info in the DB for the matching rawfiles. " \
-                            "(Default: Don't be verbose.)")
     args = parser.parse_args()
     main()
