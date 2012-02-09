@@ -16,9 +16,7 @@ from subprocess import *
 # import pipeline utilities
 import epta_pipeline_utils as epu
 
-#Debugging flags
-VERBOSE = 0 #Print extra output
-TEST = 0 #Prints commands and other actions without running them
+import config
 
 def Help():
     print "\nLoad raw files to database"
@@ -36,9 +34,6 @@ def parse_psrfits_header(file):
     tmpbuf.append(",".join(hdritems))
     tmpbuf.append(file)
     
-    if VERBOSE:
-        print "Parsing file header:"
-        print " ".join(tmpbuf) 
     hdrparams, errstr = epu.execute(" ".join(tmpbuf))
     #hdrparams = Popen(tmpbuf, stdout=PIPE, stderr=PIPE).communicate()
     return hdrparams
@@ -97,7 +92,7 @@ def populate_rawfiles_table(fname, DBcursor, DBconn, verbose=0):
     else:     
         # check if the file is indeed in psrfits format
         # Parse the psredit output
-        if VERBOSE:
+        if config.verbosity:
             print "Importing header information for %s \n" % fname
         param_names = parse_psrfits_header(fname)
         if "BAD PSRFITS FILE" in param_names:
@@ -168,21 +163,18 @@ def create_diagnostics(rawfile_ids,DBcursor,DBconn):
             file_ext = filename.split(".")[-1]
             if file_ext == "fT":
                 command = "pav -dG %s -g %s.png/png"%(file,file)
-                epu.Run_shell_command(command, verbose=VERBOSE, test=TEST)
-            if file_ext == "Ft":
+            elif file_ext == "Ft":
                 command = "pav -Y %s -g %s.png/png"%(file,file)
-                epu.Run_shell_command(command, verbose=VERBOSE, test=TEST)
-            if file_ext == "FT":
+            elif file_ext == "FT":
                 command = "pav -S %s -g %s.png/png"%(file,file)
-                epu.Run_shell_command(command, verbose=VERBOSE, test=TEST)
-            if file_ext == "FTp":
+            elif file_ext == "FTp":
                 command = "pav -DFTp %s -g%s.png/png"%(file,file)
-                epu.Run_shell_command(command, verbose=VERBOSE, test=TEST)
+            epu.execute(command)
 
 def run_loader(file, DBcursor, DBconn):
 
     # Fill rawfile table
-    if VERBOSE:
+    if config.verbosity:
         print "Started %s at %s" % (populate_rawfiles_table.__name__, \
                                         epu.Give_UTC_now())
     rawfile_id = populate_rawfiles_table(file, DBcursor, DBconn, 1)
@@ -190,7 +182,7 @@ def run_loader(file, DBcursor, DBconn):
     if rawfile_id == -1:
         sys.stderr.write("Error loading file. %s returned %d\n"%(populate_rawfiles_table.__name__, rawfile_id))
     else:
-        if VERBOSE:
+        if config.verbosity:
             print "Finished %s at %s" % (populate_rawfiles_table.__name__,\
                                             epu.Give_UTC_now())
         print "File successfully loaded - rawfile_id: %s\n" % rawfile_id
@@ -200,38 +192,43 @@ def run_loader(file, DBcursor, DBconn):
     # New entry in parfiles is tables is needed to distinguish these parfiles.
 
 def main():
+    # Collect input files
+    infiles = set(args.infiles)
+    for glob_expr in args.glob_exprs:
+        infiles.update(glob.glob(glob_expr))
+    infiles = list(infiles)
 
-    if sys.argv[1:]:
-        flist0=[];
-        flist1=[];
-        # Check if raw files exist. If wildcard was entered, check validity of all files. 
-        # If there is "*" or "?" character that was not interpreted by shell,
-        # use glob interpret it.
-        for arg in sys.argv[1:]:
-            if ("*" in arg) or ("?" in arg):
-                flist0 = glob.glob(arg)
-            else:
-                flist1.append(arg)
-
-        flist = flist0 + flist1;
-
-        # Create DB connection instance
-        DBcursor, DBconn = epu.DBconnect()
-
+    if not infiles:
+        sys.stderr.write("You didn't provide any files load. " \
+                         "You should consider including some next time...\n")
+        sys.exit(1)
+    # Create DB connection instance
+    DBcursor, DBconn = epu.DBconnect()
+    try:
         # Enter information in rawfiles table
         # create diagnostic plots and metrics.
         # Also fill-in raw_diagnostics and raw_diagnostic_plots tables
-        for file in flist:
-            epu.Verify_file_path(file)
-            run_loader(file, DBcursor, DBconn);
-            #create_diagnostics(rawfile_id,DBcursor,DBconn)
-        
+        for file in infiles:
+            try:
+                epu.Verify_file_path(file)
+                run_loader(file, DBcursor, DBconn);
+                #create_diagnostics(rawfile_id,DBcursor,DBconn)
+            except errors.FileExistenceError:
+                sys.stderr.write("File (%s) not found. Skipping..." % file)
+    finally:
         # Close DB connection
         DBconn.close()
 
-    else:
-        print "\nNo files to process.  Exiting..."
-        Help()
-        
-main()
+
+if __name__=='__main__':
+    parser = epu.DefaultArguments(description="Archive raw files, " \
+                                        "and load their info into the database.")
+    parser.add_argument("infiles", nargs='*', action='store', \
+                        help="Files with headers to correct.")
+    parser.add_argument("-g", "--glob-files", action="append", \
+                        dest='glob_exprs', default=[], \
+                        help="Glob expression identifying files with " \
+                             "headers to correct. Be sure to correctly " \
+                             "quote the expression.")
+    main()
 

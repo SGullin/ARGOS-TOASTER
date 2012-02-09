@@ -55,14 +55,14 @@ def Run_shell_command(command, verbose=0, test=0):
 def Verify_file_path(file, verbose=0):
     #Verify that file exists
     if not os.path.isfile(file):
-        print "File %s does not exist, you dumb dummy!"%(file)
-        exit(0)
-    elif  os.path.isfile(file) and verbose:
-        print "File %s exists!"%(file)
+        errors.FileExistenceError("File %s does not exist, you dumb dummy!" % file)
+    elif verbose:
+        print "File %s exists!" % file
+
     #Determine path (will retrieve absolute path)
     file_path, file_name = os.path.split(os.path.abspath(file))
     if verbose:
-        print "Path: %s Filename: %s"%(file_path, file_name)
+        print "Path: %s Filename: %s" % (file_path, file_name)
     return file_path, file_name
 
 def Fill_pipeline_table(DBcursor,DBconn):
@@ -127,7 +127,7 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, dir=None):
         unless subprocess.PIPE is provided.
     """
     # Log command to stdout
-    if config.debug.SYSCALLS:
+    if config.debug.SYSCALLS or config.verbosity:
         sys.stdout.write("\n'"+cmd+"'\n")
         sys.stdout.flush()
 
@@ -178,8 +178,8 @@ class DefaultArguments(argparse.ArgumentParser):
     def add_standard_group(self):
         group = self.add_argument_group("Standard Options", \
                     "The following options get used by various programs.")
-        group.add_argument('-v', '--more-verbose', action='count', \
-                            default=0, dest="verbosity", \
+        group.add_argument('-v', '--more-verbose', nargs=0, \
+                            action= self.TurnUpVerbosity, \
                             help="Be more verbose. (Default: " \
                                  "Don't be verbose at all.)")
 
@@ -198,6 +198,10 @@ class DefaultArguments(argparse.ArgumentParser):
             group.add_argument('--debug-%s' % m.lower(), nargs=0, \
                             action=self.SetDebugMode, \
                             help=desc)
+    
+    class TurnUpVerbosity(argparse.Action):
+        def __call__(self, parse, namespace, values, option_string):
+            config.verbosity += 1
 
     class SetDebugMode(argparse.Action): 
         def __call__(self, parser, namespace, values, option_string):

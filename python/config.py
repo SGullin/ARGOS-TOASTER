@@ -15,5 +15,5 @@ dbpass = "psr1937"
 python = "/usr/bin/python"
 
 #Debugging flags
-verbose = 1 # Print extra output
+verbosity = 0 # Print extra output
 import debug

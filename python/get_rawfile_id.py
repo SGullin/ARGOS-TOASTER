@@ -16,10 +16,11 @@ import warnings
 import epta_pipeline_utils as epu
 import MySQLdb
 
+import config
 
 def main():
     rawfiles = get_rawfiles(args)
-    show_rawfiles(rawfiles, verbosity=args.verbosity)
+    show_rawfiles(rawfiles)
 
 
 def get_rawfiles(args):
@@ -99,7 +100,7 @@ def get_rawfiles(args):
     return rawfiles
 
 
-def show_rawfiles(rawfiles, verbosity=0):
+def show_rawfiles(rawfiles):
     if len(rawfiles):
         for rawdict in rawfiles:
             print "- "*25
@@ -108,14 +109,14 @@ def show_rawfiles(rawfiles, verbosity=0):
             print "    Rawfile: %s" % fn
             print "    Pulsar name: %s" % rawdict['pulsar_name']
             print "    Date and time rawfile was added: %s" % rawdict['add_time'].isoformat(' ')
-            if verbosity:
+            if config.verbosity:
                 print "    Observing System ID: %d" % rawdict['obssystem_id']
                 print "    Observing System Name: %s" % rawdict['obssys_name']
                 print "    Telescope: %s" % rawdict['telescope_name']
                 print "    Frontend: %s" % rawdict['frontend']
                 print "    Backend: %s" % rawdict['backend']
                 print "    Clock: %s" % rawdict['clock']
-            if verbosity > 1:
+            if config.verbosity > 1:
                 print "\n    Number of phase bins: %d" % rawdict['nbin']
                 print "    Number of channels: %d" % rawdict['nchan']
                 print "    Number of polarisations: %d" % rawdict['npol']
