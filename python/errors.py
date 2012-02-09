@@ -14,3 +14,7 @@ class SystemCallError(EptaPipelineError):
 
 class FileExistenceError(EptaPipelineError):
     pass
+
+
+class UnrecognizedValueError(EptaPipelineError):
+    pass
