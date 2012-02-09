@@ -19,6 +19,32 @@ import types
 
 import errors
 import config
+
+##############################################################################
+# GLOBAL DEFNITIONS
+##############################################################################
+site_to_telescope = {'i': 'WSRT',
+                     'wt': 'WSRT',
+                     'wsrt': 'WSRT',
+                     'westerbork':, 'WSRT',
+                     'g': 'Effelsberg', 
+                     'ef': 'Effelsberg',
+                     'eff': 'Effelsberg',
+                     'effelsberg': 'Effelsberg',
+                     '8': 'Jodrell',
+                     'jb': 'Jodrell',
+                     'jbo': 'Jodrell',
+                     'jodrell bank': 'Jodrell',
+                     'jodrell bank observatory': 'Jodrell',
+                     'lovell': 'Jodrell',
+                     'f': 'Nancay',
+                     'nc': 'Nancay',
+                     'ncy': 'Nancay',
+                     'nancay': 'Nancay',
+                     'sardinia': 'SRT',
+                     'srt': 'SRT'}
+
+
 ##############################################################################
 # Functions
 ##############################################################################
@@ -32,8 +58,8 @@ def DBconnect(Host=config.dbhost, DBname=config.dbname, \
         cursor = connection.cursor(cursor_class)
         print "Successfully connected to database %s.%s as %s"%(Host,DBname,Username)
     except OperationalError:
-        print "Could not connect to database!  Exiting..."
-        exit(0)
+        print "Could not connect to database!"
+        raise
     return cursor, connection
                     
 def Run_python_script(script, args_list, verbose=0, test=0):
@@ -89,6 +115,67 @@ def Make_Tstamp():
 def Give_UTC_now():
     utcnow = datetime.datetime.utcnow()
     return "UTC %d:%02d:%02d on %d%02d%02d"%(utcnow.hour,utcnow.minute,utcnow.second,utcnow.year,utcnow.month,utcnow.day)
+
+
+def get_telescope(site):
+    """Given a site identifier return the telescope's name. 
+        Possible identifiers are:
+        - telescope name
+        - 1-char site code
+        - 2-char site code -
+        - telescope abbreviation
+        
+        Input:
+            site: String to identify site.
+                    (Idenfier is not case sensitive)
+
+        Output:
+            telescope: Name of the telescope.
+    """
+        site = site.lower()
+        if site not in site_to_telescope:
+            raise errors.UnrecognizedValueError("Site identifier (%s) " \
+                                                "is not recognized" % site)
+        return site_to_telescope[site]
+
+
+def parse_psrfits_header(fn, hdritems):
+    """Get a set of header params from the given file.
+        Returns a dictionary.
+
+        Inputs:
+            fn: The name of the file to get params for.
+            hdritems: List of parameter names to fetch.
+
+        Output:
+            params: A dictionary. The keys are values requested from 'psredit'
+                the values are the values reported by 'psredit'.
+    """
+    hdrstr = ",".join(hdritems)
+    if '=' in hdrstr:
+        raise ValueError("'hdritems' passed to 'parse_psrfits_header' " \
+                         "should not perform and assignments!")
+    cmd = "psredit -q -Q -c '%s' fn" % (hdrstr, fn)
+    outstr, errstr = epu.execute(cmd)
+    if errstr:
+        raise SystemCallError("The command: %s\nprinted to stderr:\n%s" % \
+                                (cmd, errstr))
+    params = {}
+    for key, val in zip(hdritems, outstr.split()):
+        params[key] = val
+    return params
+    
+
+def get_archive_dir(fn):
+    """Given a file name return where it should be archived.
+
+        Input:
+            fn: The name of the file to archive.
+
+        Output:
+            dir: The directory where the file should be archived.
+    """
+
 
 def Get_md5sum(fname, block_size=16*8192):
     """Compute and return the MD5 sum for the given file.
