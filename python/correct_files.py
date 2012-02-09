@@ -16,13 +16,7 @@ def get_header_params(fn):
                 the values are the values reported by 'psredit'.
     """
     params_to_get = ['rcvr:name', 'be:name', 'site']
-    cmd = "psredit -q -Q -c '%s' %s" % (','.join(params_to_get), fn)
-    outstr, errstr = epu.execute(cmd)
-
-    params = {}
-    for key, val in zip(params_to_get, outstr.split()):
-        params[key] = val
-    return params
+    return epu.parse_psrfits_header(fn, params_to_get)
 
 
 def set_header_param(fn, param, val):
