@@ -40,6 +40,20 @@ def set_header_param(fn, param, val):
     epu.execute(cmd)
 
 
+def convert_file_to_psrfits(fn):
+    """Convert the given file to PSRFITS format using 'psrconv'.
+        This change is done in place.
+
+        Input:
+            fn: The name of the file to convert.
+
+        Outputs:
+            None
+    """
+    cmd = "psrconv -m -o PSRFITS %s" % fn
+    epu.execute(cmd)
+
+
 def main():
     # Collect input files
     infiles = set(args.infiles)
@@ -51,7 +65,14 @@ def main():
         params = get_header_params(fn)
         print "%s:" % fn
         made_changes = False
-        
+      
+        # Convert archive to PSRFITS format
+        if args.convert:
+            print "    Convert to PSRFITS"
+            if not args.dry_run:
+                convert_file_to_psrfits(fn)
+            made_changes = True
+
         # Correct receiver
         if (args.receiver is not None) and \
                 (args.force or (params['rcvr:name'] == args.old_receiver)):
@@ -78,6 +99,11 @@ if __name__ == '__main__':
     parser = epu.DefaultArguments()
     parser.add_argument("infiles", nargs='*', action='store', \
                         help="Files with headers to correct.")
+    parser.add_argument("--convert", action='store_true', \
+                        dest='convert', default=False, \
+                        help="First convert file to PSRFITS format " \
+                             "using 'psrconv'. NOTE: Conversion may be " \
+                             "neccessary. (Default: Don't convert format.)")
     parser.add_argument("-r", "--receiver", action='store', \
                         dest='receiver', default=None, type=str, \
                         help="Corrected receiver name. " \
