@@ -15,7 +15,9 @@ import datetime
 import argparse
 import hashlib
 import subprocess
+import types
 
+import errors
 import config
 ##############################################################################
 # Functions
@@ -167,10 +169,19 @@ class DefaultArguments(argparse.ArgumentParser):
         argparse.ArgumentParser.__init__(self, *args, **kwargs)
 
     def parse_args(self, *args, **kwargs):
-        # Add debug group just before parsing so it is the last set of
+        # Add default groups just before parsing so it is the last set of
         # options displayed in help text
+        self.add_standard_group()
         self.add_debug_group()
         return argparse.ArgumentParser.parse_args(self, *args, **kwargs)
+
+    def add_standard_group(self):
+        group = self.add_argument_group("Standard Options", \
+                    "The following options get used by various programs.")
+        group.add_argument('-v', '--more-verbose', action='count', \
+                            default=0, dest="verbosity", \
+                            help="Be more verbose. (Default: " \
+                                 "Don't be verbose at all.)")
 
     def add_debug_group(self):
         group = self.add_argument_group("Debug Options", \
