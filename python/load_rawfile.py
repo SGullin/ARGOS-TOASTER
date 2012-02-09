@@ -29,7 +29,7 @@ def Help():
 def parse_psrfits_header(file):
     tmpbuf = ["psredit", "-q"]
     tmpbuf.append("-c")
-    hdritems = ["nbin", "nchan", "npol", "sub:nrows", "type", "site", \
+    hdritems = ["nbin", "nchan", "npol", "nsubint", "type", "site", \
 		"name", "type", "coord", "freq", "bw", "dm", "rm", \
 		"dmc", "rmc", "polc", "scale", "state", "length", \
 		"rcvr:name", "rcvr:basis", "be:name"]
@@ -39,14 +39,11 @@ def parse_psrfits_header(file):
     if VERBOSE:
         print "Parsing file header:"
         print " ".join(tmpbuf) 
-    hdrparams = Popen(tmpbuf, stdout=PIPE, stderr=PIPE).communicate()
+    hdrparams, errstr = epu.execute(" ".join(tmpbuf))
+    #hdrparams = Popen(tmpbuf, stdout=PIPE, stderr=PIPE).communicate()
+    return hdrparams
+    
 
-    if not 'error' in hdrparams[1]:
-        return hdrparams[0]
-    else:
-        err_string = "BAD PSRFITS FILE"
-        return err_string
-            
 def get_userid(DBcursor, DBconn):
     uname=os.getlogin();
     QUERY = "SELECT user_id FROM users WHERE user_name = '%s'" % uname
@@ -107,7 +104,7 @@ def populate_rawfiles_table(fname, DBcursor, DBconn, verbose=0):
             sys.stderr.write("Bad PSRFITS file. Trying running psredit manually on file\n")
             return -1
         # psredit reports sub:rows instead of nsub. Also change revr/be identifiers
-        tmplist = param_names.replace("sub:nrows","nsub").replace("rcvr:","rcvr_").\
+        tmplist = param_names.replace("nsubint","nsub").replace("rcvr:","rcvr_").\
                   replace("be:","be_").replace("type","datatype").split()
 
         # find pulsar/backend and frontend
