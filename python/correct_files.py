@@ -56,10 +56,9 @@ def main():
     infiles = list(infiles)
 
     for fn in sorted(infiles):
-        params = get_header_params(fn)
         print "%s:" % fn
         made_changes = False
-      
+        
         # Convert archive to PSRFITS format
         if args.convert:
             print "    Convert to PSRFITS"
@@ -67,6 +66,9 @@ def main():
                 convert_file_to_psrfits(fn)
             made_changes = True
 
+        # Get header parameters we may want to change
+        params = get_header_params(fn)
+      
         # Correct receiver
         if (args.receiver is not None) and \
                 (args.force or (params['rcvr:name'] == args.old_receiver)):

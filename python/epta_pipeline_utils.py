@@ -26,7 +26,7 @@ import config
 site_to_telescope = {'i': 'WSRT',
                      'wt': 'WSRT',
                      'wsrt': 'WSRT',
-                     'westerbork':, 'WSRT',
+                     'westerbork': 'WSRT',
                      'g': 'Effelsberg', 
                      'ef': 'Effelsberg',
                      'eff': 'Effelsberg',
@@ -44,6 +44,12 @@ site_to_telescope = {'i': 'WSRT',
                      'sardinia': 'SRT',
                      'srt': 'SRT'}
 
+telescope_to_dir = {'Jodrell': 'jb', \
+                    'WSRT': 'wsrt', \
+                    'SRT': 'srt', \
+                    'Effelsberg': 'eff', \
+                    'Nancay': 'ncy'}
+
 
 ##############################################################################
 # Functions
@@ -56,7 +62,8 @@ def DBconnect(Host=config.dbhost, DBname=config.dbname, \
     try:
         connection = connect(host=Host,db=DBname,user=Username,passwd=Password)
         cursor = connection.cursor(cursor_class)
-        print "Successfully connected to database %s.%s as %s"%(Host,DBname,Username)
+        if config.debug.DATABASE:
+            print "Successfully connected to database %s.%s as %s"%(Host,DBname,Username)
     except OperationalError:
         print "Could not connect to database!"
         raise
@@ -81,7 +88,7 @@ def Run_shell_command(command, verbose=0, test=0):
 def Verify_file_path(file, verbose=0):
     #Verify that file exists
     if not os.path.isfile(file):
-        errors.FileExistenceError("File %s does not exist, you dumb dummy!" % file)
+        errors.FileError("File %s does not exist, you dumb dummy!" % file)
     elif verbose:
         print "File %s exists!" % file
 
@@ -117,6 +124,117 @@ def Give_UTC_now():
     return "UTC %d:%02d:%02d on %d%02d%02d"%(utcnow.hour,utcnow.minute,utcnow.second,utcnow.year,utcnow.month,utcnow.day)
 
 
+def get_userids(cursor=None):
+    """Return a dictionary mapping user names to user ids.
+
+        Input:
+            cursor: Cursor to connect to DB.
+                (Default: Establish a connection and use that cursor).
+
+        Output:
+            userids: A dictionary with user names as keys 
+                    and user ids as values.
+    """
+    if cursor is None:
+        # Create DB connection instance
+        DBcursor, DBconn = DBconnect()
+    else:
+        DBcursor = cursor
+    
+    query = "SELECT user_name, user_id FROM users"
+    DBcursor.execute(query)
+
+    rows = DBcursor.fetchall()
+    if cursor is None:
+        # Close the DB connection we opened
+        DBconn.close()
+
+    # Create the mapping
+    userids = {}
+    for uname, uid in rows:
+        userids[uname] = uid
+    return userids
+
+
+def get_pulsarids(cursor=None):
+    """Return a dictionary mapping pulsar names to pulsar ids.
+
+        Input:
+            cursor: Cursor to connect to DB.
+                (Default: Establish a connection and use that cursor).
+
+        Output:
+            pulsarids: A dictionary with pulsar names as keys
+                    and pulsar ids as values.
+    """
+    if cursor is None:
+        # Create DB connection instance
+        DBcursor, DBconn = DBconnect()
+    else:
+        DBcursor = cursor
+    
+    query = "SELECT pulsar_name, " \
+                "pulsar_jname, " \
+                "pulsar_bname, " \
+                "pulsar_id " \
+            "FROM pulsars"
+    DBcursor.execute(query)
+
+    rows = DBcursor.fetchall()
+    if cursor is None:
+        # Close the DB connection we opened
+        DBconn.close()
+
+    # Create the mapping
+    pulsarids = {}
+    for name, jname, bname, id in rows:
+        trimname = name.lower().lstrip('bj')
+        pulsarids[trimname] = id
+        pulsarids[name] = id
+        pulsarids[jname] = id
+        pulsarids[bname] = id
+    return pulsarids
+
+
+def get_obssystemids(cursor=None):
+    """Return a dictionary mapping fronend/backend combinations
+        to obs system ids.
+
+        Input:
+            cursor: Cursor to connect to DB.
+                (Default: Establish a connection and use that cursor).
+
+        Output:
+            obssystemids: A dictionary with a (frontend, backend) tuple as keys
+                    and obs system ids as values.
+    """
+    if cursor is None:
+        # Create DB connection instance
+        DBcursor, DBconn = DBconnect()
+    else:
+        DBcursor = cursor
+    
+    query = "SELECT t.name, " \
+                "o.frontend, " \
+                "o.backend, " \
+                "o.obssystem_id " \
+            "FROM obssystems AS o " \
+            "LEFT JOIN telescopes AS t " \
+                "ON t.telescope_id = o.telescope_id"
+    DBcursor.execute(query)
+
+    rows = DBcursor.fetchall()
+    if cursor is None:
+        # Close the DB connection we opened
+        DBconn.close()
+
+    # Create the mapping
+    obssystemids = {}
+    for telescope, frontend, backend, id in rows:
+        obssystemids[(telescope, frontend, backend)] = id
+    return obssystemids
+
+
 def get_telescope(site):
     """Given a site identifier return the telescope's name. 
         Possible identifiers are:
@@ -132,11 +250,11 @@ def get_telescope(site):
         Output:
             telescope: Name of the telescope.
     """
-        site = site.lower()
-        if site not in site_to_telescope:
-            raise errors.UnrecognizedValueError("Site identifier (%s) " \
-                                                "is not recognized" % site)
-        return site_to_telescope[site]
+    site = site.lower()
+    if site not in site_to_telescope:
+        raise errors.UnrecognizedValueError("Site identifier (%s) " \
+                                            "is not recognized" % site)
+    return site_to_telescope[site]
 
 
 def parse_psrfits_header(fn, hdritems):
@@ -155,26 +273,57 @@ def parse_psrfits_header(fn, hdritems):
     if '=' in hdrstr:
         raise ValueError("'hdritems' passed to 'parse_psrfits_header' " \
                          "should not perform and assignments!")
-    cmd = "psredit -q -Q -c '%s' fn" % (hdrstr, fn)
-    outstr, errstr = epu.execute(cmd)
+    cmd = "psredit -q -Q -c '%s' %s" % (hdrstr, fn)
+    outstr, errstr = execute(cmd)
+    outvals = outstr.split()
     if errstr:
-        raise SystemCallError("The command: %s\nprinted to stderr:\n%s" % \
+        raise errors.SystemCallError("The command: %s\nprinted to stderr:\n%s" % \
                                 (cmd, errstr))
+    elif len(outvals) != len(hdritems):
+        raise errors.SystemCallError("The command: %s\nreturn the wrong " \
+                            "number of values. (Was expecting %d, got %d.)" % \
+                            (cmd, len(hdritems), len(outvals)))
     params = {}
     for key, val in zip(hdritems, outstr.split()):
         params[key] = val
     return params
     
 
-def get_archive_dir(fn):
+def get_archive_dir(fn, site=None, backend=None, psrname=None):
     """Given a file name return where it should be archived.
 
         Input:
             fn: The name of the file to archive.
+            site: Value of "site" keyword from 'psredit'.
+                Providing this will override the value stored
+                in the file header.
+                (Default: Fetch value using 'psredit'.)
+            backend: Name of backend as reported by 'psredit'.
+                Providing this will override the value stored
+                in the file header.
+                (Default: Fetch value using 'psredit'.)
+            psrname: Name of the pulsar as reported by 'psredit'.
+                Providing this will override the value stored
+                in the file header.
+                (Default: Fetch value using 'psredit'.)
 
         Output:
             dir: The directory where the file should be archived.
     """
+    if (site is None) or (backend is None) or (psrname is None):
+        params_to_get = ['site', 'be:name', 'name']
+        params = parse_psrfits_header(fn, params_to_get)
+        if site is None:
+            site = params['site']
+        if backend is None:
+            backend = params['be:name']
+        if psrname is None:
+            psrname = params['name']
+    sitedir = telescope_to_dir[get_telescope(site)]
+    
+    dir = os.path.join(config.data_archive_location, sitedir.lower(), \
+                        backend.lower(), psrname)
+    return dir
 
 
 def Get_md5sum(fname, block_size=16*8192):
@@ -214,7 +363,7 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, dir=None):
         unless subprocess.PIPE is provided.
     """
     # Log command to stdout
-    if config.debug.SYSCALLS or config.verbosity:
+    if config.debug.SYSCALLS:
         sys.stdout.write("\n'"+cmd+"'\n")
         sys.stdout.flush()
 

@@ -8,6 +8,7 @@ Patrick Lazarus, Feb. 9, 2012
 """
 
 modes = [('syscalls', 'Print commands being executed as system calls.'), \
+         ('database', 'Print database connection info.'), \
             ]
 
 modes.sort()

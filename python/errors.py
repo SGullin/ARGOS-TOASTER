@@ -12,9 +12,13 @@ class SystemCallError(EptaPipelineError):
     pass
 
 
-class FileExistenceError(EptaPipelineError):
+class FileError(EptaPipelineError):
     pass
 
 
 class UnrecognizedValueError(EptaPipelineError):
+    pass
+
+
+class DatabaseError(EptaPipelineError):
     pass
