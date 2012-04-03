@@ -16,6 +16,7 @@ import warnings
 import epta_pipeline_utils as epu
 import MySQLdb
 
+import colour
 import config
 
 def main():
@@ -104,27 +105,28 @@ def show_rawfiles(rawfiles):
     if len(rawfiles):
         for rawdict in rawfiles:
             print "- "*25
-            print "Rawfile ID: %d" % rawdict['rawfile_id']
+            print colour.cstring("Rawfile ID:", underline=True, bold=True) + \
+                    colour.cstring(" %d" % rawdict['rawfile_id'], bold=True)
             fn = os.path.join(rawdict['filepath'], rawdict['filename'])
-            print "    Rawfile: %s" % fn
-            print "    Pulsar name: %s" % rawdict['pulsar_name']
-            print "    Date and time rawfile was added: %s" % rawdict['add_time'].isoformat(' ')
-            msg = "    Observing System ID: %d" % rawdict['obssystem_id'] + \
-                  "    Observing System Name: %s" % rawdict['obssys_name'] + \
-                  "    Telescope: %s" % rawdict['telescope_name'] + \
-                  "    Frontend: %s" % rawdict['frontend'] + \
-                  "    Backend: %s" % rawdict['backend'] + \
-                  "    Clock: %s" % rawdict['clock']
-            epu.print_info(msg, 1)
-            msg = "\n    Number of phase bins: %d" % rawdict['nbin'] + \
-                  "    Number of channels: %d" % rawdict['nchan'] + \
-                  "    Number of polarisations: %d" % rawdict['npol'] + \
-                  "    Number of sub-integrations: %d" % rawdict['nsub'] + \
-                  "    Centre frequency (MHz): %g" % rawdict['freq'] + \
-                  "    Bandwidth (MHz): %g" % rawdict['bw'] + \
-                  "    Dispersion measure (pc cm^-3): %g" % rawdict['dm'] + \
-                  "    Integration time (s): %g" % rawdict['length']
-            epu.print_info(msg, 2)
+            print "\nRawfile: %s" % fn
+            print "Pulsar name: %s" % rawdict['pulsar_name']
+            print "Date and time rawfile was added: %s" % rawdict['add_time'].isoformat(' ')
+            lines = ["Observing System ID: %d" % rawdict['obssystem_id'], \
+                     "Observing System Name: %s" % rawdict['obssys_name'], \
+                     "Telescope: %s" % rawdict['telescope_name'], \
+                     "Frontend: %s" % rawdict['frontend'], \
+                     "Backend: %s" % rawdict['backend'], \
+                     "Clock: %s" % rawdict['clock']]
+            epu.print_info("\n".join(lines), 1)
+            lines = ["Number of phase bins: %d" % rawdict['nbin'], \
+                     "Number of channels: %d" % rawdict['nchan'], \
+                     "Number of polarisations: %d" % rawdict['npol'], \
+                     "Number of sub-integrations: %d" % rawdict['nsub'], \
+                     "Centre frequency (MHz): %g" % rawdict['freq'], \
+                     "Bandwidth (MHz): %g" % rawdict['bw'], \
+                     "Dispersion measure (pc cm^-3): %g" % rawdict['dm'], \
+                     "Integration time (s): %g" % rawdict['length']]
+            epu.print_info("\n".join(lines), 2)
             print " -"*25
     else:
         print "*** NO MATCHING RAWFILES! ***"
