@@ -50,6 +50,22 @@ telescope_to_dir = {'Jodrell': 'jb', \
                     'Effelsberg': 'eff', \
                     'Nancay': 'ncy'}
 
+header_param_types = {'freq': float, \
+                      'length': float, \
+                      'bw': float, \
+                      'mjd': float, \
+                      'intmjd': int, \
+                      'fracmjd': float, \
+                      'backend': str, \
+                      'rcvr': str, \
+                      'telescop': str, \
+                      'name': str, \
+                      'nchan': int, \
+                      'npol': int, \
+                      'nbin': int, \
+                      'nsub': int, \
+                      'tbin': float}
+
 
 ##############################################################################
 # Functions
@@ -255,6 +271,49 @@ def get_telescope(site):
         raise errors.UnrecognizedValueError("Site identifier (%s) " \
                                             "is not recognized" % site)
     return site_to_telescope[site]
+
+
+def get_header_vals(fn, hdritems):
+    """Get a set of header params from the given file.
+        Returns a dictionary.
+
+        Inputs:
+            fn: The name of the file to get params for.
+            hdritems: List of parameters (recognized by vap) to fetch.
+
+        Output:
+            params: A dictionary. The keys are values requested from 'vap'
+                the values are the values reported by 'vap'.
+    """
+    hdrstr = ",".join(hdritems)
+    if '=' in hdrstr:
+        raise ValueError("'hdritems' passed to 'get_header_vals' " \
+                         "should not perform and assignments!")
+    cmd = "vap -n -c '%s' %s" % (hdrstr, fn)
+    outstr, errstr = execute(cmd)
+    outvals = outstr.split()[1:] # First value is filename (we don't need it)
+    if errstr:
+        raise errors.SystemCallError("The command: %s\nprinted to stderr:\n%s" % \
+                                (cmd, errstr))
+    elif len(outvals) != len(hdritems):
+        raise errors.SystemCallError("The command: %s\nreturn the wrong " \
+                            "number of values. (Was expecting %d, got %d.)" % \
+                            (cmd, len(hdritems), len(outvals)))
+    params = {}
+    for key, val in zip(hdritems, outvals):
+        if val == "INVALID":
+            raise errors.SystemCallError("The vap header key '%s' " \
+                                            "is invalid!" % key)
+        elif val == "*" or val == "UNDEF":
+            warnings.warn("The vap header key '%s' is not " \
+                            "defined in this file (%s)" % (key, fn), \
+                            errors.EptaPipelineWarning)
+            params[key] = None
+        else:
+            # Get param's type to cast value
+            caster = header_param_types.get(key, str)
+            params[key] = caster(val)
+    return params
 
 
 def parse_psrfits_header(fn, hdritems):
