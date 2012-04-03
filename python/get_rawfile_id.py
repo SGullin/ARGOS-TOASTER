@@ -109,22 +109,22 @@ def show_rawfiles(rawfiles):
             print "    Rawfile: %s" % fn
             print "    Pulsar name: %s" % rawdict['pulsar_name']
             print "    Date and time rawfile was added: %s" % rawdict['add_time'].isoformat(' ')
-            if config.verbosity:
-                print "    Observing System ID: %d" % rawdict['obssystem_id']
-                print "    Observing System Name: %s" % rawdict['obssys_name']
-                print "    Telescope: %s" % rawdict['telescope_name']
-                print "    Frontend: %s" % rawdict['frontend']
-                print "    Backend: %s" % rawdict['backend']
-                print "    Clock: %s" % rawdict['clock']
-            if config.verbosity > 1:
-                print "\n    Number of phase bins: %d" % rawdict['nbin']
-                print "    Number of channels: %d" % rawdict['nchan']
-                print "    Number of polarisations: %d" % rawdict['npol']
-                print "    Number of sub-integrations: %d" % rawdict['nsub']
-                print "    Centre frequency (MHz): %g" % rawdict['freq']
-                print "    Bandwidth (MHz): %g" % rawdict['bw']
-                print "    Dispersion measure (pc cm^-3): %g" % rawdict['dm']
-                print "    Integration time (s): %g" % rawdict['length']
+            msg = "    Observing System ID: %d" % rawdict['obssystem_id'] + \
+                  "    Observing System Name: %s" % rawdict['obssys_name'] + \
+                  "    Telescope: %s" % rawdict['telescope_name'] + \
+                  "    Frontend: %s" % rawdict['frontend'] + \
+                  "    Backend: %s" % rawdict['backend'] + \
+                  "    Clock: %s" % rawdict['clock']
+            epu.print_info(msg, 1)
+            msg = "\n    Number of phase bins: %d" % rawdict['nbin'] + \
+                  "    Number of channels: %d" % rawdict['nchan'] + \
+                  "    Number of polarisations: %d" % rawdict['npol'] + \
+                  "    Number of sub-integrations: %d" % rawdict['nsub'] + \
+                  "    Centre frequency (MHz): %g" % rawdict['freq'] + \
+                  "    Bandwidth (MHz): %g" % rawdict['bw'] + \
+                  "    Dispersion measure (pc cm^-3): %g" % rawdict['dm'] + \
+                  "    Integration time (s): %g" % rawdict['length']
+            epu.print_info(msg, 2)
             print " -"*25
     else:
         print "*** NO MATCHING RAWFILES! ***"
