@@ -3,7 +3,7 @@ import os.path
 import shutil
 import tempfile
 
-registered_manipulators = ["scruncher", "ddfixfreq"]
+registered_manipulators = ["scruncher", "ddfixfreq", "pamit"]
 
 auto_import_registered = True # If True, automatically import all registered
                               # manipulators when 'manipulators' is
