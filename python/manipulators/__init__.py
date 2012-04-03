@@ -2,7 +2,6 @@ import inspect
 import os.path
 import shutil
 import tempfile
-import psrchive
 
 registered_manipulators = ["scruncher", "ddfixfreq"]
 
@@ -27,6 +26,8 @@ def load_archives(fns):
         Output:
             archives: A list of Archive objects.
     """
+    import psrchive # Temporarily move import here in case 
+                    # psrchive bindings aren't installed
     archives = []
     for fn in fns:
         archives.append(psrchive.Archive_load(fn))

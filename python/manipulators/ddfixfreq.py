@@ -1,5 +1,4 @@
 import manipulators
-import psrchive
 
 plugin_name = 'ddfixfreq'
 
