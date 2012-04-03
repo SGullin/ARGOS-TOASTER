@@ -16,8 +16,10 @@ import argparse
 import hashlib
 import subprocess
 import types
+import inspect
 
 import errors
+import colour
 import config
 
 ##############################################################################
@@ -78,8 +80,7 @@ def DBconnect(Host=config.dbhost, DBname=config.dbname, \
     try:
         connection = connect(host=Host,db=DBname,user=Username,passwd=Password)
         cursor = connection.cursor(cursor_class)
-        if config.debug.DATABASE:
-            print "Successfully connected to database %s.%s as %s"%(Host,DBname,Username)
+        print_debug("Successfully connected to database %s.%s as %s"%(Host,DBname,Username), 'database')
     except OperationalError:
         print "Could not connect to database!"
         raise
