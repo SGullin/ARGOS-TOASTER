@@ -316,13 +316,13 @@ if __name__=='__main__':
     parser = epu.DefaultArguments(description="Archive raw files, " \
                                         "and load their info into the database.")
     parser.add_argument("infiles", nargs='*', action='store', \
-                        help="Files with headers to correct.")
+                        help="Files to load into the DB")
     parser.add_argument("-g", "--glob-files", action="append", \
                         dest='glob_exprs', default=[], \
-                        help="Glob expression identifying files with " \
-                             "headers to correct. Be sure to correctly " \
-                             "quote the expression. Multiple -g/--glob-files " \
-                             "options can be provided.")
+                        help="Glob expression identifying files " \
+                             "to load into the DB. Be sure to correctly " \
+                             "quote the expression. The -g/--glob-files " \
+                             "option can be provided multiple times.")
     args = parser.parse_args()
     main()
 
