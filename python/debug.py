@@ -44,7 +44,11 @@ def get_on_modes():
         if eval('%s' % m.upper()):
             on_modes.append('debug.%s' % m.upper())
     return on_modes         
-                        
+
+
+def is_on(mode):
+    return eval('%s' % mode.upper())
+
     
 def print_debug_status():
     on_modes = get_on_modes()
