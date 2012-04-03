@@ -5,6 +5,8 @@
 pipe_name = "epta_pipeline"
 version = 0.1
 
+colour = True # Colourise terminal output
+
 #Database parameters
 dbhost = "eptadata.jb.man.ac.uk"
 dbname = "epta"
