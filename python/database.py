@@ -1,23 +1,29 @@
 import MySQLdb
+import MySQLdb.cursors
 
 import errors
 import config
+
+cursor_classes = {'dict': MySQLdb.cursors.DictCursor, \
+                'default': MySQLdb.cursor.Cursor}
 
 class Database(object):
     """Database object for connecting to the EPTA database
         using MySQLdb
     """
-    def __init__(self, cursor_class=MySQLdb.cursors.Cursor):
+    def __init__(self, cursor_class='default'):
         """Constructor for Database object.
 
             Inputs:
-                cursor_class: MySQLdb cursor class.
-                    (Default: MySQLdb.cursors.Cursor)
+                cursor_class: A string referring to a cursor class.
+                    'dict': MySQLdb.cursors.DictCursor,
+                    'default: MySQLdb.cursors.Cursor.
+                    (Default: 'default' - go figure!)
 
             Output:
                 db: connected Database object.
         """
-        self.cursor_class = cursor_class
+        self.cursor_class = cursor_classes[cursor_class]
         self.connect()
 
     def connect(self):
