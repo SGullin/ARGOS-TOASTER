@@ -7,9 +7,9 @@
 #Imported modules
 
 import sys
-from sys import argv, exit
-from os import system, popen
 from MySQLdb import *
+import os
+import shutil
 import os.path
 import datetime
 import argparse
@@ -248,7 +248,7 @@ def get_obssystemids(cursor=None):
     # Create the mapping
     obssystemids = {}
     for telescope, frontend, backend, id in rows:
-        obssystemids[(telescope, frontend, backend)] = id
+        obssystemids[(telescope.lower(), frontend.lower(), backend.lower())] = id
     return obssystemids
 
 
@@ -349,7 +349,7 @@ def parse_psrfits_header(fn, hdritems):
     return params
     
 
-def get_archive_dir(fn, site=None, backend=None, psrname=None):
+def get_archive_dir(fn, site=None, backend=None, receiver=None, psrname=None):
     """Given a file name return where it should be archived.
 
         Input:
@@ -357,33 +357,129 @@ def get_archive_dir(fn, site=None, backend=None, psrname=None):
             site: Value of "site" keyword from 'psredit'.
                 Providing this will override the value stored
                 in the file header.
-                (Default: Fetch value using 'psredit'.)
-            backend: Name of backend as reported by 'psredit'.
+                (Default: Fetch value using 'vap'.)
+            backend: Name of backend as reported by 'vap'.
                 Providing this will override the value stored
                 in the file header.
-                (Default: Fetch value using 'psredit'.)
+                (Default: Fetch value using 'vap'.)
+            receiver: Name of receiver as reported by 'vap'.
+                Providing this will override the value stored
+                in the file header.
+                (Default: Fetch value using 'vap'.)
             psrname: Name of the pulsar as reported by 'psredit'.
                 Providing this will override the value stored
                 in the file header.
-                (Default: Fetch value using 'psredit'.)
+                (Default: Fetch value using 'vap'.)
 
         Output:
             dir: The directory where the file should be archived.
     """
-    if (site is None) or (backend is None) or (psrname is None):
-        params_to_get = ['site', 'be:name', 'name']
-        params = parse_psrfits_header(fn, params_to_get)
+    if (site is None) or (backend is None) or (psrname is None) or \
+            (receiver is None):
+        params_to_get = ['telescop', 'backend', 'rcvr', 'name']
+        params = get_header_vals(fn, params_to_get)
         if site is None:
-            site = params['site']
+            site = params['telescop']
         if backend is None:
-            backend = params['be:name']
+            backend = params['backend']
+        if receiver is None:
+            receiver = params['rcvr']
         if psrname is None:
             psrname = params['name']
     sitedir = telescope_to_dir[get_telescope(site)]
     
-    dir = os.path.join(config.data_archive_location, sitedir.lower(), \
-                        backend.lower(), psrname)
+    dir = os.path.join(config.data_archive_location, psrname, sitedir.lower(), \
+                        backend.lower(), receiver.lower())
     return dir
+
+
+def prep_file(fn):
+    """Prepare file for archiving/loading.
+        
+        Also, perform some checks on the file to make sure we
+        won't run into problems later. Checks peformed:
+            - Existence of file.
+            - Read/write access for file (so it can be moved).
+            - Header contains all necessary values.
+            - Site/observing system is recognized.
+
+        Input:
+            fn: The name of the file to check.
+
+        Outputs:
+            params: A dictionary of info to be uploaded.
+    """
+    # Check existence of file
+    Verify_file_path(fn)
+
+    # Check file permissions allow for writing and reading
+    if not os.access(fn, os.W_OK | os.R_OK):
+        raise errors.FileError("File (%s) is not read/writable!" % fn)
+
+    # Grab header info
+    hdritems = ["nbin", "nchan", "npol", "nsub", "type", "telescop", \
+         	"name", "dec", "ra", "freq", "bw", "dm", "rm", \
+      	        "dmc", "rm_c", "pol_c", "scale", "state", "length", \
+    	        "rcvr", "basis", "backend"]
+    params = get_header_vals(fn, hdritems)
+
+    # Get telescope name
+    params['telescop'] = get_telescope(params['telescop'])
+
+    # Check if obssystem_id, pulsar_id, user_id can be found
+    params['obssystem_id'] = get_obssystemids()[(params['telescop'].lower(), \
+                                params['rcvr'].lower(), \
+                                params['backend'].lower())]
+    params['pulsar_id'] = get_pulsarids()[(params['name'])]
+    params['user_id'] = get_userids()[os.getlogin()]
+    return params
+
+
+def archive_file(file, destdir):
+    srcdir, fn = os.path.split(file)
+    dest = os.path.join(destdir, fn)
+
+    # Check if the directory exists
+    # If not, create it
+    if not os.path.isdir(destdir):
+        # Set permissions (in octal) to read/write/execute for user and group
+        os.makedirs(destdir, 0770)
+
+    # Check that our file doesn't already exist in 'dest'
+    # If it does exist do nothing but print a warning
+    if not os.path.isfile(dest):
+        # Copy file to 'dest'
+        shutil.move(file, dest)
+    elif destdir == srcdir:
+        # File is already located in its destination
+        # Do nothing
+        pass
+    else:
+        # Another file with the same name is the destination directory
+        # Compare the files
+        srcmd5 = Get_md5sum(file)
+        srcsize = os.path.getsize(file)
+        destmd5 = Get_md5sum(dest)
+        destsize = os.path.getsize(dest)
+        if (srcmd5==destmd5) and (srcsize==destsize):
+            # Files are the same, so remove src as if we moved it
+            # (taking credit for work that was already done...)
+            os.remove(file)
+        else:
+            # The files are not the same! This is not good.
+            # Raise an exception.
+            raise errors.FileError("File (%s) cannot be archived. " \
+                    "There is already a file archived by that name " \
+                    "in the appropriate archive location (%s), but " \
+                    "the two files are _not_ identical. " \
+                    "(source: MD5=%s, size=%d bytes; dest: MD5=%s, " \
+                    "size=%d bytes)" % \
+                    (file, dest, srcmd5, srcsize, destmd5, destsize))
+
+    # Change permissions so the file can no longer be written to
+    os.chmod(dest, 0440) # "0440" is an integer in base 8. It works
+                         # the same way 440 does for chmod on cmdline
+    return dest
 
 
 def Get_md5sum(fname, block_size=16*8192):
