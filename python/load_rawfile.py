@@ -223,47 +223,6 @@ def move_file(file, destdir):
     return dest
 
 
-def prep_file(fn):
-    """Prepare file for archiving/loading.
-        
-        Also, perform some checks on the file to make sure we
-        won't run into problems later. Checks peformed:
-            - Existence of file.
-            - Read/write access for file (so it can be moved).
-            - Header contains all necessary values.
-            - Site/observing system is recognized.
-
-        Input:
-            fn: The name of the file to check.
-
-        Outputs:
-            params: A dictionary of info to be uploaded.
-    """
-    # Check existence of file
-    epu.Verify_file_path(fn)
-
-    # Check file permissions allow for writing and reading
-    if not os.access(fn, os.W_OK | os.R_OK):
-        raise errors.FileError("File (%s) is not read/writable!" % fn)
-
-    # Grab header info
-    hdritems = ["nbin", "nchan", "npol", "nsub", "type", "asite", \
-         	"name", "dec", "ra", "freq", "bw", "dm", "rm", \
-      	        "dmc", "rm_c", "pol_c", "scale", "state", "length", \
-    	        "rcvr", "basis", "backend"]
-    params = epu.get_header_vals(fn, hdritems)
-
-    # Get telescope name
-    params['telescope'] = epu.get_telescope(params['asite'])
-
-    # Check if obssystem_id, pulsar_id, user_id can be found
-    params['obssystem_id'] = get_obssystemid(params['telescope'], \
-                                params['rcvr'], params['backend'])
-    params['pulsar_id'] = get_pulsarid(params['name'])
-    params['user_id'] = get_userid()
-    return params
-
-
 def main():
     # Collect input files
     infiles = set(args.infiles)
@@ -287,7 +246,7 @@ def main():
                 if config.verbosity:
                     print "Working on %s (%s)" % (fn, epu.Give_UTC_now())
                 # Check the file and parse the header
-                params = prep_file(fn)
+                params = epu.prep_file(fn)
                 
                 # Move the File
                 destdir = epu.get_archive_dir(fn, site=params['site'], \
