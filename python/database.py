@@ -3,6 +3,7 @@ import MySQLdb.cursors
 
 import errors
 import config
+import epta_pipeline_utils as epu
 
 cursor_classes = {'dict': MySQLdb.cursors.DictCursor, \
                   'default': MySQLdb.cursors.Cursor}
@@ -40,15 +41,17 @@ class Database(object):
                                         db=config.dbname, \
                                         user=config.dbuser, \
                                         passwd=config.dbpass)
-            self.cursor = MySQLdb.cursor(self.cursor_class)
-            print_debug("Successfully connected to database %s.%s as %s" % \
-                        (config.dbhost, config.dbname, config.dbuser), \
+            self.cursor = self.conn.cursor(self.cursor_class)
+            epu.print_debug("Successfully connected to database %s.%s as %s " \
+                            "(cursor class: '%s')" % \
+                        (config.dbhost, config.dbname, config.dbuser, \
+                            self.cursor_class.__name__), \
                         'database')
         except MySQLdb.OperationalError:
             raise errors.DatabaseError("Could not connect to database!")
 
     def execute(self, query, *args, **kwargs):
-        print_debug(query, 'database')
+        epu.print_debug(query, 'database')
         self.cursor.execute(query, *args, **kwargs)
 
     def close(self):
@@ -61,10 +64,20 @@ class Database(object):
                 None
         """
         self.conn.close()
+        epu.print_debug("Connection to database has been closed", 'database')
 
     def fetchall(self):
         return self.cursor.fetchall()
 
     def fetchone(self):
         return self.cursor.fetchone()
-            
+        
+    def execute_and_fetchone(self, query, *args, **kwargs):
+        self.execute(query, *args, **kwargs)
+        return self.fetchone()
+
+    def execute_and_fetchall(self, query, *args, **kwargs):
+        self.execute(query, *args, **kwargs)
+        return self.fetchall()
+
+        
