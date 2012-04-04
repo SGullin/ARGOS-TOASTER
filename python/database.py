@@ -5,7 +5,7 @@ import errors
 import config
 
 cursor_classes = {'dict': MySQLdb.cursors.DictCursor, \
-                'default': MySQLdb.cursor.Cursor}
+                  'default': MySQLdb.cursors.Cursor}
 
 class Database(object):
     """Database object for connecting to the EPTA database
