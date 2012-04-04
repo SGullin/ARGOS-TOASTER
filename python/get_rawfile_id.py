@@ -13,13 +13,15 @@ import os.path
 import datetime
 import warnings
 
-import epta_pipeline_utils
+import epta_pipeline_utils as epu
 import MySQLdb
 
+import colour
+import config
 
 def main():
     rawfiles = get_rawfiles(args)
-    show_rawfiles(rawfiles, verbosity=args.verbosity)
+    show_rawfiles(rawfiles)
 
 
 def get_rawfiles(args):
@@ -92,44 +94,45 @@ def get_rawfiles(args):
         query += "AND (obs.clock LIKE %s) "
         query_args.append(args.clock)
 
-    cursor, conn = epta_pipeline_utils.DBconnect(cursor_class=MySQLdb.cursors.DictCursor)
+    cursor, conn = epu.DBconnect(cursor_class=MySQLdb.cursors.DictCursor)
     cursor.execute(query, query_args)
     rawfiles = cursor.fetchall()
     conn.close()
     return rawfiles
 
 
-def show_rawfiles(rawfiles, verbosity=0):
+def show_rawfiles(rawfiles):
     if len(rawfiles):
         for rawdict in rawfiles:
             print "- "*25
-            print "Rawfile ID: %d" % rawdict['rawfile_id']
+            print colour.cstring("Rawfile ID:", underline=True, bold=True) + \
+                    colour.cstring(" %d" % rawdict['rawfile_id'], bold=True)
             fn = os.path.join(rawdict['filepath'], rawdict['filename'])
-            print "    Rawfile: %s" % fn
-            print "    Pulsar name: %s" % rawdict['pulsar_name']
-            print "    Date and time rawfile was added: %s" % rawdict['add_time'].isoformat(' ')
-            if verbosity:
-                print "    Observing System ID: %d" % rawdict['obssystem_id']
-                print "    Observing System Name: %s" % rawdict['obssys_name']
-                print "    Telescope: %s" % rawdict['telescope_name']
-                print "    Frontend: %s" % rawdict['frontend']
-                print "    Backend: %s" % rawdict['backend']
-                print "    Clock: %s" % rawdict['clock']
-            if verbosity > 1:
-                print "\n    Number of phase bins: %d" % rawdict['nbin']
-                print "    Number of channels: %d" % rawdict['nchan']
-                print "    Number of polarisations: %d" % rawdict['npol']
-                print "    Number of sub-integrations: %d" % rawdict['nsub']
-                print "    Centre frequency (MHz): %g" % rawdict['freq']
-                print "    Bandwidth (MHz): %g" % rawdict['bw']
-                print "    Dispersion measure (pc cm^-3): %g" % rawdict['dm']
-                print "    Integration time (s): %g" % rawdict['length']
+            print "\nRawfile: %s" % fn
+            print "Pulsar name: %s" % rawdict['pulsar_name']
+            print "Date and time rawfile was added: %s" % rawdict['add_time'].isoformat(' ')
+            lines = ["Observing System ID: %d" % rawdict['obssystem_id'], \
+                     "Observing System Name: %s" % rawdict['obssys_name'], \
+                     "Telescope: %s" % rawdict['telescope_name'], \
+                     "Frontend: %s" % rawdict['frontend'], \
+                     "Backend: %s" % rawdict['backend'], \
+                     "Clock: %s" % rawdict['clock']]
+            epu.print_info("\n".join(lines), 1)
+            lines = ["Number of phase bins: %d" % rawdict['nbin'], \
+                     "Number of channels: %d" % rawdict['nchan'], \
+                     "Number of polarisations: %d" % rawdict['npol'], \
+                     "Number of sub-integrations: %d" % rawdict['nsub'], \
+                     "Centre frequency (MHz): %g" % rawdict['freq'], \
+                     "Bandwidth (MHz): %g" % rawdict['bw'], \
+                     "Dispersion measure (pc cm^-3): %g" % rawdict['dm'], \
+                     "Integration time (s): %g" % rawdict['length']]
+            epu.print_info("\n".join(lines), 2)
             print " -"*25
     else:
         print "*** NO MATCHING RAWFILES! ***"
 
 if __name__=='__main__':
-    parser = argparse.ArgumentParser(description="Get a listing of rawfile_id " \
+    parser = epu.DefaultArguments(description="Get a listing of rawfile_id " \
                                         "values from the DB to help the user" \
                                         "find the appropriate one to use.")
     parser.add_argument('-p', '--psr', dest='pulsar_name', \
@@ -186,11 +189,5 @@ if __name__=='__main__':
                         help="Grab rawfiles from specific clocks. " \
                             "NOTE: SQL regular expression syntax may be used " \
                             "(Default: No constraint on clock name.)") 
-    parser.add_argument('-v', '--verbose', dest='verbosity', \
-                        default=0, action='count', \
-                        help="Be more verbose; Level 1: show some contents " \
-                            "of the matching rawfiles; Level 2: show all " \
-                            "info in the DB for the matching rawfiles. " \
-                            "(Default: Don't be verbose.)")
     args = parser.parse_args()
     main()

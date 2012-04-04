@@ -6,31 +6,21 @@ VERSION = 0.1
 
 #Imported modules
 import sys
-from os import system, popen
-from MySQLdb import *
+import os
 import os.path
-import datetime
 import glob
-from subprocess import *
+import shutil
 
 # import pipeline utilities
 import epta_pipeline_utils as epu
+import config
+import errors
 
-#Database parameters
-DB_HOST = "eptadata"
-DB_NAME = "epta"
-DB_USER = "epta"
-DB_PASS = "psr1937"
+# Global definitions
+userid_cache = None
+pulsarid_cache = None
+obssystemid_cache = None
 
-#Python version to use
-PYTHON = "/usr/bin/python"
-
-#Storage directories
-interfile_path="/home/epta/database/data/interfiles"
-
-#Debugging flags
-VERBOSE = 0 #Print extra output
-TEST = 0 #Prints commands and other actions without running them
 
 def Help():
     print "\nLoad raw files to database"
@@ -38,136 +28,126 @@ def Help():
     print ("'%s' accepts only raw files. Wildcard allowed.\n")% sys.argv[0]
     sys.exit(0)
 
-def parse_psrfits_header(file):
-    tmpbuf = ["psredit", "-q"]
-    tmpbuf.append("-c")
-    hdritems = ["nbin", "nchan", "npol", "sub:nrows", "type", "site", \
-		"name", "type", "coord", "freq", "bw", "dm", "rm", \
-		"dmc", "rmc", "polc", "scale", "state", "length", \
-		"rcvr:name", "rcvr:basis", "be:name"]
-    tmpbuf.append(",".join(hdritems))
-    tmpbuf.append(file)
+def get_userid():
+    """Return user_id for the current user.
+
+        Inputs:
+            None
+
+        Output:
+            userid: The user_id as taken from the DB.
+    """
+    global userid_cache
+    if userid_cache is None:
+        userid_cache = epu.get_userids()
+
+    uname = os.getlogin()
+    if uname in userid_cache:
+        id = userid_cache[uname]
+    else:
+        raise errors.UnrecognizedValueError("The user name %s " \
+                                            "is not recognized!" % uname)
+    return id
+
+
+def get_pulsarid(psrname):
+    """Return pulsar_id for the given pulsar name.
+
+        Inputs:
+            psrname: A pulsar name
+
+        Output:
+            pulsarid: The pulsar_id as taken from the DB.
+    """
+    global pulsarid_cache
+    if pulsarid_cache is None:
+        pulsarid_cache = epu.get_pulsarids()
+
+    if psrname in pulsarid_cache:
+        id = pulsarid_cache[psrname]
+    else:
+        raise errors.UnrecognizedValueError("The pulsar name %s " \
+                                            "is not recognized!" % psrname)
+    return id
+
+
+def get_obssystemid(telescope, frontend, backend):
+    """Return obssystem_id for the given telescope, frontend, 
+        backend combination.
+
+        Inputs:
+            telescope: The standard telescope name.
+                (ie one of WSRT, SRT, Nancay, Jodrell, Effelsberg)
+            frontend: The frontend name.
+            backend: The backend name.
+
+        Output:
+            obssystemid: The obssystem_id as taken from the DB.
+    """
+    global obssystemid_cache
+    if obssystemid_cache is None:
+        obssystemid_cache = epu.get_obssystemids()
+
+    if (telescope, frontend, backend) in obssystemid_cache:
+        id = obssystemid_cache[(telescope, frontend, backend)]
+    else:
+        raise errors.UnrecognizedValueError("There are no DB entries with " \
+                                        "telescope='%s', frontend='%s' and " \
+                                        "backend='%s' in 'obssystems' table" % \
+                                        (telescope, frontend, backend))
+    return id
     
-    if VERBOSE:
-        print "Parsing file header:"
-        print " ".join(tmpbuf) 
-    hdrparams = Popen(tmpbuf, stdout=PIPE, stderr=PIPE).communicate()
-
-    if not 'error' in hdrparams[1]:
-        return hdrparams[0]
-    else:
-        err_string = "BAD PSRFITS FILE"
-        return err_string
-            
-def get_userid(DBcursor, DBconn):
-    uname=os.getlogin();
-    QUERY = "SELECT user_id FROM users WHERE user_name = '%s'" % uname
-    DBcursor.execute(QUERY)
-    result = DBcursor.fetchall()
-    if len(result) == 0:
-        sys.stderr.write("user not found\n")
-        return -1
-    else:
-        return result[0][0]
-
-def get_pulsarid(DBcursor, DBconn, psrname):
-    # added an extra '%' sign to pass a wildcard to mysql - so 1937+21 and B1937+21 are identified properly
-    QUERY = "SELECT pulsar_id FROM pulsars WHERE pulsar_name like '%%%s'" % psrname
-    DBcursor.execute(QUERY)
-    result = DBcursor.fetchall()
-    if len(result) == 0:
-        sys.stderr.write("pulsar not found\n")
-        return -1
-    else:
-        return result[0][0]
-    
-
-def get_obssystemid(DBcursor, DBconn, frontend, backend):
-    QUERY = "SELECT obssystem_id FROM obssystems WHERE frontend = '%s' AND backend = '%s'" % (frontend, backend)
-    DBcursor.execute(QUERY)
-    result = DBcursor.fetchall()
-    if len(result) == 0:
-        sys.stderr.write(("%s/%s not found in obssystems table\n")%(frontend, backend))
-        return -1
-    else:
-        return result[0][0]
                                         
-def populate_rawfiles_table(fname, DBcursor, DBconn, verbose=0):
-    psr=''
-    frontend=''
-    backend=''
+def populate_rawfiles_table(fn, params, DBcursor):
     # md5sum helper function in epu
-    md5 = epu.Get_md5sum(fname);
-    filepath, filename = os.path.split(os.path.abspath(fname))
+    md5 = epu.Get_md5sum(fn);
+    path, fn = os.path.split(os.path.abspath(fn))
     
     # Does this file exist already?
-    QUERY = "SELECT rawfile_id FROM rawfiles WHERE md5sum = '%s'" % md5
-    DBcursor.execute(QUERY)
-    result = DBcursor.fetchall()
-    if len(result) != 0:
-        sys.stderr.write ("Rawfile in database already\n")
-        return
-    else:     
-        # check if the file is indeed in psrfits format
-        # Parse the psredit output
-        if VERBOSE:
-            print "Importing header information for %s \n" % fname
-        param_names = parse_psrfits_header(fname)
-        if "BAD PSRFITS FILE" in param_names:
-            sys.stderr.write("Bad PSRFITS file. Trying running psredit manually on file\n")
-            return -1
-        # psredit reports sub:rows instead of nsub. Also change revr/be identifiers
-        tmplist = param_names.replace("sub:nrows","nsub").replace("rcvr:","rcvr_").\
-                  replace("be:","be_").replace("type","datatype").split()
-
-        # find pulsar/backend and frontend
-        for item in tmplist:
-            tmpitem=item.split("=")
-            if tmpitem[0] == "name":
-                psr = tmpitem[1]
-                
-        for item in tmplist:
-            tmpitem=item.split("=")
-            if tmpitem[0] == "be_name":
-                backend = tmpitem[1]
-                
-        for item in tmplist:
-            tmpitem=item.split("=")
-            if tmpitem[0] == "rcvr_name":
-                frontend = tmpitem[1]
-
-        pulsar_id = get_pulsarid(DBcursor, DBconn, psr); 
-        obssystem_id = get_obssystemid(DBcursor, DBconn, frontend, backend);
-        user_id = get_userid(DBcursor, DBconn);
-        add_time = epu.Make_Tstamp();
-
-        if pulsar_id == -1 or obssystem_id == -1 or user_id == -1:
-            sys.stderr.write("psr: %s frontend: %s backend: %s\n"%(psr, frontend, backend))
-            sys.stderr.write("Not enough information\n")
-            return -1
-
-        # insert basic data, to get a rawfile_id
-        QUERY = ( "INSERT INTO rawfiles SET md5sum = '%s', filename = '%s', filepath = '%s', \
-        user_id = '%s', add_time ='%s', pulsar_id = '%s', obssystem_id = '%s'") \
-        %(md5, filename, filepath, user_id, add_time, pulsar_id, obssystem_id)
-
-        DBcursor.execute(QUERY)
-        QUERY = "SELECT LAST_INSERT_ID()"
-        DBcursor.execute(QUERY)
-        rawfile_id = DBcursor.fetchall()[0][0]
-        # from the result extracted from psrfits header, construct a query
-        aa = [];
-        for item in tmplist:
-            # check if second field is a digit, if not it need to be a string for mysql
-            if item.split("=")[1].replace(".","0").isdigit() == False:
-                aa.append(item.split("=")[0] + "='" + item.split("=")[1] + "'")
-            else:
-                aa.append(item)
-        # once the list is made compatible, ie, surround string with single-quotes, simply join
-        QUERY = "UPDATE rawfiles SET " + ", ".join(aa) + " WHERE rawfile_id='%s'"%rawfile_id
-        DBcursor.execute(QUERY)
-        
+    query = "SELECT rawfile_id FROM rawfiles WHERE md5sum = '%s'" % md5
+    DBcursor.execute(query)
+    rows = DBcursor.fetchall()
+    if rows:
+        raise DatabaseError("Rawfile with MD5 (%s) in database already" % md5)
+    
+    # Insert the file
+    query = "INSERT INTO rawfiles " + \
+            "SET md5sum = '%s', " % md5 + \
+                "filename = '%s', " % fn + \
+                "filepath = '%s', " % path + \
+                "user_id = '%s', " % params['user_id'] + \
+                "add_time = NOW(), " + \
+                "pulsar_id = '%s', " % params['pulsar_id'] + \
+                "obssystem_id = '%s', " % params['obssystem_id'] + \
+                "nbin = %d, " % int(params['nbin']) + \
+                "nchan = %d, " % int(params['nchan']) + \
+                "npol = %d, " % int(params['npol']) + \
+                "nsub = %d, " % int(params['nsub']) + \
+                "type = '%s', " % params['type'] + \
+                "site = '%s', " % params['site'] + \
+                "name = '%s', " % params['name'] + \
+                "coord = '%s,%s', " % (params['ra'],params['dec']) + \
+                "freq = %.15g, " % float(params['freq']) + \
+                "bw = %.15g, " % float(params['bw']) + \
+                "dm = %.15g, " % float(params['dm']) + \
+                "rm = %.15g, " % float(params['rm']) + \
+                "dmc = %.15g, " % float(params['dmc']) + \
+                "rmc = %.15g, " % float(params['rm_c']) + \
+                "polc = %.15g, " % float(params['pol_c']) + \
+                "scale = '%s', " % params['scale'] + \
+                "state = '%s', " % params['state'] + \
+                "length = %.15g, " % float(params['length']) + \
+                "rcvr_name = '%s', " % params['rcvr'] + \
+                "rcvr_basis = '%s', " % params['basis'] + \
+                "be_name = '%s'" % params['backend'] 
+    DBcursor.execute(query)
+    
+    # Get the rawfile_id of the file that was just entered
+    query = "SELECT LAST_INSERT_ID()"
+    DBcursor.execute(query)
+    rawfile_id = DBcursor.fetchone()[0]
     return rawfile_id
+
 
 def create_diagnostics(rawfile_ids,DBcursor,DBconn):
     for rawfile_id in rawfile_ids:
@@ -187,71 +167,163 @@ def create_diagnostics(rawfile_ids,DBcursor,DBconn):
             file_ext = filename.split(".")[-1]
             if file_ext == "fT":
                 command = "pav -dG %s -g %s.png/png"%(file,file)
-                epu.Run_shell_command(command, verbose=VERBOSE, test=TEST)
-            if file_ext == "Ft":
+            elif file_ext == "Ft":
                 command = "pav -Y %s -g %s.png/png"%(file,file)
-                epu.Run_shell_command(command, verbose=VERBOSE, test=TEST)
-            if file_ext == "FT":
+            elif file_ext == "FT":
                 command = "pav -S %s -g %s.png/png"%(file,file)
-                epu.Run_shell_command(command, verbose=VERBOSE, test=TEST)
-            if file_ext == "FTp":
+            elif file_ext == "FTp":
                 command = "pav -DFTp %s -g%s.png/png"%(file,file)
-                epu.Run_shell_command(command, verbose=VERBOSE, test=TEST)
+            epu.execute(command)
 
-def run_loader(file, DBcursor, DBconn):
 
-    # Fill rawfile table
-    if VERBOSE:
-        print "Started %s at %s" % (populate_rawfiles_table.__name__, \
-                                        epu.Give_UTC_now())
-    rawfile_id = populate_rawfiles_table(file, DBcursor, DBconn, 1)
+def move_file(file, destdir):
+    srcdir, fn = os.path.split(file)
+    dest = os.path.join(destdir, fn)
 
-    if rawfile_id == -1:
-        sys.stderr.write("Error loading file. %s returned %d\n"%(populate_rawfiles_table.__name__, rawfile_id))
+    # Check if the directory exists
+    # If not, create it
+    if not os.path.isdir(destdir):
+        # Set permissions (in octal) to read/write/execute for user and group
+        os.makedirs(destdir, 0770)
+
+    # Check that our file doesn't already exist in 'dest'
+    # If it does exist do nothing but print a warning
+    if not os.path.isfile(dest):
+        # Copy file to 'dest'
+        shutil.move(file, dest)
+    elif destdir == srcdir:
+        # File is already located in its destination
+        # Do nothing
+        pass
     else:
-        if VERBOSE:
-            print "Finished %s at %s" % (populate_rawfiles_table.__name__,\
-                                            epu.Give_UTC_now())
-        print "File successfully loaded - rawfile_id: %s\n" % rawfile_id
+        # Another file with the same name is the destination directory
+        # Compare the files
+        srcmd5 = epu.Get_md5sum(file)
+        srcsize = os.path.getsize(file)
+        destmd5 = epu.Get_md5sum(dest)
+        destsize = os.path.getsize(dest)
+        if (srcmd5==destmd5) and (srcsize==destsize):
+            # Files are the same, so remove src as if we moved it
+            # (taking credit for work that was already done...)
+            os.remove(file)
+        else:
+            # The files are not the same! This is not good.
+            # Raise an exception.
+            raise errors.FileError("File (%s) cannot be archived. " \
+                    "There is already a file archived by that name " \
+                    "in the appropriate archive location (%s), but " \
+                    "the two files are _not_ identical. " \
+                    "(source: MD5=%s, size=%d bytes; dest: MD5=%s, " \
+                    "size=%d bytes)" % \
+                    (file, dest, srcmd5, srcsize, destmd5, destsize))
 
-    # fill-in parfiles table? This is to keep track of the
-    # ephermeris used to fold the data.
-    # New entry in parfiles is tables is needed to distinguish these parfiles.
+    # Change permissions so the file can no longer be written to
+    os.chmod(dest, 0440) # "0440" is an integer in base 8. It works
+                         # the same way 440 does for chmod on cmdline
+    return dest
+
+
+def prep_file(fn):
+    """Prepare file for archiving/loading.
+        
+        Also, perform some checks on the file to make sure we
+        won't run into problems later. Checks peformed:
+            - Existence of file.
+            - Read/write access for file (so it can be moved).
+            - Header contains all necessary values.
+            - Site/observing system is recognized.
+
+        Input:
+            fn: The name of the file to check.
+
+        Outputs:
+            params: A dictionary of info to be uploaded.
+    """
+    # Check existence of file
+    epu.Verify_file_path(fn)
+
+    # Check file permissions allow for writing and reading
+    if not os.access(fn, os.W_OK | os.R_OK):
+        raise errors.FileError("File (%s) is not read/writable!" % fn)
+
+    # Grab header info
+    hdritems = ["nbin", "nchan", "npol", "nsub", "type", "asite", \
+         	"name", "dec", "ra", "freq", "bw", "dm", "rm", \
+      	        "dmc", "rm_c", "pol_c", "scale", "state", "length", \
+    	        "rcvr", "basis", "backend"]
+    params = epu.get_header_vals(fn, hdritems)
+
+    # Get telescope name
+    params['telescope'] = epu.get_telescope(params['asite'])
+
+    # Check if obssystem_id, pulsar_id, user_id can be found
+    params['obssystem_id'] = get_obssystemid(params['telescope'], \
+                                params['rcvr'], params['backend'])
+    params['pulsar_id'] = get_pulsarid(params['name'])
+    params['user_id'] = get_userid()
+    return params
+
 
 def main():
+    # Collect input files
+    infiles = set(args.infiles)
+    for glob_expr in args.glob_exprs:
+        infiles.update(glob.glob(glob_expr))
+    infiles = list(infiles)
 
-    if len(sys.argv) > 1:
-
-        flist0=[];
-        flist1=[];
-        # Check if raw files exist. If wildcard was entered, check validity of all files. 
-        # If there is "*" or "?" character that was not interpreted by shell,
-        # use glob interpret it.
-        for i in range(1,len(sys.argv)):
-            if ("*" in sys.argv[i]) or ("?" in sys.argv[i]):
-                flist0 = glob.glob(sys.argv[i])
-            else:
-                flist1.append(sys.argv[i])
-
-        flist = flist0 + flist1;
-
-        # Create DB connection instance
-        DBcursor, DBconn = epu.DBconnect(DB_HOST,DB_NAME,DB_USER,DB_PASS)
-
+    if not infiles:
+        sys.stderr.write("You didn't provide any files to load. " \
+                         "You should consider including some next time...\n")
+        sys.exit(1)
+    # Create DB connection instance
+    DBcursor, DBconn = epu.DBconnect()
+    
+    try:
         # Enter information in rawfiles table
         # create diagnostic plots and metrics.
         # Also fill-in raw_diagnostics and raw_diagnostic_plots tables
-        for file in flist:
-            epu.Verify_file_path(file)
-            run_loader(file, DBcursor, DBconn);
-            #create_diagnostics(rawfile_id,DBcursor,DBconn)
-        
+        for fn in infiles:
+            try:
+                if config.verbosity:
+                    print "Working on %s (%s)" % (fn, epu.Give_UTC_now())
+                # Check the file and parse the header
+                params = prep_file(fn)
+                
+                # Move the File
+                destdir = epu.get_archive_dir(fn, site=params['site'], \
+                            backend=params['be:name'], psrname=params['name'])
+                newfn = move_file(fn, destdir)
+                
+                if config.verbosity:
+                    print "%s moved to %s (%s)" % (fn, newfn, epu.Give_UTC_now())
+
+                # Register the file into the database
+                rawfile_id = populate_rawfiles_table(newfn, params, DBcursor)
+                
+                if config.verbosity:
+                    print "Finished with %s - rawfile_id=%d (%s)" % \
+                        (fn, rawfile_id, epu.Give_UTC_now())
+
+                # Create diagnostic plots and load them into the DB
+                #create_diagnostics(rawfile_id,DBcursor,DBconn)
+            except errors.EptaPipelineError, msg:
+                sys.stderr.write("%s\nSkipping...\n" % msg)
+    finally:
         # Close DB connection
         DBconn.close()
 
-    else:
-        print "\nNo files to process.  Exiting..."
-        Help()
-        
-main()
+
+if __name__=='__main__':
+    parser = epu.DefaultArguments(description="Archive raw files, " \
+                                        "and load their info into the database.")
+    parser.add_argument("infiles", nargs='*', action='store', \
+                        help="Files to load into the DB")
+    parser.add_argument("-g", "--glob-files", action="append", \
+                        dest='glob_exprs', default=[], \
+                        help="Glob expression identifying files " \
+                             "to load into the DB. Be sure to correctly " \
+                             "quote the expression. The -g/--glob-files " \
+                             "option can be provided multiple times.")
+    args = parser.parse_args()
+    main()
 

@@ -1,11 +1,12 @@
 import manipulators
+import epta_pipeline_utils as epu
 
-plugin_name = 'scruncher'
+plugin_name = 'pamit'
 
 def manipulate(infns, outname, nsub=1, nchan=1, nbin=None):
     """Scrunch the given archive in polarization, as well as
-        in frequency to 'self.nchan' channels, and in time to 
-        'self.nsub' subints. Also bin scrunch to 'self.nbin'.
+        in frequency to 'nchan' channels, and in time to 
+        'nsub' subints. Also bin scrunch to 'nbin'.
         
         **Note: The Scruncher manipulation only works on
             one archive, so if the list 'infns' contains 
@@ -27,25 +28,22 @@ def manipulate(infns, outname, nsub=1, nchan=1, nbin=None):
     """
     # Ensure there is only a single input file
     if len(infns) != 1:
-        raise manipulators.ManipulatorError("Scruncher manipulator " \
+        raise manipulators.ManipulatorError("Pam-it manipulator " \
                     "accepts/requires only a single input file "\
                     "(%d provided)." % len(infns))
 
-    # Load the input archives into python as Archive objects
-    archives = manipulators.load_archives(infns)
+    # Copy input archive to outname and modify that file in place
+    # infns is a list of one (we ensure this above)
+    shutil.copy(infns[0], outname)
 
-    # Archives is a list of one (we ensure this above)
-    scrunched = archives[0]
+    cmd = "pam -m --setnchn %d --setnsub %d %s" % \
+            (nchan, nsub, outname)
+
+    if nbin is not None:
+        cmd += " --setnbin %d" % nbin
 
     # Scrunch the heck out of it
-    scrunched.pscrunch()
-    scrunched.fscrunch_to_nchan(nchan)
-    scrunched.tscrunch_to_nsub(nsub)
-    if nbin is not None:
-        scrunched.bscrunch_to_nbin(nbin)
-
-    # Unload the archive
-    manipulators.unload_archive(scrunched, outname)   
+    epu.execute(cmd)
 
 
 def add_arguments(parser):
