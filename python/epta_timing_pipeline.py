@@ -43,6 +43,9 @@ def Help():
     #Print basic description and usage
     print "\nThe EPTA Timing Pipeline"
     print "Version: %.2f"%(VERSION)+"\n"
+
+    print "To run a test on J1713+0747 use rawfile_id=80 parfile_id=15 and template_id=1"
+    print "i.e. run './epta_timing_pipeline.py --rawfile_id 80 --parfile_id 15 --template_id 1'"
         
     print "Please use 'epta_timing_pipeline.py -h' for a full list of command line options. \n"
 
@@ -60,7 +63,7 @@ def Parse_command_line():
                         default=None,
                         help="ID of raw data file to use for running the full pipeline.")
     #Ephemeris
-    parser.add_argument('--ephem_id',
+    parser.add_argument('--parfile_id',
                         nargs=1,
                         type=int,
                         default=None,
@@ -83,7 +86,7 @@ def main():
 
     args = Parse_command_line()
 
-    if not (args.rawfile_id and args.ephem_id and args.template_id):
+    if not (args.rawfile_id and args.parfile_id and args.template_id):
         print "\nYou haven't specified a valid set of command line options.  Exiting..."
         Help()
 
@@ -110,12 +113,17 @@ def main():
     #raw_file = epta.get_raw_data()
     print rawfile_id
     DBcursor.execute("select filename, filepath, md5sum from rawfiles where rawfile_id = %d"%rawfile_id)
-    filename, filepath, md5sum = DBcursor.fetchall()
+    filename, filepath, md5sum_DB = DBcursor.fetchall()[0]
     rawfile = os.path.join(filepath,filename)
     epta.Verify_file_path(rawfile)
-    epta.Verify_MD5SUM(md5sum,rawfile)
-    
-    
+    md5sum_file = epta.Get_md5sum(rawfile)
+    if md5sum_DB == md5sum_file:
+        print "md5sum check succeeded"
+        return 0
+    else:
+        print "md5sum check failed"
+        return 1
+        
     #Get ephemeris from ephem_id and verify MD5SUM
     #ephemeris = epta.get_ephem()
 
