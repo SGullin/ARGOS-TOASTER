@@ -122,24 +122,24 @@ def populate_rawfiles_table(fn, params, DBcursor):
                 "nbin = %d, " % int(params['nbin']) + \
                 "nchan = %d, " % int(params['nchan']) + \
                 "npol = %d, " % int(params['npol']) + \
-                "nsub = %d, " % int(params['nsubint']) + \
+                "nsub = %d, " % int(params['nsub']) + \
                 "type = '%s', " % params['type'] + \
                 "site = '%s', " % params['site'] + \
                 "name = '%s', " % params['name'] + \
-                "coord = '%s', " % params['coord'] + \
+                "coord = '%s,%s', " % (params['ra'],params['dec']) + \
                 "freq = %.15g, " % float(params['freq']) + \
                 "bw = %.15g, " % float(params['bw']) + \
                 "dm = %.15g, " % float(params['dm']) + \
                 "rm = %.15g, " % float(params['rm']) + \
                 "dmc = %.15g, " % float(params['dmc']) + \
-                "rmc = %.15g, " % float(params['rmc']) + \
-                "polc = %.15g, " % float(params['polc']) + \
+                "rmc = %.15g, " % float(params['rm_c']) + \
+                "polc = %.15g, " % float(params['pol_c']) + \
                 "scale = '%s', " % params['scale'] + \
                 "state = '%s', " % params['state'] + \
                 "length = %.15g, " % float(params['length']) + \
-                "rcvr_name = '%s', " % params['rcvr:name'] + \
-                "rcvr_basis = '%s', " % params['rcvr:basis'] + \
-                "be_name = '%s'" % params['be:name'] 
+                "rcvr_name = '%s', " % params['rcvr'] + \
+                "rcvr_basis = '%s', " % params['basis'] + \
+                "be_name = '%s'" % params['backend'] 
     DBcursor.execute(query)
     
     # Get the rawfile_id of the file that was just entered
@@ -183,7 +183,8 @@ def move_file(file, destdir):
     # Check if the directory exists
     # If not, create it
     if not os.path.isdir(destdir):
-        os.makedirs(destdir)
+        # Set permissions (in octal) to read/write/execute for user and group
+        os.makedirs(destdir, 0770)
 
     # Check that our file doesn't already exist in 'dest'
     # If it does exist do nothing but print a warning
@@ -246,18 +247,18 @@ def prep_file(fn):
         raise errors.FileError("File (%s) is not read/writable!" % fn)
 
     # Grab header info
-    hdritems = ["nbin", "nchan", "npol", "nsubint", "type", "site", \
-         	"name", "type", "coord", "freq", "bw", "dm", "rm", \
-      	        "dmc", "rmc", "polc", "scale", "state", "length", \
-    	        "rcvr:name", "rcvr:basis", "be:name"]
-    params = epu.parse_psrfits_header(fn, hdritems)
+    hdritems = ["nbin", "nchan", "npol", "nsub", "type", "asite", \
+         	"name", "dec", "ra", "freq", "bw", "dm", "rm", \
+      	        "dmc", "rm_c", "pol_c", "scale", "state", "length", \
+    	        "rcvr", "basis", "backend"]
+    params = epu.get_header_vals(fn, hdritems)
 
     # Get telescope name
-    params['telescope'] = epu.get_telescope(params['site'])
+    params['telescope'] = epu.get_telescope(params['asite'])
 
     # Check if obssystem_id, pulsar_id, user_id can be found
     params['obssystem_id'] = get_obssystemid(params['telescope'], \
-                                params['rcvr:name'], params['be:name'])
+                                params['rcvr'], params['backend'])
     params['pulsar_id'] = get_pulsarid(params['name'])
     params['user_id'] = get_userid()
     return params
