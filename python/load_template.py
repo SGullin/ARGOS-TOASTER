@@ -1,12 +1,7 @@
 #!/usr/bin/env python2.6
-####################
-#
-# load_template.py: Script to upload template profiles to the EPTA
-#                   timing database
-#
-SCRIPT_NAME = "load_template"
-VERSION = 0.1
-####################
+"""
+Script to upload template profiles to the EPTA timing database
+"""
 
 #Imported modules
 import os.path
