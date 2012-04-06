@@ -5,8 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates
 
-import epta_pipeline_utils
-import MySQLdb
+import epta_pipeline_utils as epu
+import database
 
 telescope_colours = {'Effelsberg': '#FFCE00',
                      'Jodrell': '#CE1124', 
@@ -17,8 +17,8 @@ telescope_colours = {'Effelsberg': '#FFCE00',
 def main():
     # Get data
     query = "SELECT add_time FROM rawfiles ORDER BY add_time ASC"
-    cursor.execute(query)
-    add_times = np.asarray([row[0] for row in cursor.fetchall()])
+    db.execute(query)
+    add_times = np.asarray([row[0] for row in db.fetchall()])
     
     fig = plt.figure(figsize=(10,8))
     ax = plt.axes((0.1, 0.15, 0.85, 0.35))
@@ -49,8 +49,8 @@ def main():
             "LEFT JOIN telescopes AS t " \
                 "ON o.telescope_id=t.telescope_id " \
             "GROUP BY t.name"
-    cursor.execute(query)
-    telescopes, counts = zip(*cursor.fetchall())
+    db.execute(query)
+    telescopes, counts = zip(*db.fetchall())
     labels = []
     for t, cnt in zip(telescopes, counts):
         labels.append("%s: %d" % (t, cnt))
@@ -68,8 +68,8 @@ def main():
             "LEFT JOIN pulsars AS p " \
                 "ON r.pulsar_id=p.pulsar_id " \
             "GROUP BY p.pulsar_name"
-    cursor.execute(query)
-    psrs, counts = zip(*cursor.fetchall())
+    db.execute(query)
+    psrs, counts = zip(*db.fetchall())
     labels = []
     for p, cnt in zip(psrs, counts):
         labels.append("%s: %d" % (p, cnt))
@@ -82,8 +82,8 @@ def main():
    
     # Get file sizes
     query = "SELECT filepath, filename, length FROM rawfiles"
-    cursor.execute(query)
-    rawfiles = cursor.fetchall()
+    db.execute(query)
+    rawfiles = db.fetchall()
     fns = [os.path.join(path, fn) for (path, fn, length) in rawfiles]
     numgb = sum([os.path.getsize(fn) for fn in fns])/(1024.0**3)
     length = sum([row[2] for row in rawfiles])
@@ -97,9 +97,12 @@ def main():
 
 
 if __name__=='__main__':
-    cursor, conn = epta_pipeline_utils.DBconnect()
+    parser = epu.DefaultArguments(description="Make a plot summarising " \
+                                        "data in the archive.")
+    args = parser.parse_args()
+    db = database.Database()
     try:
         main()
     finally:
-        conn.close()
+        db.close()
 
