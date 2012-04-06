@@ -660,7 +660,6 @@ class DefaultArguments(argparse.ArgumentParser):
 
     class SetDebugMode(argparse.Action): 
         def __call__(self, parser, namespace, values, option_string):
-            print values
             config.debug.set_mode_on(values[0])
 
     class SetAllDebugModes(argparse.Action): 
