@@ -16,6 +16,7 @@ import warnings
 import epta_pipeline_utils as epu
 import MySQLdb
 
+import errors
 import colour
 import config
 
@@ -73,7 +74,8 @@ def get_rawfiles(args):
 
     # TODO: Implement MJD selection criteria 
     # when MJDs are added to rawfiles table
-    warnings.warn("MJD selection criteria are _not_ implemented.")
+    warnings.warn("MJD selection criteria are _not_ implemented.", \
+                    errors.EptaPipelineWarning)
 
     if args.obssys_id:
         query += "AND (obs.obssystem_id = %s) "
