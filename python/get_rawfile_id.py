@@ -14,8 +14,7 @@ import datetime
 import warnings
 
 import epta_pipeline_utils as epu
-import MySQLdb
-
+import database
 import errors
 import colour
 import config
@@ -96,10 +95,10 @@ def get_rawfiles(args):
         query += "AND (obs.clock LIKE %s) "
         query_args.append(args.clock)
 
-    cursor, conn = epu.DBconnect(cursor_class=MySQLdb.cursors.DictCursor)
-    cursor.execute(query, query_args)
-    rawfiles = cursor.fetchall()
-    conn.close()
+    db = database.Database(cursor_class='dict')
+    db.execute(query, query_args)
+    rawfiles = db.fetchall()
+    db.close()
     return rawfiles
 
 
