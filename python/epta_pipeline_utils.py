@@ -349,11 +349,15 @@ def parse_psrfits_header(fn, hdritems):
     return params
     
 
-def get_archive_dir(fn, site=None, backend=None, receiver=None, psrname=None):
+def get_archive_dir(fn, data_archive_location=config.data_archive_location, \
+                        site=None, backend=None, receiver=None, psrname=None):
     """Given a file name return where it should be archived.
 
         Input:
             fn: The name of the file to archive.
+            data_archive_location: The base directory of the 
+                archive. (Default: use location listed in config
+                file).
             site: Value of "site" keyword from 'psredit'.
                 Providing this will override the value stored
                 in the file header.
@@ -388,7 +392,7 @@ def get_archive_dir(fn, site=None, backend=None, receiver=None, psrname=None):
             psrname = params['name']
     sitedir = telescope_to_dir[get_telescope(site)]
     
-    dir = os.path.join(config.data_archive_location, psrname, sitedir.lower(), \
+    dir = os.path.join(data_archive_location, psrname, sitedir.lower(), \
                         backend.lower(), receiver.lower())
     return dir
 
