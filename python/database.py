@@ -51,7 +51,12 @@ class Database(object):
             raise errors.DatabaseError("Could not connect to database!")
 
     def execute(self, query, *args, **kwargs):
-        epu.print_debug(query, 'database')
+        msg = "Query: %s" % query
+        if args:
+            msg += "\nArgs: %s" % args
+        if kwargs:
+            msg += "\nKeyword args: %s" % kwargs
+        epu.print_debug(msg, 'database')
         self.cursor.execute(query, *args, **kwargs)
 
     def close(self):
