@@ -642,22 +642,35 @@ class DefaultArguments(argparse.ArgumentParser):
                             action=self.SetAllDebugModes, \
                             help="Turn on all debugging modes. (Same as --debug-all).")
         group.add_argument('--debug-all', nargs=0, \
-                            action=self.SetDebugMode, \
+                            action=self.SetAllDebugModes, \
                             help="Turn on all debugging modes. (Same as -d/--debug).")
-        for m, desc in config.debug.modes:
-            group.add_argument('--debug-%s' % m.lower(), nargs=0, \
+        group.add_argument('--set-debug-mode', nargs=1, \
                             action=self.SetDebugMode, \
-                            help=desc)
-    
+                            help="Turn on specified debugging mode. Use " \
+                                "--list-debug-modes to see the list of " \
+                                "available modes and descriptions. " \
+                                "(Default: all debugging modes are off)")
+        group.add_argument('--list-debug-modes', nargs=0, \
+                            action=self.ListDebugModes, \
+                            help="List available debugging modes and " \
+                                "descriptions, then exit")
     class TurnUpVerbosity(argparse.Action):
         def __call__(self, parse, namespace, values, option_string):
             config.verbosity += 1
 
     class SetDebugMode(argparse.Action): 
         def __call__(self, parser, namespace, values, option_string):
-            mode = option_string.split("--debug-")[1].upper()
-            config.debug.set_mode_on(mode)
+            print values
+            config.debug.set_mode_on(values[0])
 
     class SetAllDebugModes(argparse.Action): 
         def __call__(self, parser, namespace, values, option_string):
             config.debug.set_allmodes_on()
+
+    class ListDebugModes(argparse.Action): 
+        def __call__(self, parser, namespace, values, option_string):
+            print "Available debugging modes:"
+            for name, desc in config.debug.modes:
+                print "    %s: %s" % (name, desc)
+            sys.exit(1)
+
