@@ -12,13 +12,13 @@ import argparse
 import os.path
 import datetime
 
-import epta_pipeline_utils
-import MySQLdb
-
+import epta_pipeline_utils as epu
+import database
+import errors
 
 def main():
     parfiles = get_parfiles(args.pulsar_name, args.start_date, args.end_date)
-    show_parfiles(parfiles, verbose=args.verbose)
+    show_parfiles(parfiles)
 
 
 def get_parfiles(psr, start=None, end=None):
@@ -59,14 +59,14 @@ def get_parfiles(psr, start=None, end=None):
         query += "AND add_time <= %s "
         query_args.append(end)
 
-    cursor, conn = epta_pipeline_utils.DBconnect(cursor_class=MySQLdb.cursors.DictCursor)
-    cursor.execute(query, query_args)
-    parfiles = cursor.fetchall()
-    conn.close()
+    db = database.Database(cursor_class='dict')
+    db.execute(query, query_args)
+    parfiles = db.fetchall()
+    db.close()
     return parfiles
 
 
-def show_parfiles(parfiles, verbose=False):
+def show_parfiles(parfiles):
     if len(parfiles):
         for pardict in parfiles:
             print "- "*25
@@ -76,17 +76,17 @@ def show_parfiles(parfiles, verbose=False):
             print "    Pulsar J-name: %s; Pulsar B-name: %s" % \
                     (pardict['PSRJ'], pardict['PSRB'])
             print "    Date and time parfile was added: %s" % pardict['add_time'].isoformat(' ')
-            if verbose:
-                print "    Parfile contents:"
-                for line in open(fn, 'r'):
-                    print "        %s" % line.strip()
+            msg = "Parfile contents:\n\n"
+            for line in open(fn, 'r'):
+                msg += "%s\n" % line.strip()
+            epu.print_info(msg, 1)
             print " -"*25
     else:
-        print "*** NO MATCHING PARFILES! ***"
+        raise errors.EptaPipelineError("No parfiles match parameters provided!")
 
 
 if __name__=='__main__':
-    parser = argparse.ArgumentParser(description="Get a listing of parfile_id " \
+    parser = epu.DefaultArguments(description="Get a listing of parfile_id " \
                                         "values from the DB to help the user" \
                                         "find the appropriate one to use.")
     parser.add_argument('-p', '--psr', dest='pulsar_name', \
@@ -101,10 +101,5 @@ if __name__=='__main__':
                         type=str, default=None, \
                         help="Do not return parfiles added to the DB " \
                             "after this date.")
-    parser.add_argument('-v', '--verbose', dest='verbose', \
-                        default=False, action='store_true', \
-                        help="Be verbose; show the contents of the parfiles " \
-                            "matching the search criteria provided. " \
-                            "(Default: Don't be verbose.)")
     args = parser.parse_args()
     main()
