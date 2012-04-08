@@ -14,7 +14,7 @@ import epta_pipeline_utils as epu
 
 def set_as_master_template(db, template_id):
     query = "REPLACE INTO master_templates " \
-                "(template_id, pulsar_id, obsystem_id) " \
+                "(template_id, pulsar_id, obssystem_id) " \
             "SELECT template_id, " \
                 "pulsar_id, " \
                 "obssystem_id " \
