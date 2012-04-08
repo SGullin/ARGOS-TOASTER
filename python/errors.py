@@ -27,6 +27,10 @@ class DatabaseError(EptaPipelineError):
     pass
 
 
+class InconsistentDatabaseError(EptaPipelineError):
+    pass
+
+
 # Custom Warnings
 class EptaPipelineWarning(Warning):
     def __str__(self):
