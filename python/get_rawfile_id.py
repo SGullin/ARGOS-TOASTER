@@ -47,6 +47,8 @@ def get_rawfiles(args):
                    "r.bw, " \
                    "r.dm, " \
                    "r.length, " \
+                   "u.real_name, " \
+                   "u.email_address, " \
                    "psr.pulsar_name, " \
                    "t.name AS telescope_name, " \
                    "obs.obssystem_id, " \
@@ -61,6 +63,8 @@ def get_rawfiles(args):
                 "ON obs.obssystem_id=r.obssystem_id " \
             "LEFT JOIN telescopes AS t " \
                 "ON t.telescope_id=obs.telescope_id " \
+            "LEFT JOIN users AS u " \
+                "ON u.user_id=r.user_id " \
             "WHERE (psr.pulsar_name LIKE %s) "
     query_args = [args.pulsar_name]
 
@@ -111,6 +115,8 @@ def show_rawfiles(rawfiles):
             fn = os.path.join(rawdict['filepath'], rawdict['filename'])
             print "\nRawfile: %s" % fn
             print "Pulsar name: %s" % rawdict['pulsar_name']
+            print "Uploaded by: %s (%s)" % \
+                        (rawdict['real_name'], rawdict['email_address'])
             print "Date and time rawfile was added: %s" % rawdict['add_time'].isoformat(' ')
             lines = ["Observing System ID: %d" % rawdict['obssystem_id'], \
                      "Observing System Name: %s" % rawdict['obssys_name'], \
