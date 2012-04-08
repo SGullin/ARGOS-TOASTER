@@ -25,7 +25,6 @@ def main():
     show_templates(templates)
 
 
-
 def get_templates(args):
     """Return a dictionary of information for each template
         in the DB that matches the search criteria provided.
@@ -35,8 +34,7 @@ def get_templates(args):
 
         Output:
             rows: A list of dicts for each matching row. 
-        """
-
+    """
     query = "SELECT t.template_id, " \
                    "t.add_time, " \
                    "t.filename, " \
@@ -44,6 +42,7 @@ def get_templates(args):
                    "t.nbin, " \
                    "t.comments, " \
                    "t.is_analytic, " \
+                   "IFNULL(mt.template_id, 0) AS is_master, " \
                    "u.real_name, " \
                    "u.email_address, " \
                    "psr.pulsar_name, " \
@@ -58,6 +57,8 @@ def get_templates(args):
                 "ON psr.pulsar_id=t.pulsar_id " \
             "LEFT JOIN obssystems AS obs " \
                 "ON obs.obssystem_id=t.obssystem_id " \
+            "LEFT JOIN master_templates AS mt " \
+                "ON mt.template_id=t.template_id " \
             "LEFT JOIN telescopes AS tel " \
                 "ON tel.telescope_id=obs.telescope_id " \
             "LEFT JOIN users AS u " \
@@ -71,6 +72,9 @@ def get_templates(args):
     if args.end_date is not None:
         query += "AND t.add_time <= %s "
         query_args.append(args.end_date)
+    if args.ids:
+        query += "AND t.template_id IN %s "
+        query_args.append(args.ids)
     if args.obssys_id:
         query += "AND (obs.obssystem_id = %s) "
         query_args.append(args.obssys_id)
@@ -113,11 +117,13 @@ def show_templates(templates):
             fn = os.path.join(tdict['filepath'], tdict['filename'])
             print "\nTemplate: %s" % fn
             print "Pulsar name: %s" % tdict['pulsar_name']
-            print "Date and time rawfile was added: %s" % tdict['add_time'].isoformat(' ')
-            print "Uploaded by: %s (%s)" % (tdict['real_name'], tdict['email_address'])
+            print "Master template? %s" % (tdict['is_master'] and "Yes" or "No")
             print "Template type: %s" % (tdict['is_analytic'] and "Analytic" or "Non-analytic")
             if not tdict['is_analytic']:
                 print "Number of phase bins: %d" % tdict['nbin']
+            print "Uploaded by: %s (%s)" % (tdict['real_name'], tdict['email_address'])
+            print "Uploader's comments: %s" % tdict['comments']
+            print "Date and time template was added: %s" % tdict['add_time'].isoformat(' ')
 
             # Show extra information if verbosity is >= 1
             lines = ["Observing System ID: %d" % tdict['obssystem_id'], \
@@ -176,6 +182,9 @@ if __name__=='__main__':
                         type=str, default=None, \
                         help="Do not return templates added to the DB " \
                             "after this date.")
+    parser.add_argument('-i', '--id', dest='ids', type=int, \
+                        default=[], action='append', \
+                        help="Specific template_id numbers to describe.")
     parser.add_argument('-n', '--nbin', dest='nbin', \
                         type=int, default=None, \
                         help="Only show templates with a specific number " \
