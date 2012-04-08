@@ -130,7 +130,7 @@ def show_rawfiles(rawfiles):
             epu.print_info("\n".join(lines), 2)
             print " -"*25
     else:
-        print "*** NO MATCHING RAWFILES! ***"
+        raise errors.EptaPipelineError("No rawfiles match parameters provided!")
 
 if __name__=='__main__':
     parser = epu.DefaultArguments(description="Get a listing of rawfile_id " \
