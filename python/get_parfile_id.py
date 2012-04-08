@@ -15,6 +15,7 @@ import datetime
 import epta_pipeline_utils as epu
 import database
 import errors
+import colour
 
 def main():
     parfiles = get_parfiles(args.pulsar_name, args.start_date, args.end_date)
@@ -40,16 +41,18 @@ def get_parfiles(psr, start=None, end=None):
                 The following columns are included:
                     parfile_id, add_time, filename, filepath, 
                     PSRJ, and PSRB
-        """
-
-    query = "SELECT parfile_id, " \
-                   "add_time, " \
-                   "filename, " \
-                   "filepath, " \
-                   "PSRJ, " \
-                   "PSRB " \
-            "FROM parfiles " \
-            "WHERE (PSRJ LIKE %s OR PSRB LIKE %s) "
+    """
+    query = "SELECT par.parfile_id, " \
+                   "par.add_time, " \
+                   "par.filename, " \
+                   "par.filepath, " \
+                   "par.PSRJ, " \
+                   "par.PSRB, " \
+                   "IFNULL(p.master_parfile_id, 0) AS is_master " \
+            "FROM parfiles AS par " \
+            "LEFT JOIN pulsars AS p " \
+                "ON p.master_parfile_id=par.parfile_id " \
+            "WHERE (par.PSRJ LIKE %s OR par.PSRB LIKE %s) "
     query_args = [psr, psr]
 
     if start is not None:
@@ -70,12 +73,14 @@ def show_parfiles(parfiles):
     if len(parfiles):
         for pardict in parfiles:
             print "- "*25
-            print "Parfile ID: %d" % pardict['parfile_id']
+            print colour.cstring("Parfile ID:", underline=True, bold=True) + \
+                    colour.cstring(" %d" % pardict['parfile_id'], bold=True)
             fn = os.path.join(pardict['filepath'], pardict['filename'])
-            print "    Parfile: %s" % fn
-            print "    Pulsar J-name: %s; Pulsar B-name: %s" % \
-                    (pardict['PSRJ'], pardict['PSRB'])
-            print "    Date and time parfile was added: %s" % pardict['add_time'].isoformat(' ')
+            print "\nParfile: %s" % fn
+            print "Pulsar J-name: %s" % pardict['PSRJ']
+            print "Pulsar B-name: %s" % pardict['PSRB']
+            print "Master parfile? %s" % (pardict['is_master'] and "Yes" or "No")
+            print "Date and time parfile was added: %s" % pardict['add_time'].isoformat(' ')
             msg = "Parfile contents:\n\n"
             for line in open(fn, 'r'):
                 msg += "%s\n" % line.strip()
