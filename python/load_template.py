@@ -10,7 +10,7 @@ import config
 import database
 import errors
 import epta_pipeline_utils as epu
-
+import set_master_template as smt
     
 def populate_templates_table(db, fn, params, comments, is_analytic):
     # md5sum helper function in epu
@@ -45,14 +45,6 @@ def populate_templates_table(db, fn, params, comments, is_analytic):
     return template_id 
 
 
-def set_as_master_template(db, template_id, pulsar_id, obssystem_id):
-    query = "REPLACE INTO master_templates " + \
-            "SET template_id = %d, " % template_id + \
-                "pulsar_id = %d, " % pulsar_id + \
-                "obssystem_id = %d " % obssystem_id
-    db.execute(query)
-
-
 def main():
     fn = args.template
     
@@ -80,8 +72,7 @@ def main():
         if args.is_master:
             epu.print_info("Setting %s as master template (%s)" % \
                             (newfn, epu.Give_UTC_now()), 1)
-            set_as_master_template(db, template_id, params['pulsar_id'], \
-                                    params['obssystem_id'])
+            smt.set_as_master_template(db, template_id)
         epu.print_info("Finished with %s - template_id=%d (%s)" % \
                         (fn, template_id, epu.Give_UTC_now()), 1)
     finally:
