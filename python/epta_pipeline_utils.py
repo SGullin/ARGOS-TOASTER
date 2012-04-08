@@ -397,6 +397,47 @@ def get_archive_dir(fn, data_archive_location=config.data_archive_location, \
     return dir
 
 
+def prep_parfile(fn):
+    """Prepare parfile for archiving/loading.
+        
+        Also, perform some checks on the parfile to make sure we
+        won't run into problems later. Checks peformed:
+            - Existence of file.
+            - Read/write access for file (so it can be moved).
+
+        Input:
+            fn: The name of the parfile to check.
+
+        Outputs:
+            params: A dictionary of parameters contained in the file.
+                NOTE: All parameters are left as strings.
+    """
+    # Check existence of file
+    Verify_file_path(fn)
+
+    # Check file permissions allow for writing and reading
+    if not os.access(fn, os.W_OK | os.R_OK):
+        raise errors.FileError("File (%s) is not read/writable!" % fn)
+
+    # Grab parameters from file
+    f = open(fn, 'r')
+    params = {}
+    for line in f.readlines():
+        # Ignore blank lines
+        line = line.strip()
+        if not line:
+            continue
+        key, valstr = line.split()[:2]
+        params[key.lower()] = valstr
+    if "PSRJ" in params:
+        params['pulsar_id'] = get_pulsarids()[params['PSRJ']]
+        params['name'] = params['PSRJ']
+    else:
+        params['pulsar_id'] = get_pulsarids()[params['PSRB']]
+        params['name'] = params['PSRB']
+    return params
+
+
 def prep_file(fn):
     """Prepare file for archiving/loading.
         
@@ -434,7 +475,7 @@ def prep_file(fn):
     params['obssystem_id'] = get_obssystemids()[(params['telescop'].lower(), \
                                 params['rcvr'].lower(), \
                                 params['backend'].lower())]
-    params['pulsar_id'] = get_pulsarids()[(params['name'])]
+    params['pulsar_id'] = get_pulsarids()[params['name']]
     params['user_id'] = get_userids()[os.getlogin()]
     return params
 
