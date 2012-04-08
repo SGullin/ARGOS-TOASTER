@@ -549,7 +549,8 @@ def Get_md5sum(fname, block_size=16*8192):
     return md5.hexdigest()
 
 
-def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, dir=None):
+def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, \
+                dir=None, stdinstr=None):
     """Execute the command 'cmd' after logging the command
         to STDOUT. Execute the command in the directory 'dir',
         which defaults to the current directory is not provided.
@@ -560,13 +561,14 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, dir=None):
         By default stdout is subprocess.PIPE and stderr is sent 
         to sys.stderr.
 
+        If stdinstr is not None, send the string to the command as
+        data in the stdin stream.
+
         Returns (stdoutdata, stderrdata). These will both be None, 
         unless subprocess.PIPE is provided.
     """
     # Log command to stdout
-    if config.debug.SYSCALLS:
-        sys.stdout.write("\n'"+cmd+"'\n")
-        sys.stdout.flush()
+    print_debug(cmd, "syscalls")
 
     stdoutfile = False
     stderrfile = False
@@ -577,10 +579,19 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, dir=None):
         stderr = open(stderr, 'w')
         stderrfile = True
 
-    # Run (and time) the command. Check for errors.
-    pipe = subprocess.Popen(cmd, shell=True, cwd=dir, \
+    if stdinstr is not None:
+        print_debug("Sending the following to cmd's stdin: %s" % stdinstr, \
+                        "syscalls")
+        # Run (and time) the command. Check for errors.
+        pipe = subprocess.Popen(cmd, shell=True, cwd=dir, \
+                            stdin=subprocess.PIPE, 
                             stdout=stdout, stderr=stderr)
-    (stdoutdata, stderrdata) = pipe.communicate()
+        (stdoutdata, stderrdata) = pipe.communicate(stdinstr)
+    else:
+        # Run (and time) the command. Check for errors.
+        pipe = subprocess.Popen(cmd, shell=True, cwd=dir, \
+                            stdout=stdout, stderr=stderr)
+        (stdoutdata, stderrdata) = pipe.communicate()
     retcode = pipe.returncode
     if retcode < 0:
         raise errors.SystemCallError("Execution of command (%s) terminated by signal (%s)!" % \
