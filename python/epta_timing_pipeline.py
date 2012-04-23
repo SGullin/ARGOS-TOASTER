@@ -78,7 +78,6 @@ def Parse_command_line():
     args=parser.parse_args()
     return args
 
-
 def main():
 
     #Exit if there are no or insufficient arguments
