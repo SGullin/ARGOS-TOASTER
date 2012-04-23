@@ -125,7 +125,7 @@ def populate_rawfiles_table(fn, params, DBcursor):
                 "npol = %d, " % int(params['npol']) + \
                 "nsub = %d, " % int(params['nsub']) + \
                 "type = '%s', " % params['type'] + \
-                "site = '%s', " % params['site'] + \
+                "site = '%s', " % params['telescop'] + \
                 "name = '%s', " % params['name'] + \
                 "coord = '%s,%s', " % (params['ra'],params['dec']) + \
                 "freq = %.15g, " % float(params['freq']) + \
