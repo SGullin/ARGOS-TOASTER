@@ -75,7 +75,12 @@ def main():
 
         # Register the parfile into the database
         parfile_id = populate_parfiles_table(db, newfn, params)
-       
+        
+        if epu.get_master_parfile(params['pulsar_id']):
+            # If this is the only parfile for this pulsar 
+            # make sure it will be set as the master
+            args.is_master = True
+
         if args.is_master:
             epu.print_info("Setting %s as master parfile (%s)" % \
                             (newfn, epu.Give_UTC_now()), 1)
