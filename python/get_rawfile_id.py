@@ -140,7 +140,7 @@ def show_rawfiles(rawfiles):
 
 if __name__=='__main__':
     parser = epu.DefaultArguments(description="Get a listing of rawfile_id " \
-                                        "values from the DB to help the user" \
+                                        "values from the DB to help the user " \
                                         "find the appropriate one to use.")
     parser.add_argument('-p', '--psr', dest='pulsar_name', \
                         type=str, default='%', \

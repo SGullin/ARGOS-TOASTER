@@ -67,7 +67,7 @@ def main():
         params = epu.prep_parfile(fn)
 
         # Move the parfile
-        destdir = os.path.join(config.data_archive_location, \ 
+        destdir = os.path.join(config.data_archive_location, \
                     'parfiles', params['name'])
         newfn = epu.archive_file(fn, destdir)
 
@@ -76,7 +76,7 @@ def main():
         # Register the parfile into the database
         parfile_id = populate_parfiles_table(db, newfn, params)
        
-       if args.is_master:
+        if args.is_master:
             epu.print_info("Setting %s as master parfile (%s)" % \
                             (newfn, epu.Give_UTC_now()), 1)
             set_as_master_parfile(db, parfile_id, params['pulsar_id'])
