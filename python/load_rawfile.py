@@ -249,8 +249,9 @@ def main():
                 params = epu.prep_file(fn)
                 
                 # Move the File
-                destdir = epu.get_archive_dir(fn, site=params['site'], \
-                            backend=params['be:name'], psrname=params['name'])
+                destdir = epu.get_archive_dir(fn, site=params['telescop'], \
+                            backend=params['backend'], receiver=['rcvr'], \
+                            psrname=params['name'])
                 newfn = move_file(fn, destdir)
                 
                 if config.verbosity:
