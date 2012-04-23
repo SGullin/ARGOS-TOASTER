@@ -93,7 +93,7 @@ def Run_python_script(script, args_list, verbose=0, test=0):
     if verbose:
         print "Running command: "+COMMAND
     if not test:
-        system(COMMAND)
+        os.system(COMMAND)
 
 def Run_shell_command(command, verbose=0, test=0):
     #Use to run an external program in the shell
@@ -101,7 +101,7 @@ def Run_shell_command(command, verbose=0, test=0):
     if verbose:
         print "Running command: "+COMMAND
     if not test:
-        system(COMMAND)        
+        os.system(COMMAND)        
 
 def Verify_file_path(file, verbose=0):
     #Verify that file exists
@@ -754,3 +754,14 @@ def get_file_and_id(type,type_id,DBcursor):
         print "md5sum check failed"
         return 1
 
+def DB_load_TOA(tempo2_toa_string,DBcursor,template_id,rawfile_id):
+    toa = tempo2_toa_string
+    freq = toa.split()[1]
+    imjd = toa.split()[2].split(".")[0]
+    fmjd = "0." + toa.split()[2].split(".")[1]
+    errmjd = toa.split()[4]
+
+    # Writes values to the toa table
+    QUERY = "insert into toa (template_id,rawfile_id,imjd,fmjd,freq,toa_unc_us) values ('%s','%s','\%s','%s','%s','%s')"%(template_id,rawfile_id,imjd,fmjd,freq,errmjd)
+    DBcursor.execute(QUERY)
+    
