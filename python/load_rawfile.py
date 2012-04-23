@@ -108,7 +108,8 @@ def populate_rawfiles_table(fn, params, DBcursor):
     DBcursor.execute(query)
     rows = DBcursor.fetchall()
     if rows:
-        raise DatabaseError("Rawfile with MD5 (%s) in database already" % md5)
+        raise errors.DatabaseError("Rawfile with MD5 (%s) in " \
+                                    "database already" % md5)
     
     # Insert the file
     query = "INSERT INTO rawfiles " + \
