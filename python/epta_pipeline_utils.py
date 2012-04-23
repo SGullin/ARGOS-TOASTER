@@ -500,12 +500,26 @@ def archive_file(file, destdir):
     if not os.path.isfile(dest):
         # Copy file to 'dest'
         print_info("Moving %s to %s" % (file, dest), 2)
-        shutil.move(file, dest)
+        shutil.copy2(file, dest)
+        
+        # Check that file copied successfully
+        srcmd5 = Get_md5sum(file)
+        srcsize = os.path.getsize(file)
+        destmd5 = Get_md5sum(dest)
+        destsize = os.path.getsize(dest)
+        if (srcmd5==destmd5) and (srcsize==destsize):
+            print_info("File copied successfully to %s. Removing %s." % \
+                        (dest, file), 2)
+            os.remove(file)
+        else:
+            raise errors.ArchivingError("File copy failed! (Source MD5: %s, " \
+                        "Dest MD5: %s; Source size: %d, Dest size: %d)" % \
+                        (srcmd5, destmd5, srcsize, destmd5))
     elif destdir == srcdir:
         # File is already located in its destination
         # Do nothing
-        warnings.warn("File %s is already in the archive (and in the " \
-                        "correct place). Doing nothing..." % file, \
+        warnings.warn("Source file %s is already in the archive (and in " \
+                        "the correct place). Doing nothing..." % file, \
                         errors.EptaPipelineWarning)
         pass
     else:
@@ -528,7 +542,7 @@ def archive_file(file, destdir):
         else:
             # The files are not the same! This is not good.
             # Raise an exception.
-            raise errors.FileError("File (%s) cannot be archived. " \
+            raise errors.ArchivingError("File (%s) cannot be archived. " \
                     "There is already a file archived by that name " \
                     "in the appropriate archive location (%s), but " \
                     "the two files are _not_ identical. " \
