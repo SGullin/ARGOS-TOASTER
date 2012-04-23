@@ -552,6 +552,40 @@ def Get_md5sum(fname, block_size=16*8192):
     return md5.hexdigest()
 
 
+def get_master_parfile(pulsar_id):
+    """Given a pulsar ID number return the full path
+        to that pulsar's master parfile. If no master parfile
+        exists return None.
+
+        Input:
+            pulsar_id: The pulsar ID number to get a master parfile for.
+
+        Output:
+            fn: The master parfile's full path, or None if no master
+                parfile exists.
+    """
+    db = database.Database()
+    query = "SELECT filepath, filename " \
+            "FROM pulsars AS psr " \
+            "LEFT JOIN parfiles AS par " \
+                "ON par.parfile_id=psr.master_parfile_id " \
+            "WHERE psr.pulsar_id=%d" % pulsar_id
+    db.execute(query)
+    rows = db.fetchall()
+    if len(rows) > 1:
+        raise errors.InconsistentDatabaseError("There are too many (%d) " \
+                                            "master parfiles for pulsar #%d" % \
+                                            (len(rows), pulsar_id ))
+    elif len(rows) == 0:
+        return None
+    else:
+        path, fn = rows[0]
+        if path is None or fn is None:
+            return None
+        else:
+            return os.path.join(path, fn)
+
+
 def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, \
                 dir=None, stdinstr=None):
     """Execute the command 'cmd' after logging the command
