@@ -617,6 +617,49 @@ def get_master_parfile(pulsar_id):
             return masterpar_id, os.path.join(path, fn)
 
 
+def get_master_template(pulsar_id, obssystem_id):
+    """Given a pulsar ID number, and observing system ID number
+        return the full path to the appropriate master template, 
+        and its ID number. If no master template exists return
+        None.
+
+        Inputs:
+            pulsar_id: The pulsar ID number.
+            obssystem_id: The observing system ID number.
+
+        Outputs:
+            mastertmp_id: The master template's template_id value, or
+                None if no master template exists for the pulsar/obssystem
+                combination provided.
+            fn: The master template's full path, or None if no master
+                template exists for the provided pulsar/obssystem
+                combination.
+    """
+    db = database.Database()
+    query = "SELECT tmp.tempate_id, " \
+                "tmp.filename, " \
+                "tmp.filepath " \
+            "FROM templates AS tmp " \
+            "LEFT JOIN master_templates AS mtmp " \
+                "ON mtmp.template_id=tmp.template_id " \
+            "WHERE mtmp.pulsar_id=%d " \
+                "AND mtmp.obssystem_id=%d" % \
+            (pulsar_id, obssystem_id)
+    db.execute(query)
+    if len(rows) > 1:
+        raise errors.InconsistentDatabaseError("There are too many (%d) " \
+                                            "master templates for pulsar #%d" % \
+                                            (len(rows), pulsar_id ))
+    elif len(rows) == 0:
+        return None, None
+    else:
+        mastertmp_id, path, fn = rows[0]
+        if path is None or fn is None:
+            return None, None
+        else:
+            return mastertmp_id, os.path.join(path, fn)
+
+
 def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, \
                 dir=None, stdinstr=None):
     """Execute the command 'cmd' after logging the command
