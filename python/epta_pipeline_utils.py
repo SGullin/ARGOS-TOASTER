@@ -491,16 +491,21 @@ def archive_file(file, destdir):
     # If not, create it
     if not os.path.isdir(destdir):
         # Set permissions (in octal) to read/write/execute for user and group
+        print_info("Making directory: %s" % destdir, 2)
         os.makedirs(destdir, 0770)
 
     # Check that our file doesn't already exist in 'dest'
     # If it does exist do nothing but print a warning
     if not os.path.isfile(dest):
         # Copy file to 'dest'
+        print_info("Moving %s to %s" % (file, dest), 2)
         shutil.move(file, dest)
     elif destdir == srcdir:
         # File is already located in its destination
         # Do nothing
+        warnings.warn("File %s is already in the archive (and in the " \
+                        "correct place). Doing nothing..." % file, \
+                        errors.EptaPipelineWarning)
         pass
     else:
         # Another file with the same name is the destination directory
@@ -512,6 +517,12 @@ def archive_file(file, destdir):
         if (srcmd5==destmd5) and (srcsize==destsize):
             # Files are the same, so remove src as if we moved it
             # (taking credit for work that was already done...)
+            warnings.warn("Another version of this file (%s), with " \
+                            "the same size (%d bytes) and the same " \
+                            "MD5 (%s) is already in the archive. " \
+                            "Removing source file..." % \
+                            (file, destsize, destmd5), \
+                            errors.EptaPipelineWarning)
             os.remove(file)
         else:
             # The files are not the same! This is not good.
@@ -525,6 +536,7 @@ def archive_file(file, destdir):
                     (file, dest, srcmd5, srcsize, destmd5, destsize))
 
     # Change permissions so the file can no longer be written to
+    print_info("Changing permissions of archived file to 440", 2)
     os.chmod(dest, 0440) # "0440" is an integer in base 8. It works
                          # the same way 440 does for chmod on cmdline
     return dest
