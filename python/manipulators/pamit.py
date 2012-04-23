@@ -1,12 +1,17 @@
+import shutil
+
 import manipulators
 import epta_pipeline_utils as epu
 
 plugin_name = 'pamit'
 
-def manipulate(infns, outname, nsub=1, nchan=1, nbin=None):
+def manipulate(infns, outname, nsub=1, nchan=1, nbin=None, \
+                ephem=None, update_dm=True):
     """Scrunch the given archive in polarization, as well as
         in frequency to 'nchan' channels, and in time to 
         'nsub' subints. Also bin scrunch to 'nbin'.
+        Optionally, a new ephemeris will be installed and the DM will
+        be updated accordingly.
         
         **Note: The Scruncher manipulation only works on
             one archive, so if the list 'infns' contains 
@@ -22,6 +27,11 @@ def manipulate(infns, outname, nsub=1, nchan=1, nbin=None):
                 (Default: 1)
             nbin: Number of output bins requested.
                 (Default: Don't bin scrunch.)
+            ephem: The filename of the ephemeris to install.
+                (Default: Don't install a new ephemeris.)
+            update_dm: If True, update the archive's DM value in
+                its header to be the same as what is in the newly
+                installed ephemeris. (Default: True).
 
         Outputs:
             None
@@ -38,6 +48,11 @@ def manipulate(infns, outname, nsub=1, nchan=1, nbin=None):
 
     cmd = "pam -m --setnchn %d --setnsub %d %s" % \
             (nchan, nsub, outname)
+
+    if ephem is not None:
+        cmd += " -E %s" % ephem
+        if update_dm:
+            cmd += " --update-dm"
 
     if nbin is not None:
         cmd += " --setnbin %d" % nbin
