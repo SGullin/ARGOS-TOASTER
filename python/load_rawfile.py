@@ -16,6 +16,7 @@ import warnings
 import epta_pipeline_utils as epu
 import config
 import errors
+import database
 
 # Global definitions
 userid_cache = None
@@ -99,7 +100,7 @@ def get_obssystemid(telescope, frontend, backend):
     return id
     
                                         
-def populate_rawfiles_table(fn, params, DBcursor):
+def populate_rawfiles_table(db, fn, params):
     # md5sum helper function in epu
     md5 = epu.Get_md5sum(fn);
     path, fn = os.path.split(os.path.abspath(fn))
@@ -108,8 +109,8 @@ def populate_rawfiles_table(fn, params, DBcursor):
     query = "SELECT rawfile_id, pulsar_id " \
             "FROM rawfiles " \
             "WHERE md5sum = '%s'" % md5
-    DBcursor.execute(query)
-    rows = DBcursor.fetchall()
+    db.execute(query)
+    rows = db.fetchall()
     if len(rows) > 1:
         raise errors.InconsistentDatabaseError("There are %d rawfiles " \
                     "with MD5 (%s) in the database already" % (len(rows), md5))
@@ -158,12 +159,12 @@ def populate_rawfiles_table(fn, params, DBcursor):
                     "rcvr_name = '%s', " % params['rcvr'] + \
                     "rcvr_basis = '%s', " % params['basis'] + \
                     "be_name = '%s'" % params['backend'] 
-        DBcursor.execute(query)
+        db.execute(query)
         
         # Get the rawfile_id of the file that was just entered
         query = "SELECT LAST_INSERT_ID()"
-        DBcursor.execute(query)
-        rawfile_id = DBcursor.fetchone()[0]
+        db.execute(query)
+        rawfile_id = db.fetchone()[0]
     return rawfile_id
 
 
@@ -252,9 +253,10 @@ def main():
         sys.stderr.write("You didn't provide any files to load. " \
                          "You should consider including some next time...\n")
         sys.exit(1)
-    # Create DB connection instance
-    DBcursor, DBconn = epu.DBconnect()
-    
+
+    # Connect to the database
+    db = database.Database()
+
     try:
         # Enter information in rawfiles table
         # create diagnostic plots and metrics.
@@ -277,19 +279,19 @@ def main():
                     print "%s moved to %s (%s)" % (fn, newfn, epu.Give_UTC_now())
 
                 # Register the file into the database
-                rawfile_id = populate_rawfiles_table(newfn, params, DBcursor)
+                rawfile_id = populate_rawfiles_table(db, newfn, params)
                 
                 if config.verbosity:
                     print "Finished with %s - rawfile_id=%d (%s)" % \
                         (fn, rawfile_id, epu.Give_UTC_now())
 
-                # Create diagnostic plots and load them into the DB
-                #create_diagnostics(rawfile_id,DBcursor,DBconn)
+                # TODO: Create diagnostic plots and load them into the DB
+            
             except errors.EptaPipelineError, msg:
                 sys.stderr.write("%s\nSkipping...\n" % msg)
     finally:
         # Close DB connection
-        DBconn.close()
+        db.close()
 
 
 if __name__=='__main__':
