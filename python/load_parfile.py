@@ -6,7 +6,11 @@ Script to upload par files to the EPTA timing database.
 
 # Import modules
 import os.path
+import warnings
 
+import database
+import config
+import errors
 import epta_pipeline_utils as epu
 
 
@@ -16,33 +20,49 @@ def populate_parfiles_table(db, fn, params):
     path, fn = os.path.split(os.path.abspath(fn))
     
     # Does this file exist already?
-    query = "SELECT parfile_id FROM parfiles WHERE md5sum = '%s'" % md5
+    query = "SELECT parfile_id, pulsar_id " \
+            "FROM parfiles " \
+            "WHERE md5sum = '%s'" % md5
     db.execute(query)
     rows = db.fetchall()
-    if rows:
-        raise errors.DatabaseError("A parfile with MD5 (%s) in " \
-                                    "database already" % md5)
-    
-    # Get column names for parfiles table
-    query = "DESCRIBE parfiles"
-    db.execute(query)
-    rows = db.fetchall()
-    colnames = [r[0] for r in rows]
+    if len(rows) > 1:
+        raise errors.InconsistentDatabaseError("There are %d parfiles " \
+                    "with MD5 (%s) in the database already" % (len(rows), md5))
+    elif len(rows) == 1:
+        parfile_id, psr_id = rows[0]
+        if psr_id == params['pulsar_id']:
+            warnings.warn("A parfile with this MD5 (%s) already exists " \
+                            "in the DB for this pulsar (ID: %d). " \
+                            "Doing nothing..." % (md5, psr_id), \
+                            errors.EptaPipelineWarning)
+        else:
+            raise errors.InconsistentDatabaseError("A parfile with this " \
+                            "MD5 (%s) already exists in the DB, but for " \
+                            "a different pulsar (ID: %d)!" % (md5, psr_id))
+    else:
+        # Based on its MD5, this parfile doesn't already 
+        # exist in the DB. Insert it.
 
-    # Insert the file
-    basequery = "INSERT INTO parfiles " + \
-                "SET md5sum = '%s', " % md5 + \
-                   "filename = '%s', " % fn + \
-                   "filepath = '%s', " % path + \
-                   "add_time = NOW() "
-    toset = ["%s = '%s'" % (col, params[col]) for col in colnames \
-                    if col in params]
-    query = ', '.join([basequery]+toset)
-    db.execute(query)
-    
-    # Get the template_id of the file that was just entered
-    query = "SELECT LAST_INSERT_ID()"
-    parfile_id = db.execute_and_fetchone(query)[0]
+        # Get column names for parfiles table
+        query = "DESCRIBE parfiles"
+        db.execute(query)
+        rows = db.fetchall()
+        colnames = [r[0].lower() for r in rows]
+ 
+        # Insert the file
+        basequery = "INSERT INTO parfiles " + \
+                    "SET md5sum = '%s', " % md5 + \
+                       "filename = '%s', " % fn + \
+                       "filepath = '%s', " % path + \
+                       "add_time = NOW() "
+        toset = ["%s = '%s'" % (col, params[col]) for col in colnames \
+                        if col in params]
+        query = ', '.join([basequery]+toset)
+        db.execute(query)
+        
+        # Get the template_id of the file that was just entered
+        query = "SELECT LAST_INSERT_ID()"
+        parfile_id = db.execute_and_fetchone(query)[0]
     return parfile_id 
 
 

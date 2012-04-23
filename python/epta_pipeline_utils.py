@@ -22,6 +22,7 @@ import string
 import errors
 import colour
 import config
+import database
 
 ##############################################################################
 # GLOBAL DEFNITIONS
@@ -103,18 +104,17 @@ def Run_shell_command(command, verbose=0, test=0):
     if not test:
         system(COMMAND)        
 
-def Verify_file_path(file, verbose=0):
+def Verify_file_path(file):
     #Verify that file exists
+    print_info("Verifying file: %s" % file, 2)
     if not os.path.isfile(file):
-        errors.FileError("File %s does not exist, you dumb dummy!" % file)
-    elif verbose:
-        print "File %s exists!" % file
+        raise errors.FileError("File %s does not exist, you dumb dummy!" % file)
 
     #Determine path (will retrieve absolute path)
     file_path, file_name = os.path.split(os.path.abspath(file))
-    if verbose:
-        print "Path: %s Filename: %s" % (file_path, file_name)
+    print_info("File %s exists!" % os.path.join(file_path, file_name), 3)
     return file_path, file_name
+
 
 def Fill_process_table(DBcursor,version_id,rawfile_id,parfile_id,template_id,argv):
     #Calculate md5sum of pipeline script
@@ -432,12 +432,12 @@ def prep_parfile(fn):
             continue
         key, valstr = line.split()[:2]
         params[key.lower()] = valstr
-    if "PSRJ" in params:
-        params['pulsar_id'] = get_pulsarids()[params['PSRJ']]
-        params['name'] = params['PSRJ']
+    if "psrj" in params:
+        params['pulsar_id'] = get_pulsarids()[params['psrj']]
+        params['name'] = params['psrj']
     else:
-        params['pulsar_id'] = get_pulsarids()[params['PSRB']]
-        params['name'] = params['PSRB']
+        params['pulsar_id'] = get_pulsarids()[params['psrb']]
+        params['name'] = params['psrb']
     return params
 
 
