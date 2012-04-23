@@ -271,7 +271,7 @@ def main():
                             backend=params['backend'], \
                             receiver=params['rcvr'], \
                             psrname=params['name'])
-                newfn = move_file(fn, destdir)
+                newfn = epu.archive_file(fn, destdir)
                 
                 if config.verbosity:
                     print "%s moved to %s (%s)" % (fn, newfn, epu.Give_UTC_now())
