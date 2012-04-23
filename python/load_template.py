@@ -18,31 +18,47 @@ def populate_templates_table(db, fn, params, comments, is_analytic):
     path, fn = os.path.split(os.path.abspath(fn))
     
     # Does this file exist already?
-    query = "SELECT template_id FROM templates WHERE md5sum = '%s'" % md5
+    query = "SELECT template_id, pulsar_id " \
+            "FROM templates " \
+            "WHERE md5sum = '%s'" % md5
     db.execute(query)
     rows = db.fetchall()
-    if rows:
-        raise errors.DatabaseError("A template with MD5 (%s) in " \
-                                    "database already" % md5)
-    
-    # Insert the file
-    query = "INSERT INTO templates " + \
-            "SET md5sum = '%s', " % md5 + \
-                "filename = '%s', " % fn + \
-                "filepath = '%s', " % path + \
-                "user_id = '%s', " % params['user_id'] + \
-                "add_time = NOW(), " + \
-                "pulsar_id = '%s', " % params['pulsar_id'] + \
-                "obssystem_id = '%s', " % params['obssystem_id'] + \
-                "nbin = %d, " % params['nbin'] + \
-                "is_analytic = %d, " % is_analytic + \
-                "comments = '%s' " % comments
-    db.execute(query)
+    if len(rows) > 1:
+        raise errors.InconsistentDatabaseError("There are %d templates " \
+                    "with MD5 (%s) in the database already" % (len(rows), md5))
+    elif len(rows) == 1:
+        template_id, psr_id = rows[0]
+        if psr_id == params['pulsar_id']:
+            warnings.warn("A template with this MD5 (%s) already exists " \
+                            "in the DB for this pulsar (ID: %d). " \
+                            "Doing nothing..." % (md5, psr_id), \
+                            errors.EptaPipelineWarning)
+        else:
+            raise errors.InconsistentDatabaseError("A template with this " \
+                            "MD5 (%s) already exists in the DB, but for " \
+                            "a different pulsar (ID: %d)!" % (md5, psr_id))
+    else:
+        # Based on its MD5, this template doesn't already 
+        # exist in the DB. Insert it.
 
-    # Get the template_id of the file that was just entered
-    query = "SELECT LAST_INSERT_ID()"
-    template_id = db.execute_and_fetchone(query)[0]
-    return template_id 
+        # Insert the file
+        query = "INSERT INTO templates " + \
+                "SET md5sum = '%s', " % md5 + \
+                    "filename = '%s', " % fn + \
+                    "filepath = '%s', " % path + \
+                    "user_id = '%s', " % params['user_id'] + \
+                    "add_time = NOW(), " + \
+                    "pulsar_id = '%s', " % params['pulsar_id'] + \
+                    "obssystem_id = '%s', " % params['obssystem_id'] + \
+                    "nbin = %d, " % params['nbin'] + \
+                    "is_analytic = %d, " % is_analytic + \
+                    "comments = '%s' " % comments
+        db.execute(query)
+ 
+        # Get the template_id of the file that was just entered
+        query = "SELECT LAST_INSERT_ID()"
+        template_id = db.execute_and_fetchone(query)[0]
+        return template_id 
 
 
 def main():
