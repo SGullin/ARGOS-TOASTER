@@ -250,7 +250,8 @@ def main():
                 
                 # Move the File
                 destdir = epu.get_archive_dir(fn, site=params['telescop'], \
-                            backend=params['backend'], receiver=['rcvr'], \
+                            backend=params['backend'], \
+                            receiver=params['rcvr'], \
                             psrname=params['name'])
                 newfn = move_file(fn, destdir)
                 
