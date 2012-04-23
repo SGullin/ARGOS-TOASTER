@@ -104,49 +104,65 @@ def populate_rawfiles_table(fn, params, DBcursor):
     path, fn = os.path.split(os.path.abspath(fn))
     
     # Does this file exist already?
-    query = "SELECT rawfile_id FROM rawfiles WHERE md5sum = '%s'" % md5
+    query = "SELECT rawfile_id, pulsar_id " \
+            "FROM rawfiles " \
+            "WHERE md5sum = '%s'" % md5
     DBcursor.execute(query)
     rows = DBcursor.fetchall()
-    if rows:
-        raise errors.DatabaseError("Rawfile with MD5 (%s) in " \
-                                    "database already" % md5)
-    
-    # Insert the file
-    query = "INSERT INTO rawfiles " + \
-            "SET md5sum = '%s', " % md5 + \
-                "filename = '%s', " % fn + \
-                "filepath = '%s', " % path + \
-                "user_id = '%s', " % params['user_id'] + \
-                "add_time = NOW(), " + \
-                "pulsar_id = '%s', " % params['pulsar_id'] + \
-                "obssystem_id = '%s', " % params['obssystem_id'] + \
-                "nbin = %d, " % int(params['nbin']) + \
-                "nchan = %d, " % int(params['nchan']) + \
-                "npol = %d, " % int(params['npol']) + \
-                "nsub = %d, " % int(params['nsub']) + \
-                "type = '%s', " % params['type'] + \
-                "site = '%s', " % params['telescop'] + \
-                "name = '%s', " % params['name'] + \
-                "coord = '%s,%s', " % (params['ra'],params['dec']) + \
-                "freq = %.15g, " % float(params['freq']) + \
-                "bw = %.15g, " % float(params['bw']) + \
-                "dm = %.15g, " % float(params['dm']) + \
-                "rm = %.15g, " % float(params['rm']) + \
-                "dmc = %.15g, " % float(params['dmc']) + \
-                "rmc = %.15g, " % float(params['rm_c']) + \
-                "polc = %.15g, " % float(params['pol_c']) + \
-                "scale = '%s', " % params['scale'] + \
-                "state = '%s', " % params['state'] + \
-                "length = %.15g, " % float(params['length']) + \
-                "rcvr_name = '%s', " % params['rcvr'] + \
-                "rcvr_basis = '%s', " % params['basis'] + \
-                "be_name = '%s'" % params['backend'] 
-    DBcursor.execute(query)
-    
-    # Get the rawfile_id of the file that was just entered
-    query = "SELECT LAST_INSERT_ID()"
-    DBcursor.execute(query)
-    rawfile_id = DBcursor.fetchone()[0]
+    if len(rows) > 1:
+        raise errors.InconsistentDatabaseError("There are %d rawfiles " \
+                    "with MD5 (%s) in the database already" % (len(rows), md5))
+    elif len(rows) == 1:
+        rawfile_id, psr_id = rows[0]
+        if psr_id == params['pulsar_id']:
+            warnings.warn("A rawfile with this MD5 (%s) already exists " \
+                            "in the DB for this pulsar (ID: %d). " \
+                            "Doing nothing..." % (md5, psr_id), \
+                            errors.EptaPipelineWarning)
+        else:
+            raise errors.InconsistentDatabaseError("A rawfile with this " \
+                            "MD5 (%s) already exists in the DB, but for " \
+                            "a different pulsar (ID: %d)!" % (md5, psr_id))
+    else:
+        # Based on its MD5, this rawfile doesn't already 
+        # exist in the DB. Insert it.
+
+        # Insert the file
+        query = "INSERT INTO rawfiles " + \
+                "SET md5sum = '%s', " % md5 + \
+                    "filename = '%s', " % fn + \
+                    "filepath = '%s', " % path + \
+                    "user_id = '%s', " % params['user_id'] + \
+                    "add_time = NOW(), " + \
+                    "pulsar_id = '%s', " % params['pulsar_id'] + \
+                    "obssystem_id = '%s', " % params['obssystem_id'] + \
+                    "nbin = %d, " % int(params['nbin']) + \
+                    "nchan = %d, " % int(params['nchan']) + \
+                    "npol = %d, " % int(params['npol']) + \
+                    "nsub = %d, " % int(params['nsub']) + \
+                    "type = '%s', " % params['type'] + \
+                    "site = '%s', " % params['telescop'] + \
+                    "name = '%s', " % params['name'] + \
+                    "coord = '%s,%s', " % (params['ra'],params['dec']) + \
+                    "freq = %.15g, " % float(params['freq']) + \
+                    "bw = %.15g, " % float(params['bw']) + \
+                    "dm = %.15g, " % float(params['dm']) + \
+                    "rm = %.15g, " % float(params['rm']) + \
+                    "dmc = %.15g, " % float(params['dmc']) + \
+                    "rmc = %.15g, " % float(params['rm_c']) + \
+                    "polc = %.15g, " % float(params['pol_c']) + \
+                    "scale = '%s', " % params['scale'] + \
+                    "state = '%s', " % params['state'] + \
+                    "length = %.15g, " % float(params['length']) + \
+                    "rcvr_name = '%s', " % params['rcvr'] + \
+                    "rcvr_basis = '%s', " % params['basis'] + \
+                    "be_name = '%s'" % params['backend'] 
+        DBcursor.execute(query)
+        
+        # Get the rawfile_id of the file that was just entered
+        query = "SELECT LAST_INSERT_ID()"
+        DBcursor.execute(query)
+        rawfile_id = DBcursor.fetchone()[0]
     return rawfile_id
 
 
