@@ -561,11 +561,15 @@ def get_master_parfile(pulsar_id):
             pulsar_id: The pulsar ID number to get a master parfile for.
 
         Output:
+            masterpar_id: The master parfile's parfile_id value, or
+                None if no master parfile exists.
             fn: The master parfile's full path, or None if no master
                 parfile exists.
     """
     db = database.Database()
-    query = "SELECT filepath, filename " \
+    query = "SELECT par.parfile_id, " \
+                "par.filepath, " \
+                "par.filename " \
             "FROM pulsars AS psr " \
             "LEFT JOIN parfiles AS par " \
                 "ON par.parfile_id=psr.master_parfile_id " \
@@ -577,13 +581,13 @@ def get_master_parfile(pulsar_id):
                                             "master parfiles for pulsar #%d" % \
                                             (len(rows), pulsar_id ))
     elif len(rows) == 0:
-        return None
+        return None, None
     else:
-        path, fn = rows[0]
+        masterpar_id, path, fn = rows[0]
         if path is None or fn is None:
-            return None
+            return None, None
         else:
-            return os.path.join(path, fn)
+            return masterpar_id, os.path.join(path, fn)
 
 
 def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, \
