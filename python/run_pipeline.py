@@ -1,11 +1,14 @@
 from sys import argv
 import epta_pipeline_utils as epta
+from os import exit
 
 for rawfile in argv:
 
     #Load rawfile into archive
-    epta.execute("./load_rawfile.py %s"%rawfile)
-    rawfile_id = 
+    stdout, stderr = epta.execute("./load_rawfile.py %s"%rawfile)
+    rawfile_id = stdout.split(" ")[-1].strip()
+    print rawfile_id
+    exit(0)
 
     #Get pulsar_id and obssystem_id
     query = "select pulsar_id, obssystem_id from rawfiles where rawfile_id = %d"%(rawfile_id)
