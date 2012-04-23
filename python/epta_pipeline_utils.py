@@ -17,6 +17,7 @@ import hashlib
 import subprocess
 import types
 import inspect
+import string
 
 import errors
 import colour
@@ -115,18 +116,20 @@ def Verify_file_path(file, verbose=0):
         print "Path: %s Filename: %s" % (file_path, file_name)
     return file_path, file_name
 
-def Fill_pipeline_table(DBcursor,DBconn):
+def Fill_process_table(DBcursor,version_id,rawfile_id,parfile_id,template_id,argv):
     #Calculate md5sum of pipeline script
-    MD5SUM = popen("md5sum %s"%argv[0],"r").readline().split()[0].strip()
-    QUERY = "INSERT INTO pipeline (pipeline_name, pipeline_version, md5sum) " \
-            "VALUES ('%s','%s','%s')" % (config.pipe_name, config.version, MD5SUM)
-    DBcursor.execute(QUERY)
+    #MD5SUM = popen("md5sum %s"%argv[0],"r").readline().split()[0].strip()
+    #QUERY = "INSERT INTO pipeline (pipeline_name, pipeline_version, md5sum) " \
+    #        "VALUES ('%s','%s','%s')" % (config.pipe_name, config.version, MD5SUM)
+    #DBcursor.execute(QUERY)
     #Get pipeline_id
+    QUERY = "INSERT INTO process (version_id,rawfile_id,proc_start_time,input_args,parfile_id,template_id) VALUES ('%s','%s','%s','%s','%s','%s')" % (version_id,rawfile_id,Make_Tstamp(),string.join(argv," "),parfile_id,template_id)
+    DBcursor.execute(QUERY)
     QUERY = "SELECT LAST_INSERT_ID()"
     DBcursor.execute(QUERY)
-    pipeline_id = DBcursor.fetchall()[0][0]
-    print "Added pipeline name and version to pipeline table with pipeline_id = %s"%pipeline_id
-    return pipeline_id
+    process_id = DBcursor.fetchall()[0][0]
+    print "Added pipeline name and version to pipeline table with pipeline_id = %s"%process_id
+    return process_id
     
 def Make_Proc_ID():
     utcnow = datetime.datetime.utcnow()
@@ -724,4 +727,30 @@ class DefaultArguments(argparse.ArgumentParser):
             for name, desc in config.debug.modes:
                 print "    %s: %s" % (name, desc)
             sys.exit(1)
+
+def get_file_and_id(type,type_id,DBcursor):
+    """
+    Return a file path for a particular file ID and cross-check the md5sum with the database.
+    File type can be 'rawfile', 'parfile', or 'template'.
+    """
+    if type == "rawfile" or type == "parfile" or type == "template":
+        print "Looking-up file type %s"%type
+    else:
+        print "Type is not recognized.  Exiting!"
+        return 1
+
+    print "Retrieving %s_id = %d"%(type,type_id)
+    DBcursor.execute("select filename, filepath, md5sum from %ss where %s_id = %d"%(type,type,type_id))
+    #HOW TO HANDLE ERROR IF NOTHING RETURNED?
+    filename, filepath, md5sum_DB = DBcursor.fetchall()[0]
+    file_type = os.path.join(filepath,filename)
+    Verify_file_path(file_type)
+    md5sum_file = Get_md5sum(file_type)
+    if md5sum_DB == md5sum_file:
+        print "md5sum check succeeded"
+        print "Returning %s %s"%(type,file_type)
+        return file_type, filename
+    else:
+        print "md5sum check failed"
+        return 1
 

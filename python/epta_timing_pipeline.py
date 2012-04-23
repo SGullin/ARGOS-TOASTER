@@ -12,6 +12,7 @@ from MySQLdb import *
 import os.path
 import datetime
 import argparse
+import manipulators
 import epta_pipeline_utils as epta
 
 ##############################################################################
@@ -44,8 +45,8 @@ def Help():
     print "\nThe EPTA Timing Pipeline"
     print "Version: %.2f"%(VERSION)+"\n"
 
-    print "To run a test on J1713+0747 use rawfile_id=80 parfile_id=15 and template_id=1"
-    print "i.e. run './epta_timing_pipeline.py --rawfile_id 80 --parfile_id 15 --template_id 1'"
+    print "To run a test on J1713+0747 use rawfile_id=80 parfile_id=15 and template_id=3"
+    print "i.e. run './epta_timing_pipeline.py --rawfile_id 80 --parfile_id 15 --template_id 3'"
         
     print "Please use 'epta_timing_pipeline.py -h' for a full list of command line options. \n"
 
@@ -91,6 +92,8 @@ def main():
         Help()
 
     rawfile_id = args.rawfile_id[0]
+    parfile_id = args.parfile_id[0]
+    template_id = args.template_id[0]
 
     #Start pipeline
     print "###################################################"
@@ -107,36 +110,28 @@ def main():
     print DBcursor.fetchall()
 
     #Fill pipeline table
-    #pipeline_id = epta.Fill_pipeline_table(DBcursor,DBconn)
-
+    process_id = epta.Fill_process_table(DBcursor,VERSION,rawfile_id,parfile_id,template_id,argv)
+    
     #Get raw data from rawfile_id and verify MD5SUM
-    #raw_file = epta.get_raw_data()
-    print rawfile_id
-    DBcursor.execute("select filename, filepath, md5sum from rawfiles where rawfile_id = %d"%rawfile_id)
-    filename, filepath, md5sum_DB = DBcursor.fetchall()[0]
-    rawfile = os.path.join(filepath,filename)
-    epta.Verify_file_path(rawfile)
-    md5sum_file = epta.Get_md5sum(rawfile)
-    if md5sum_DB == md5sum_file:
-        print "md5sum check succeeded"
-        return 0
-    else:
-        print "md5sum check failed"
-        return 1
+    raw_file, raw_file_name = epta.get_file_and_id('rawfile',rawfile_id,DBcursor)
         
-    #Get ephemeris from ephem_id and verify MD5SUM
-    #ephemeris = epta.get_ephem()
+    #Get ephemeris from parfile_id and verify MD5SUM
+    parfile, parfile_name = epta.get_file_and_id('parfile',parfile_id,DBcursor)
 
-    #Reinstall ephemeris with pam
-
-    #Scrunch data in time/freq
+    #Scrunch data in time/freq and optionally re-install ephemeris and change DM
+    #Use Patrick's manipulator
+    print raw_file
+    print raw_file_name.split(".")[0]+".scrunch"
+    a = manipulators.pamit.manipulate([raw_file], raw_file_name.split(".")[0]+".scrunch", nsub=1, nchan=1, nbin=None)
+    print a 
 
     #Make diagnostic plots of scrunched data
 
     #Get template from template_id and verify MD5SUM
+    template, template_name = epta.get_file_and_id('template',template_id,DBcursor)
 
     #Generate TOA with pat
-
+    
     #Make plots associated with the TOA generation
 
     #Insert TOA into DB
