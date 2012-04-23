@@ -18,6 +18,7 @@ import subprocess
 import types
 import inspect
 import string
+import warnings
 
 import errors
 import colour
