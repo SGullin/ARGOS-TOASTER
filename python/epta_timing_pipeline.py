@@ -46,7 +46,7 @@ def Help():
     print "Version: %.2f"%(VERSION)+"\n"
 
     print "To run a test on J1713+0747 use rawfile_id=80 parfile_id=15 and template_id=3"
-    print "i.e. run './epta_timing_pipeline.py --rawfile_id 80 --parfile_id 15 --template_id 3'"
+    print "i.e. run './epta_timing_pipeline.py --rawfile_id 80 --parfile_id 15 --template_id 3 --debug'"
         
     print "Please use 'epta_timing_pipeline.py -h' for a full list of command line options. \n"
 
@@ -54,7 +54,7 @@ def Help():
     exit(0)
 
 def Parse_command_line():
-    parser = argparse.ArgumentParser(
+    parser = epta.DefaultArguments(
         prog='epta_pipeline',
         description='')
     #Raw data
@@ -103,6 +103,10 @@ def main():
     print "Start time: %s"%epta.Give_UTC_now()
     print "###################################################"
 
+    #Temporary? Source to get right environment
+    epta.execute("source /raid1/home/epta/login/bash.bashrc")
+    epta.execute("source /raid1/home/epta/login/bash.bash_profile")
+
     #Make DB connection
     DBcursor, DBconn = epta.DBconnect(DB_HOST,DB_NAME,DB_USER,DB_PASS)
 
@@ -120,21 +124,23 @@ def main():
 
     #Scrunch data in time/freq and optionally re-install ephemeris and change DM
     #Use Patrick's manipulator
-    print raw_file
-    print raw_file_name.split(".")[0]+".scrunch"
-    a = manipulators.pamit.manipulate([raw_file], raw_file_name.split(".")[0]+".scrunch", nsub=1, nchan=1, nbin=None)
-    print a 
+    scrunch_file = raw_file_name.split(".")[0]+".scrunch"
+    manipulators.pamit.manipulate([raw_file], scrunch_file, nsub=1, nchan=1, nbin=None)
 
     #Make diagnostic plots of scrunched data
+    epta.execute("pav -g '%s.ps/CPS' -DFTp %s"%(scrunch_file,scrunch_file))
 
     #Get template from template_id and verify MD5SUM
     template, template_name = epta.get_file_and_id('template',template_id,DBcursor)
 
     #Generate TOA with pat
+    stdout, stderr = epta.execute("pat -s %s %s"%(template,scrunch_file))
+    print stdout
     
     #Make plots associated with the TOA generation
 
     #Insert TOA into DB
+    epta.DB_load_TOA(stdout,DBcursor,template_id,rawfile_id)
 
     #Close DB connection
     print "Closing DB connection..."
@@ -148,5 +154,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
