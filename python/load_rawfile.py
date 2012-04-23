@@ -18,88 +18,7 @@ import config
 import errors
 import database
 
-# Global definitions
-userid_cache = None
-pulsarid_cache = None
-obssystemid_cache = None
 
-
-def Help():
-    print "\nLoad raw files to database"
-    print "Version: %.2f"%(VERSION)+"\n"
-    print ("'%s' accepts only raw files. Wildcard allowed.\n")% sys.argv[0]
-    sys.exit(0)
-
-def get_userid():
-    """Return user_id for the current user.
-
-        Inputs:
-            None
-
-        Output:
-            userid: The user_id as taken from the DB.
-    """
-    global userid_cache
-    if userid_cache is None:
-        userid_cache = epu.get_userids()
-
-    uname = os.getlogin()
-    if uname in userid_cache:
-        id = userid_cache[uname]
-    else:
-        raise errors.UnrecognizedValueError("The user name %s " \
-                                            "is not recognized!" % uname)
-    return id
-
-
-def get_pulsarid(psrname):
-    """Return pulsar_id for the given pulsar name.
-
-        Inputs:
-            psrname: A pulsar name
-
-        Output:
-            pulsarid: The pulsar_id as taken from the DB.
-    """
-    global pulsarid_cache
-    if pulsarid_cache is None:
-        pulsarid_cache = epu.get_pulsarids()
-
-    if psrname in pulsarid_cache:
-        id = pulsarid_cache[psrname]
-    else:
-        raise errors.UnrecognizedValueError("The pulsar name %s " \
-                                            "is not recognized!" % psrname)
-    return id
-
-
-def get_obssystemid(telescope, frontend, backend):
-    """Return obssystem_id for the given telescope, frontend, 
-        backend combination.
-
-        Inputs:
-            telescope: The standard telescope name.
-                (ie one of WSRT, SRT, Nancay, Jodrell, Effelsberg)
-            frontend: The frontend name.
-            backend: The backend name.
-
-        Output:
-            obssystemid: The obssystem_id as taken from the DB.
-    """
-    global obssystemid_cache
-    if obssystemid_cache is None:
-        obssystemid_cache = epu.get_obssystemids()
-
-    if (telescope, frontend, backend) in obssystemid_cache:
-        id = obssystemid_cache[(telescope, frontend, backend)]
-    else:
-        raise errors.UnrecognizedValueError("There are no DB entries with " \
-                                        "telescope='%s', frontend='%s' and " \
-                                        "backend='%s' in 'obssystems' table" % \
-                                        (telescope, frontend, backend))
-    return id
-    
-                                        
 def populate_rawfiles_table(db, fn, params):
     # md5sum helper function in epu
     md5 = epu.Get_md5sum(fn);
@@ -169,68 +88,45 @@ def populate_rawfiles_table(db, fn, params):
 
 
 def main():
-    # Collect input files
-    infiles = set(args.infiles)
-    for glob_expr in args.glob_exprs:
-        infiles.update(glob.glob(glob_expr))
-    infiles = list(infiles)
-
-    if not infiles:
-        sys.stderr.write("You didn't provide any files to load. " \
-                         "You should consider including some next time...\n")
-        sys.exit(1)
-
+    fn = args.infile
     # Connect to the database
     db = database.Database()
 
     try:
         # Enter information in rawfiles table
-        # create diagnostic plots and metrics.
-        # Also fill-in raw_diagnostics and raw_diagnostic_plots tables
-        for fn in infiles:
-            try:
-                if config.verbosity:
-                    print "Working on %s (%s)" % (fn, epu.Give_UTC_now())
-                # Check the file and parse the header
-                params = epu.prep_file(fn)
-                
-                # Move the File
-                destdir = epu.get_archive_dir(fn, site=params['telescop'], \
-                            backend=params['backend'], \
-                            receiver=params['rcvr'], \
-                            psrname=params['name'])
-                newfn = epu.archive_file(fn, destdir)
-                
-                if config.verbosity:
-                    print "%s moved to %s (%s)" % (fn, newfn, epu.Give_UTC_now())
+        epu.print_info("Working on %s (%s)" % (fn, epu.Give_UTC_now()), 1)
+        # Check the file and parse the header
+        params = epu.prep_file(fn)
+        
+        # Move the File
+        destdir = epu.get_archive_dir(fn, site=params['telescop'], \
+                    backend=params['backend'], \
+                    receiver=params['rcvr'], \
+                    psrname=params['name'])
+        newfn = epu.archive_file(fn, destdir)
+        
+        epu.print_info("%s moved to %s (%s)" % (fn, newfn, epu.Give_UTC_now()), 1)
 
-                # Register the file into the database
-                rawfile_id = populate_rawfiles_table(db, newfn, params)
-                
-                if config.verbosity:
-                    print "Finished with %s - rawfile_id=%d (%s)" % \
-                        (fn, rawfile_id, epu.Give_UTC_now())
+        # Register the file into the database
+        rawfile_id = populate_rawfiles_table(db, newfn, params)
+        
+        epu.print_info("Finished with %s - rawfile_id=%d (%s)" % \
+                (fn, rawfile_id, epu.Give_UTC_now()), 1)
 
-                # TODO: Create diagnostic plots and load them into the DB
-            
-            except errors.EptaPipelineError, msg:
-                sys.stderr.write("%s\nSkipping...\n" % msg)
+        # TODO: Create diagnostic plots and load them into the DB
+
+        print "%s has been archived and loaded to the DB. rawfile_id: %d" % \
+                (fn, rawfile_id)
     finally:
         # Close DB connection
         db.close()
 
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Archive raw files, " \
-                                        "and load their info into the database.")
-    parser.add_argument("infiles", nargs='*', action='store', \
-                        help="Files to load into the DB")
-    parser.add_argument("-g", "--glob-files", action="append", \
-                        dest='glob_exprs', default=[], \
-                        help="Glob expression identifying files " \
-                             "to load into the DB. Be sure to correctly " \
-                             "quote the expression. The -g/--glob-files " \
-                             "option can be provided multiple times.")
+    parser = epu.DefaultArguments(description="Archive a single raw file, " \
+                                        "and load its info into the database.")
+    parser.add_argument("infile", type=str, \
+                        help="File name of the raw file to upload.")
     args = parser.parse_args()
     main()
 
