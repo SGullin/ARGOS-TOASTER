@@ -510,7 +510,8 @@ def archive_file(file, destdir):
         if (srcmd5==destmd5) and (srcsize==destsize):
             print_info("File copied successfully to %s. Removing %s." % \
                         (dest, file), 2)
-            os.remove(file)
+            if not config.debug.ARCHIVING:
+                os.remove(file)
         else:
             raise errors.ArchivingError("File copy failed! (Source MD5: %s, " \
                         "Dest MD5: %s; Source size: %d, Dest size: %d)" % \
@@ -538,7 +539,8 @@ def archive_file(file, destdir):
                             "Removing source file..." % \
                             (file, destsize, destmd5), \
                             errors.EptaPipelineWarning)
-            os.remove(file)
+            if not config.debug.ARCHIVING:
+                os.remove(file)
         else:
             # The files are not the same! This is not good.
             # Raise an exception.
