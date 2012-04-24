@@ -52,8 +52,13 @@ class Database(object):
             msg += "\nKeyword args: %s" % kwargs
         epu.print_debug(msg, 'database')
         self.cursor.execute(query, *args, **kwargs)
-        colnames = [d[0] for d in self.cursor.description]
-        self.RowClass = collections.namedtuple("RowClass", colnames)
+        if self.cursor.description:
+            colnames = [d[0] for d in self.cursor.description]
+            self.RowClass = collections.namedtuple("RowClass", colnames)
+            self.row_maker = self.RowClass._make
+        else:
+            self.RowClass = tuple
+            self.row_maker = self.RowClass
 
     def close(self):
         """Close the DB connection.
