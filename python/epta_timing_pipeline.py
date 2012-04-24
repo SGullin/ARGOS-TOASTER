@@ -59,37 +59,31 @@ def Parse_command_line():
         description='')
     #Raw data
     parser.add_argument('--rawfile_id',
-                        nargs=1,
                         type=int,
                         default=None,
                         help="ID of raw data file to use for running the full pipeline.")
     #Ephemeris
     parser.add_argument('--parfile_id',
-                        nargs=1,
                         type=int,
                         default=None,
                         help="ID of ephemeris to use for running the full pipeline.")
     #Template profile
     parser.add_argument('--template_id',
-                        nargs=1,
                         type=int,
                         default=None,
                         help="ID of template profile to use for running the full pipeline.")
     #Number of chans for scrunched archive
     parser.add_argument('--nchan',
-                        nargs=1,
                         type=int,
                         default=1,
                         help="Number of chans for scrunched archive")
     #Number of sub-intervals for scrunched archive
     parser.add_argument('--nsub',
-                        nargs=1,
                         type=int,
                         default=1,
                         help="Number of sub-intervals for scrunched archive")
     #Manually specified DM
     parser.add_argument('--DM',
-                        nargs=1,
                         type=int,
                         default=None,
                         help="Manually specified DM")
@@ -114,7 +108,14 @@ def pipeline_core(rawfile_id,parfile_id,template_id,nchan,nsub,DM):
     DBcursor, DBconn = epta.DBconnect(DB_HOST,DB_NAME,DB_USER,DB_PASS)
 
     #Fill pipeline table
-    fake_command_line = "epta_timing_pipeline.py --rawfile_id %d --parfile_id %d --template_id %d --nchan %d --nsub %d --DM %d"%(rawfile_id,parfile_id,template_id,nchan,nsub,DM)
+    fake_command_line = "epta_timing_pipeline.py --rawfile_id %d --parfile_id %d --template_id %d" % (rawfile_id,parfile_id,template_id)
+    if nchan != 1:
+        fake_command_line += " --nchan %d" % nchan
+    if nsub != 1:
+        fake_commnd_line += " --nsub %d" % nsub
+    if DM is not None:
+        fake_command_line += " --DM %d" % DM
+
     process_id = epta.Fill_process_table(DBcursor,VERSION,rawfile_id,parfile_id,template_id,fake_command_line,nchan,nsub)
     
     #Get raw data from rawfile_id and verify MD5SUM
@@ -169,12 +170,12 @@ def main():
         Help()
 
     #Grab command line options
-    rawfile_id = args.rawfile_id[0]
-    parfile_id = args.parfile_id[0]
-    template_id = args.template_id[0]
-    nsub = args.nsub[0]
-    nchan = args.nchan[0]
-    DM = args.DM[0]
+    rawfile_id = args.rawfile_id
+    parfile_id = args.parfile_id
+    template_id = args.template_id
+    nsub = args.nsub
+    nchan = args.nchan
+    DM = args.DM
 
     #Run pipeline core
     pipeline_core(rawfile_id,parfile_id,template_id)
