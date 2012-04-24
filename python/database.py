@@ -52,11 +52,12 @@ class Database(object):
             msg += "\nKeyword args: %s" % kwargs
         epu.print_debug(msg, 'database')
         self.cursor.execute(query, *args, **kwargs)
-        if self.cursor.description:
+        try:
             colnames = [d[0] for d in self.cursor.description]
             self.RowClass = collections.namedtuple("RowClass", colnames)
             self.row_maker = self.RowClass._make
-        else:
+        except:
+            # If we run into a problem default to a tuple
             self.RowClass = tuple
             self.row_maker = self.RowClass
 
@@ -73,10 +74,10 @@ class Database(object):
         epu.print_debug("Connection to database has been closed", 'database')
 
     def fetchall(self):
-        return [self.RowClass._make(row) for row in self.cursor.fetchall()]
+        return [self.row_maker(row) for row in self.cursor.fetchall()]
 
     def fetchone(self):
-        return self.RowClass._make(self.cursor.fetchone())
+        return self.row_maker(self.cursor.fetchone())
         
     def execute_and_fetchone(self, query, *args, **kwargs):
         self.execute(query, *args, **kwargs)
