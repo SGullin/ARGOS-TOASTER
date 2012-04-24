@@ -484,6 +484,44 @@ def prep_file(fn):
     return params
 
 
+def is_gitrepo_dirty():
+    """Return True if the git repository has local changes.
+
+        Inputs:
+            None
+
+        Output:
+            is_dirty: True if git repository has local changes. False otherwise.
+    """
+    codedir = os.path.split(__file__)[0]
+    try:
+        stdout, stderr = execute("git diff --quiet", dir=codedir)
+    except errors.SystemCallError:
+        # Exit code is non-zero
+        return True
+    else:
+        # Success error code (i.e. no differences)
+        return False
+
+
+def get_githash():
+    """Get the Coast Guard project's git hash.
+
+        Inputs:
+            None
+
+        Output:
+            githash: The githash
+    """
+    if is_gitrepo_dirty():
+        warnings.warn("Git repository has uncommitted changes!", \
+                        errors.EptaPipelineWarning)
+    codedir = os.path.split(__file__)[0]
+    stdout, stderr = execute("git rev-parse HEAD", dir=codedir)
+    githash = stdout.strip()
+    return githash
+
+
 def archive_file(file, destdir):
     srcdir, fn = os.path.split(file)
     dest = os.path.join(destdir, fn)
