@@ -5,6 +5,8 @@ import sys
 import epta_pipeline_utils as epta
 import epta_timing_pipeline as epta_core
 
+import load_rawfile
+
 #Database parameters
 DB_HOST = "localhost"
 DB_NAME = "epta"
@@ -17,26 +19,22 @@ def Parse_command_line():
         description='')
     #Rawfile name
     parser.add_argument('--rawfile',
-                        nargs=1,
                         type=str,
                         default=None,
                         help="Raw data file to upload and use for running the full pipeline.")
     #Number of chans for scrunched archive
     parser.add_argument('--nchan',
-                        nargs=1,
                         type=int,
                         default=1,
                         help="Number of chans for scrunched archive. (Default: 1)")
     #Number of sub-intervals for scrunched archive
     parser.add_argument('--nsub',
-                        nargs=1,
                         type=int,
                         default=1,
                         help="Number of sub-intervals for scrunched archive. (Default: 1)")
     #Manually specified DM
     parser.add_argument('--DM',
-                        nargs=1,
-                        type=int,
+                        type=float,
                         default=None,
                         help="Manually specified DM (This argument is not used at the moment!)")
                             
@@ -63,9 +61,7 @@ def main():
     DM = args.DM
     
     #Load rawfile into archive
-    stdout, stderr = epta.execute("./load_rawfile.py %s"%rawfile)
-    rawfile_id = stdout.split(" ")[-1].strip()
-    rawfile_id = int(rawfile_id)
+    rawfile_id = load_rawfile.load_rawfile(rawfile)
     print "Using rawfile_id = %d"%rawfile_id
 
     #Get pulsar_id and obssystem_id
