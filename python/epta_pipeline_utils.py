@@ -429,6 +429,7 @@ def prep_parfile(fn):
     else:
         params['pulsar_id'] = get_pulsarids()[params['psrb']]
         params['name'] = params['psrb']
+    params['user_id'] = get_userids()[os.getlogin()]
     return params
 
 
