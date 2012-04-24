@@ -26,9 +26,10 @@ import config
 import database
 
 ##############################################################################
-# GLOBAL DEFNITIONS
+# GLOBAL DEFENITIONS
 ##############################################################################
 site_to_telescope = {'i': 'WSRT',
+                     'wb': 'WSRT',
                      'wt': 'WSRT',
                      'wsrt': 'WSRT',
                      'westerbork': 'WSRT',
@@ -39,6 +40,7 @@ site_to_telescope = {'i': 'WSRT',
                      '8': 'Jodrell',
                      'jb': 'Jodrell',
                      'jbo': 'Jodrell',
+                     'jodrell': 'Jodrell',
                      'jodrell bank': 'Jodrell',
                      'jodrell bank observatory': 'Jodrell',
                      'lovell': 'Jodrell',
