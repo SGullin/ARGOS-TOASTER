@@ -78,22 +78,7 @@ def Parse_command_line():
     args=parser.parse_args()
     return args
 
-def main():
-
-    #Exit if there are no or insufficient arguments
-    if len(argv) < 2:
-        Help()
-
-    args = Parse_command_line()
-
-    if not (args.rawfile_id and args.parfile_id and args.template_id):
-        print "\nYou haven't specified a valid set of command line options.  Exiting..."
-        Help()
-
-    rawfile_id = args.rawfile_id[0]
-    parfile_id = args.parfile_id[0]
-    template_id = args.template_id[0]
-
+def pipeline_core(rawfile_id,parfile_id,template_id):
     #Start pipeline
     print "###################################################"
     print "Starting EPTA Timing Pipeline Version %.2f"%VERSION
@@ -113,7 +98,8 @@ def main():
     print DBcursor.fetchall()
 
     #Fill pipeline table
-    process_id = epta.Fill_process_table(DBcursor,VERSION,rawfile_id,parfile_id,template_id,argv)
+    fake_command_line = "epta_timing_pipeline.py --rawfile_id %d --parfile_id %d --template_id %d"%(rawfile_id,parfile_id,template_id)
+    process_id = epta.Fill_process_table(DBcursor,VERSION,rawfile_id,parfile_id,template_id,fake_command_line)
     
     #Get raw data from rawfile_id and verify MD5SUM
     raw_file, raw_file_name = epta.get_file_and_id('rawfile',rawfile_id,DBcursor)
@@ -149,7 +135,27 @@ def main():
     print "###################################################"
     print "Finished EPTA Timing Pipeline Version %.2f"%VERSION
     print "End time: %s"%epta.Give_UTC_now()
-    print "###################################################"
+    print "###################################################"    
+
+def main():
+
+    #Exit if there are no or insufficient arguments
+    if len(argv) < 2:
+        Help()
+
+    args = Parse_command_line()
+
+    if not (args.rawfile_id and args.parfile_id and args.template_id):
+        print "\nYou haven't specified a valid set of command line options.  Exiting..."
+        Help()
+
+    #Grab command line options
+    rawfile_id = args.rawfile_id[0]
+    parfile_id = args.parfile_id[0]
+    template_id = args.template_id[0]
+
+    #Run pipeline core
+    pipeline_core(rawfile_id,parfile_id,template_id)
 
 if __name__ == "__main__":
     main()
