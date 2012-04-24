@@ -26,19 +26,19 @@ def Parse_command_line():
                         nargs=1,
                         type=int,
                         default=1,
-                        help="Number of chans for scrunched archive")
+                        help="Number of chans for scrunched archive. (Default: 1)")
     #Number of sub-intervals for scrunched archive
     parser.add_argument('--nsub',
                         nargs=1,
                         type=int,
                         default=1,
-                        help="Number of sub-intervals for scrunched archive")
+                        help="Number of sub-intervals for scrunched archive. (Default: 1)")
     #Manually specified DM
     parser.add_argument('--DM',
                         nargs=1,
                         type=int,
-                        default=1,
-                        help="Manually specified DM")
+                        default=None,
+                        help="Manually specified DM (This argument is not used at the moment!)")
                             
     args=parser.parse_args()
     return args
@@ -57,9 +57,9 @@ def main():
         Help()
 
     args = Parse_command_line()
-    rawfile = args.rawfile[0]
-    nchan = args.nchan[0]
-    nsub = args.nsub[0]
+    rawfile = args.rawfile
+    nchan = args.nchan
+    nsub = args.nsub
     DM = args.DM
     
     #Load rawfile into archive
