@@ -6,7 +6,7 @@ create table if not exists parfiles (
         filename varchar(512) not null,
         filepath varchar(512) not null,
 	PSRJ VARCHAR(12), 
-	PSRB CHAR(7), 
+	PSRB VARCHAR(12), 
 	RAJ VARCHAR(32),
 	DECJ VARCHAR(32),
 	PEPOCH DOUBLE,
