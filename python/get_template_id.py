@@ -101,7 +101,7 @@ def get_templates(args):
     if args.no_analytic:
         query += "AND (NOT t.is_analytic) "
 
-    db = database.Database(cursor_class='dict')
+    db = database.Database()
     db.execute(query, query_args)
     templates = db.fetchall()
     db.close()
@@ -113,29 +113,29 @@ def show_templates(templates):
         for tdict in templates:
             print "- "*25
             print colour.cstring("Template ID:", underline=True, bold=True) + \
-                    colour.cstring(" %d" % tdict['template_id'], bold=True)
-            fn = os.path.join(tdict['filepath'], tdict['filename'])
+                    colour.cstring(" %d" % tdict.template_id, bold=True)
+            fn = os.path.join(tdict.filepath, tdict.filename)
             print "\nTemplate: %s" % fn
-            print "Pulsar name: %s" % tdict['pulsar_name']
-            print "Master template? %s" % (tdict['is_master'] and "Yes" or "No")
-            print "Template type: %s" % (tdict['is_analytic'] and "Analytic" or "Non-analytic")
-            if not tdict['is_analytic']:
-                print "Number of phase bins: %d" % tdict['nbin']
-            print "Uploaded by: %s (%s)" % (tdict['real_name'], tdict['email_address'])
-            print "Uploader's comments: %s" % tdict['comments']
-            print "Date and time template was added: %s" % tdict['add_time'].isoformat(' ')
+            print "Pulsar name: %s" % tdict.pulsar_name
+            print "Master template? %s" % (tdict.is_master and "Yes" or "No")
+            print "Template type: %s" % (tdict.is_analytic and "Analytic" or "Non-analytic")
+            if not tdict.is_analytic:
+                print "Number of phase bins: %d" % tdict.nbin
+            print "Uploaded by: %s (%s)" % (tdict.real_name, tdict.email_address)
+            print "Uploader's comments: %s" % tdict.comments
+            print "Date and time template was added: %s" % tdict.add_time.isoformat(' ')
 
             # Show extra information if verbosity is >= 1
-            lines = ["Observing System ID: %d" % tdict['obssystem_id'], \
-                     "Observing System Name: %s" % tdict['obssys_name'], \
-                     "Telescope: %s" % tdict['telescope_name'], \
-                     "Frontend: %s" % tdict['frontend'], \
-                     "Backend: %s" % tdict['backend'], \
-                     "Clock: %s" % tdict['clock']]
+            lines = ["Observing System ID: %d" % tdict.obssystem_id, \
+                     "Observing System Name: %s" % tdict.obssys_name, \
+                     "Telescope: %s" % tdict.telescope_name, \
+                     "Frontend: %s" % tdict.frontend, \
+                     "Backend: %s" % tdict.backend, \
+                     "Clock: %s" % tdict.clock]
             epu.print_info("\n".join(lines), 1)
             
             # Show the template if verbosity is >= 2
-            if tdict['is_analytic']:
+            if tdict.is_analytic:
                 f = open(fn, 'r')
                 comps = [[float(c) for c in line.split()] for line in f.readlines()]
                 f.close()
@@ -159,12 +159,13 @@ def show_templates(templates):
                                  plot "-" using 3:4 w l
                                  %s
                                  end
-                             """ % (tdict['nbin']-1, psrtxtout)
+                             """ % (tdict.nbin-1, psrtxtout)
                 plot, stderr = epu.execute("gnuplot", stdinstr=gnuplotcode)
             epu.print_info(plot, 2)
             print " -"*25
     else:
         raise errors.EptaPipelineError("No templates match parameters provided!")
+
 
 if __name__=='__main__':
     parser = epu.DefaultArguments(description="Get a listing of tempalte_id " \

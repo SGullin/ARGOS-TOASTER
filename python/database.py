@@ -1,3 +1,5 @@
+import collections
+
 import MySQLdb
 import MySQLdb.cursors
 
@@ -5,26 +7,20 @@ import errors
 import config
 import epta_pipeline_utils as epu
 
-cursor_classes = {'dict': MySQLdb.cursors.DictCursor, \
-                  'default': MySQLdb.cursors.Cursor}
 
 class Database(object):
     """Database object for connecting to the EPTA database
         using MySQLdb
     """
-    def __init__(self, cursor_class='default'):
+    def __init__(self):
         """Constructor for Database object.
 
             Inputs:
-                cursor_class: A string referring to a cursor class.
-                    'dict': MySQLdb.cursors.DictCursor,
-                    'default: MySQLdb.cursors.Cursor.
-                    (Default: 'default' - go figure!)
+                None
 
             Output:
                 db: connected Database object.
         """
-        self.cursor_class = cursor_classes[cursor_class]
         self.connect()
 
     def connect(self):
@@ -41,11 +37,9 @@ class Database(object):
                                         db=config.dbname, \
                                         user=config.dbuser, \
                                         passwd=config.dbpass)
-            self.cursor = self.conn.cursor(self.cursor_class)
-            epu.print_debug("Successfully connected to database %s.%s as %s " \
-                            "(cursor class: '%s')" % \
-                        (config.dbhost, config.dbname, config.dbuser, \
-                            self.cursor_class.__name__), \
+            self.cursor = self.conn.cursor(MySQLdb.cursors.Cursor)
+            epu.print_debug("Successfully connected to database %s.%s as %s" % \
+                        (config.dbhost, config.dbname, config.dbuser), \
                         'database')
         except MySQLdb.OperationalError:
             raise errors.DatabaseError("Could not connect to database!")
@@ -58,6 +52,8 @@ class Database(object):
             msg += "\nKeyword args: %s" % kwargs
         epu.print_debug(msg, 'database')
         self.cursor.execute(query, *args, **kwargs)
+        colnames = [d[0] for d in self.cursor.description]
+        self.RowClass = collections.namedtuple("RowClass", colnames)
 
     def close(self):
         """Close the DB connection.
@@ -72,10 +68,10 @@ class Database(object):
         epu.print_debug("Connection to database has been closed", 'database')
 
     def fetchall(self):
-        return self.cursor.fetchall()
+        return [self.RowClass._make(row) for row in self.cursor.fetchall()]
 
     def fetchone(self):
-        return self.cursor.fetchone()
+        return self.RowClass._make(self.cursor.fetchone())
         
     def execute_and_fetchone(self, query, *args, **kwargs):
         self.execute(query, *args, **kwargs)

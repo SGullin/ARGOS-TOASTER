@@ -62,7 +62,7 @@ def get_parfiles(psr, start=None, end=None):
         query += "AND add_time <= %s "
         query_args.append(end)
 
-    db = database.Database(cursor_class='dict')
+    db = database.Database()
     db.execute(query, query_args)
     parfiles = db.fetchall()
     db.close()
@@ -74,13 +74,13 @@ def show_parfiles(parfiles):
         for pardict in parfiles:
             print "- "*25
             print colour.cstring("Parfile ID:", underline=True, bold=True) + \
-                    colour.cstring(" %d" % pardict['parfile_id'], bold=True)
-            fn = os.path.join(pardict['filepath'], pardict['filename'])
+                    colour.cstring(" %d" % pardict.parfile_id, bold=True)
+            fn = os.path.join(pardict.filepath, pardict.filename)
             print "\nParfile: %s" % fn
-            print "Pulsar J-name: %s" % pardict['PSRJ']
-            print "Pulsar B-name: %s" % pardict['PSRB']
-            print "Master parfile? %s" % (pardict['is_master'] and "Yes" or "No")
-            print "Date and time parfile was added: %s" % pardict['add_time'].isoformat(' ')
+            print "Pulsar J-name: %s" % pardict.PSRJ
+            print "Pulsar B-name: %s" % pardict.PSRB
+            print "Master parfile? %s" % (pardict.is_master and "Yes" or "No")
+            print "Date and time parfile was added: %s" % pardict.add_time.isoformat(' ')
             msg = "Parfile contents:\n\n"
             for line in open(fn, 'r'):
                 msg += "%s\n" % line.strip()
