@@ -49,7 +49,8 @@ def get_rawfiles(args):
                    "r.length, " \
                    "u.real_name, " \
                    "u.email_address, " \
-                   "psr.pulsar_name, " \
+                   "psr.pulsar_jname, " \
+                   "psr.pulsar_bname, " \
                    "t.name AS telescope_name, " \
                    "obs.obssystem_id, " \
                    "obs.name AS obssys_name, " \
@@ -65,8 +66,8 @@ def get_rawfiles(args):
                 "ON t.telescope_id=obs.telescope_id " \
             "LEFT JOIN users AS u " \
                 "ON u.user_id=r.user_id " \
-            "WHERE (psr.pulsar_bname LIKE %s OR psr.pulsar_jname) "
-    query_args = [args.pulsar_name]
+            "WHERE (psr.pulsar_bname LIKE %s OR psr.pulsar_jname LIKE %s) "
+    query_args = [args.pulsar_name, args.pulsar_name]
 
     if args.start_date is not None:
         query += "AND r.add_time >= %s "
@@ -114,7 +115,8 @@ def show_rawfiles(rawfiles):
                     colour.cstring(" %d" % rawdict.rawfile_id, bold=True)
             fn = os.path.join(rawdict.filepath, rawdict.filename)
             print "\nRawfile: %s" % fn
-            print "Pulsar name: %s" % rawdict.pulsar_name
+            print "Pulsar J-name: %s" % rawdict.pulsar_jname
+            print "Pulsar B-name: %s" % rawdict.pulsar_bname
             print "Uploaded by: %s (%s)" % \
                         (rawdict.real_name, rawdict.email_address)
             print "Date and time rawfile was added: %s" % rawdict.add_time.isoformat(' ')
