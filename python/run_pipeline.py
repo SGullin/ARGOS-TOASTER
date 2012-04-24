@@ -15,12 +15,31 @@ def Parse_command_line():
     parser = epta.DefaultArguments(
         prog='run_pipeline',
         description='')
+    #Rawfile name
     parser.add_argument('--rawfile',
                         nargs=1,
                         type=str,
                         default=None,
                         help="Raw data file to upload and use for running the full pipeline.")
-    
+    #Number of chans for scrunched archive
+    parser.add_argument('--nchan',
+                        nargs=1,
+                        type=int,
+                        default=1,
+                        help="Number of chans for scrunched archive")
+    #Number of sub-intervals for scrunched archive
+    parser.add_argument('--nsub',
+                        nargs=1,
+                        type=int,
+                        default=1,
+                        help="Number of sub-intervals for scrunched archive")
+    #Manually specified DM
+    parser.add_argument('--DM',
+                        nargs=1,
+                        type=int,
+                        default=1,
+                        help="Manually specified DM")
+                            
     args=parser.parse_args()
     return args
 
@@ -39,6 +58,9 @@ def main():
 
     args = Parse_command_line()
     rawfile = args.rawfile[0]
+    nchan = args.nchan[0]
+    nsub = args.nsub[0]
+    DM = args.DM
     
     #Load rawfile into archive
     stdout, stderr = epta.execute("./load_rawfile.py %s"%rawfile)
@@ -70,7 +92,7 @@ def main():
     print "Using master parfile_id = %d"%master_parfile_id
 
     #Run pipeline script
-    epta_core.pipeline_core(rawfile_id,master_parfile_id,template_id)
+    epta_core.pipeline_core(rawfile_id,master_parfile_id,template_id,nchan,nsub,DM)
 
 if __name__ == "__main__":
     main()

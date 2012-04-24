@@ -117,14 +117,14 @@ def Verify_file_path(file):
     return file_path, file_name
 
 
-def Fill_process_table(DBcursor,version_id,rawfile_id,parfile_id,template_id,argv):
+def Fill_process_table(DBcursor,version_id,rawfile_id,parfile_id,template_id,argv,nchan,nsub):
     #Calculate md5sum of pipeline script
     #MD5SUM = popen("md5sum %s"%argv[0],"r").readline().split()[0].strip()
     #QUERY = "INSERT INTO pipeline (pipeline_name, pipeline_version, md5sum) " \
     #        "VALUES ('%s','%s','%s')" % (config.pipe_name, config.version, MD5SUM)
     #DBcursor.execute(QUERY)
     #Get pipeline_id
-    QUERY = "INSERT INTO process (version_id,rawfile_id,proc_start_time,input_args,parfile_id,template_id) VALUES ('%s','%s','%s','%s','%s','%s')" % (version_id,rawfile_id,Make_Tstamp(),string.join(argv," "),parfile_id,template_id)
+    QUERY = "INSERT INTO process (version_id,rawfile_id,proc_start_time,input_args,parfile_id,template_id,nchan,nsub) VALUES ('%s','%s','%s','%s','%s','%s','%s','%s')" % (version_id,rawfile_id,Make_Tstamp(),string.join(argv," "),parfile_id,template_id,nchan,nsub)
     DBcursor.execute(QUERY)
     QUERY = "SELECT LAST_INSERT_ID()"
     DBcursor.execute(QUERY)
