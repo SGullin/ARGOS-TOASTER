@@ -75,10 +75,29 @@ def Parse_command_line():
                         type=int,
                         default=None,
                         help="ID of template profile to use for running the full pipeline.")
+    #Number of chans for scrunched archive
+    parser.add_argument('--nchan',
+                        nargs=1,
+                        type=int,
+                        default=1,
+                        help="Number of chans for scrunched archive")
+    #Number of sub-intervals for scrunched archive
+    parser.add_argument('--nsub',
+                        nargs=1,
+                        type=int,
+                        default=1,
+                        help="Number of sub-intervals for scrunched archive")
+    #Manually specified DM
+    parser.add_argument('--DM',
+                        nargs=1,
+                        type=int,
+                        default=None,
+                        help="Manually specified DM")
+    
     args=parser.parse_args()
     return args
 
-def pipeline_core(rawfile_id,parfile_id,template_id):
+def pipeline_core(rawfile_id,parfile_id,template_id,nchan,nsub,DM):
     #Start pipeline
     print "###################################################"
     print "Starting EPTA Timing Pipeline Version %.2f"%VERSION
@@ -94,12 +113,9 @@ def pipeline_core(rawfile_id,parfile_id,template_id):
     #Make DB connection
     DBcursor, DBconn = epta.DBconnect(DB_HOST,DB_NAME,DB_USER,DB_PASS)
 
-    DBcursor.execute("show tables")
-    print DBcursor.fetchall()
-
     #Fill pipeline table
-    fake_command_line = "epta_timing_pipeline.py --rawfile_id %d --parfile_id %d --template_id %d"%(rawfile_id,parfile_id,template_id)
-    process_id = epta.Fill_process_table(DBcursor,VERSION,rawfile_id,parfile_id,template_id,fake_command_line)
+    fake_command_line = "epta_timing_pipeline.py --rawfile_id %d --parfile_id %d --template_id %d --nchan %d --nsub %d --DM %d"%(rawfile_id,parfile_id,template_id,nchan,nsub,DM)
+    process_id = epta.Fill_process_table(DBcursor,VERSION,rawfile_id,parfile_id,template_id,fake_command_line,nchan,nsub)
     
     #Get raw data from rawfile_id and verify MD5SUM
     raw_file, raw_file_name = epta.get_file_and_id('rawfile',rawfile_id,DBcursor)
@@ -110,7 +126,7 @@ def pipeline_core(rawfile_id,parfile_id,template_id):
     #Scrunch data in time/freq and optionally re-install ephemeris and change DM
     #Use Patrick's manipulator
     scrunch_file = raw_file_name.split(".")[0]+".scrunch"
-    manipulators.pamit.manipulate([raw_file], scrunch_file, nsub=1, nchan=1, nbin=None)
+    manipulators.pamit.manipulate([raw_file], scrunch_file, nsub=nsub, nchan=nchan, nbin=None)
 
     #Make diagnostic plots of scrunched data
     epta.execute("pav -g '%s.ps/CPS' -DFTp %s"%(scrunch_file,scrunch_file))
@@ -120,12 +136,15 @@ def pipeline_core(rawfile_id,parfile_id,template_id):
 
     #Generate TOA with pat
     stdout, stderr = epta.execute("pat -s %s %s"%(template,scrunch_file))
-    print stdout
     
     #Make plots associated with the TOA generation
 
     #Insert TOA into DB
-    epta.DB_load_TOA(stdout,DBcursor,template_id,rawfile_id)
+    for toa in stdout.split("\n"):
+        toa = toa.strip()
+        if toa:
+            print toa
+            epta.DB_load_TOA(toa,DBcursor,template_id,rawfile_id)
 
     #Close DB connection
     print "Closing DB connection..."
@@ -153,6 +172,9 @@ def main():
     rawfile_id = args.rawfile_id[0]
     parfile_id = args.parfile_id[0]
     template_id = args.template_id[0]
+    nsub = args.nsub[0]
+    nchan = args.nchan[0]
+    DM = args.DM[0]
 
     #Run pipeline core
     pipeline_core(rawfile_id,parfile_id,template_id)
