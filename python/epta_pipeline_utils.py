@@ -145,30 +145,26 @@ def Give_UTC_now():
     return "UTC %d:%02d:%02d on %d%02d%02d"%(utcnow.hour,utcnow.minute,utcnow.second,utcnow.year,utcnow.month,utcnow.day)
 
 
-def get_userids(cursor=None):
+def get_userids(existing_db=None):
     """Return a dictionary mapping user names to user ids.
 
         Input:
-            cursor: Cursor to connect to DB.
-                (Default: Establish a connection and use that cursor).
+            existing_db: A (optional) existing database connection object.
+                (Default: Establish a db connection)
 
         Output:
             userids: A dictionary with user names as keys 
                     and user ids as values.
     """
-    if cursor is None:
-        # Create DB connection instance
-        DBcursor, DBconn = DBconnect()
-    else:
-        DBcursor = cursor
-    
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existing_db or database.Database()
     query = "SELECT user_name, user_id FROM users"
-    DBcursor.execute(query)
+    db.execute(query)
 
-    rows = DBcursor.fetchall()
-    if cursor is None:
+    rows = db.fetchall()
+    if not existing_db:
         # Close the DB connection we opened
-        DBconn.close()
+        db.close()
 
     # Create the mapping
     userids = {}
@@ -177,34 +173,30 @@ def get_userids(cursor=None):
     return userids
 
 
-def get_pulsarids(cursor=None):
+def get_pulsarids(existing_db=None):
     """Return a dictionary mapping pulsar names to pulsar ids.
 
         Input:
-            cursor: Cursor to connect to DB.
-                (Default: Establish a connection and use that cursor).
+            existing_db: A (optional) existing database connection object.
+                (Default: Establish a db connection)
 
         Output:
             pulsarids: A dictionary with pulsar names as keys
                     and pulsar ids as values.
     """
-    if cursor is None:
-        # Create DB connection instance
-        DBcursor, DBconn = DBconnect()
-    else:
-        DBcursor = cursor
-    
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existing_db or database.Database()
     query = "SELECT pulsar_name, " \
                 "pulsar_jname, " \
                 "pulsar_bname, " \
                 "pulsar_id " \
             "FROM pulsars"
-    DBcursor.execute(query)
+    db.execute(query)
 
-    rows = DBcursor.fetchall()
-    if cursor is None:
+    rows = db.fetchall()
+    if not existing_db:
         # Close the DB connection we opened
-        DBconn.close()
+        db.close()
 
     # Create the mapping
     pulsarids = {}
@@ -217,24 +209,20 @@ def get_pulsarids(cursor=None):
     return pulsarids
 
 
-def get_obssystemids(cursor=None):
+def get_obssystemids(existing_db=None):
     """Return a dictionary mapping fronend/backend combinations
         to obs system ids.
 
         Input:
-            cursor: Cursor to connect to DB.
-                (Default: Establish a connection and use that cursor).
+            existing_db: A (optional) existing database connection object.
+                (Default: Establish a db connection)
 
         Output:
             obssystemids: A dictionary with a (frontend, backend) tuple as keys
                     and obs system ids as values.
     """
-    if cursor is None:
-        # Create DB connection instance
-        DBcursor, DBconn = DBconnect()
-    else:
-        DBcursor = cursor
-    
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existing_db or database.Database()
     query = "SELECT t.name, " \
                 "o.frontend, " \
                 "o.backend, " \
@@ -242,12 +230,12 @@ def get_obssystemids(cursor=None):
             "FROM obssystems AS o " \
             "LEFT JOIN telescopes AS t " \
                 "ON t.telescope_id = o.telescope_id"
-    DBcursor.execute(query)
+    db.execute(query)
 
-    rows = DBcursor.fetchall()
-    if cursor is None:
+    rows = db.fetchall()
+    if not existing_db:
         # Close the DB connection we opened
-        DBconn.close()
+        db.close()
 
     # Create the mapping
     obssystemids = {}
