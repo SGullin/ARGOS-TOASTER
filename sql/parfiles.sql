@@ -5,6 +5,7 @@ create table if not exists parfiles (
         add_time DATETIME not null,
         filename varchar(512) not null,
         filepath varchar(512) not null,
+	user_id bigint not null,
 	PSRJ VARCHAR(12), 
 	PSRB VARCHAR(12), 
 	RAJ VARCHAR(32),
