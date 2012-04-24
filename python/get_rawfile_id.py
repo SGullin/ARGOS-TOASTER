@@ -65,7 +65,7 @@ def get_rawfiles(args):
                 "ON t.telescope_id=obs.telescope_id " \
             "LEFT JOIN users AS u " \
                 "ON u.user_id=r.user_id " \
-            "WHERE (psr.pulsar_name LIKE %s) "
+            "WHERE (psr.pulsar_bname LIKE %s OR psr.pulsar_jname) "
     query_args = [args.pulsar_name]
 
     if args.start_date is not None:
