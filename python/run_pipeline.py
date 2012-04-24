@@ -31,8 +31,8 @@ def Parse_command_line():
     parser.add_argument('--DM',
                         type=float,
                         default=None,
-                        help="Manually specified DM (This argument is not used at the moment!)")
-                            
+                        help="Manually specified DM. (This argument is not used at the moment!)")
+
     args=parser.parse_args()
     return args
 
