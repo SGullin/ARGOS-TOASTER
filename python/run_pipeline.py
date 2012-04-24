@@ -6,12 +6,7 @@ import epta_pipeline_utils as epta
 import epta_timing_pipeline as epta_core
 
 import load_rawfile
-
-#Database parameters
-DB_HOST = "localhost"
-DB_NAME = "epta"
-DB_USER = "epta"
-DB_PASS = "psr1937"
+import database
 
 def Parse_command_line():
     parser = epta.DefaultArguments(
@@ -46,7 +41,7 @@ def Help():
     sys.exit(0)
 
 #Make DB connection
-DBcursor, DBconn = epta.DBconnect(DB_HOST,DB_NAME,DB_USER,DB_PASS)
+db = database.Database()
 
 def main():
 
@@ -64,30 +59,23 @@ def main():
     rawfile_id = load_rawfile.load_rawfile(rawfile)
     print "Using rawfile_id = %d"%rawfile_id
 
-    #Get pulsar_id and obssystem_id
-    query = "select pulsar_id, obssystem_id from rawfiles where rawfile_id = %d"%(rawfile_id)
-    DBcursor.execute(query)
-    pulsar_id, obssystem_id = DBcursor.fetchall()[0]
-    pulsar_id = int(pulsar_id)
-    obssystem_id = int(obssystem_id)
-    print "Using pulsar_id = %d"%pulsar_id
-    print "Using obssystem_id = %d"%obssystem_id
+    #Get ID numbers for master parfile and master template
+    query = "SELECT mtmp.template_id, " \
+                "psr.master_parfile_id " \
+            "FROM rawfiles AS r " \
+            "LEFT JOIN master_templates AS mtmp " \
+                "ON mtmp.obssystem_id=r.obssystem_id " \
+                    "AND mtmp.pulsar_id=r.pulsar_id " \
+            "LEFT JOIN pulsars AS psr " \
+                "ON psr.pulsar_id=r.pulsar_id " \
+            "WHERE rawfile_id=%d" % (rawfile_id)
+    db.execute(query)
+    template_id, master_parfile_id = db.fetchone()
+    print "Using template_id: %d" % template_id
+    print "Using master_parfile_id: %d" % master_parfile_id
     
-    #Determine master template_id
-    query = "select template_id from master_templates where pulsar_id = %d and obssystem_id = %d"%(pulsar_id,obssystem_id)
-    DBcursor.execute(query)
-    template_id = DBcursor.fetchall()[0][0]
-    template_id = int(template_id)
-    print "Using master template_id = %d"%template_id
-
-    #Determine master parfile_id
-    query = "select master_parfile_id from pulsars where pulsar_id = %d"%(pulsar_id)
-    DBcursor.execute(query)
-    master_parfile_id = DBcursor.fetchall()[0][0]    
-    master_parfile_id = int(master_parfile_id)
-    print "Using master parfile_id = %d"%master_parfile_id
-
     #Run pipeline script
+    print rawfile_id, master_parfile_id,template_id,nchan,nsub,DM
     epta_core.pipeline_core(rawfile_id,master_parfile_id,template_id,nchan,nsub,DM)
 
 if __name__ == "__main__":
