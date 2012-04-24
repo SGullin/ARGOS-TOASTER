@@ -90,8 +90,13 @@ def populate_rawfiles_table(db, fn, params):
 def main():
     fn = args.infile
     # Connect to the database
-    db = database.Database()
+    rawfile_id = load_rawfile(fn)
+    print "%s has been archived and loaded to the DB. rawfile_id: %d" % \
+            (fn, rawfile_id)
 
+
+def load_rawfile(fn):
+    db = database.Database()
     try:
         # Enter information in rawfiles table
         epu.print_info("Working on %s (%s)" % (fn, epu.Give_UTC_now()), 1)
@@ -115,12 +120,11 @@ def main():
 
         # TODO: Create diagnostic plots and load them into the DB
 
-        print "%s has been archived and loaded to the DB. rawfile_id: %d" % \
-                (fn, rawfile_id)
     finally:
         # Close DB connection
         db.close()
-
+    return rawfile_id
+    
 
 if __name__=='__main__':
     parser = epu.DefaultArguments(description="Archive a single raw file, " \

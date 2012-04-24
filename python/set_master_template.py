@@ -35,10 +35,6 @@ def get_template_id(db, template):
     """
     # Make sure we can read the result regardless which cursor class
     # is being used
-    if db.cursor_class=='dict':
-        index='template_id'
-    else:
-        index = 0
     path, fn = os.path.split(os.path.abspath(template))
     md5sum = epu.Get_md5sum(template)
     query = "SELECT template_id " \
@@ -48,7 +44,7 @@ def get_template_id(db, template):
     db.execute(query, (fn, md5sum))
     rows = db.fetchall()
     if rows == 1:
-        return rows[0][index]
+        return rows[0].template_id
     elif rows == 0:
         raise errors.EptaPipelineError("No matching template found!")
     else:
@@ -58,7 +54,7 @@ def get_template_id(db, template):
 
 def main():
     # Connect to the database
-    db = database.Database('dict')
+    db = database.Database()
     
     try:
         if args.template is not None:
