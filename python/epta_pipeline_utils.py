@@ -447,8 +447,8 @@ def prep_parfile(fn):
     Verify_file_path(fn)
 
     # Check file permissions allow for writing and reading
-    if not os.access(fn, os.W_OK | os.R_OK):
-        raise errors.FileError("File (%s) is not read/writable!" % fn)
+    if not os.access(fn, os.R_OK):
+        raise errors.FileError("File (%s) is not readable!" % fn)
 
     # Grab parameters from file
     f = open(fn, 'r')
