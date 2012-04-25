@@ -94,13 +94,18 @@ def main():
             
 
 if __name__ == '__main__':
-    parser = epu.DefaultArguments()
+    parser = epu.DefaultArguments(description="Change archive header " \
+                        "values *IN PLACE*. The current receiver and/or " \
+                        "backend values must be specified with " \
+                        "--old-receiver and/or --old-backend (unless -f/" \
+                        "--force is provided. NOTE: Correcting file " \
+                        "headers is an irreversible process!")
     parser.add_argument("infiles", nargs='*', action='store', \
                         help="Files with headers to correct.")
     parser.add_argument("-r", "--receiver", action='store', \
                         dest='receiver', default=None, type=str, \
                         help="Corrected receiver name. " \
-                             "'rcvr:name' will be set to this.")
+                             "'rcvr' will be set to this.")
     parser.add_argument("--old-receiver", action='store', \
                         dest='old_receiver', default='unknown', type=str, \
                         help="Only change the receiver name if it is " \
@@ -108,7 +113,7 @@ if __name__ == '__main__':
     parser.add_argument("-b", "--backend", action='store', \
                         dest='backend', default=None, type=str, \
                         help="Corrected backend name. " \
-                             "'be:name' will be set to this.")
+                             "'backend' will be set to this.")
     parser.add_argument("--old-backend", action='store', \
                         dest='old_backend', default='unknown', type=str, \
                         help="Only change the backend name if it is " \
