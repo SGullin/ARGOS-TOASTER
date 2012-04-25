@@ -475,7 +475,7 @@ def prep_file(fn):
         raise errors.FileError("The observing system in the file %s is " \
                             "not registered in the database. (Telescope: %s, " \
                             "Receiver: %s; Backend: %s)." % (fn, t, r, b))
-    else
+    else:
         params['obssystem_id'] = obssys_ids[obssys_key]
     params['pulsar_id'] = get_pulsarids()[params['name']]
     params['user_id'] = get_userids()[os.getlogin()]
