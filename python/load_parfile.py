@@ -55,7 +55,6 @@ def populate_parfiles_table(db, fn, params):
                     "SET md5sum = '%s', " % md5 + \
                        "filename = '%s', " % fn + \
                        "filepath = '%s', " % path + \
-                        "user_id = '%s', " % params['user_id'] + \
                        "add_time = NOW() "
         toset = ["%s = '%s'" % (col, params[col]) for col in colnames \
                         if col in params]
