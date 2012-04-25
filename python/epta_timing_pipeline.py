@@ -136,7 +136,7 @@ def pipeline_core(rawfile_id,parfile_id,template_id,nchan,nsub,DM):
     template, template_name = epta.get_file_and_id('template',template_id,DBcursor)
 
     #Generate TOA with pat
-    stdout, stderr = epta.execute("pat -s %s %s"%(template,scrunch_file))
+    stdout, stderr = epta.execute("pat -f tempo2 -s %s %s"%(template,scrunch_file))
     
     #Make plots associated with the TOA generation
 
