@@ -467,9 +467,16 @@ def prep_file(fn):
     params['telescop'] = get_telescope(params['telescop'])
 
     # Check if obssystem_id, pulsar_id, user_id can be found
-    params['obssystem_id'] = get_obssystemids()[(params['telescop'].lower(), \
-                                params['rcvr'].lower(), \
-                                params['backend'].lower())]
+    obssys_key = (params['telescop'].lower(), params['rcvr'].lower(), \
+                                params['backend'].lower())
+    obssys_ids = get_obssystemids()
+    if obssys_key not in obssys_ids:
+        t, r, b = obssys_key
+        raise errors.FileError("The observing system in the file %s is " \
+                            "not registered in the database. (Telescope: %s, " \
+                            "Receiver: %s; Backend: %s)." % (fn, t, r, b))
+    else
+        params['obssystem_id'] = obssys_ids[obssys_key]
     params['pulsar_id'] = get_pulsarids()[params['name']]
     params['user_id'] = get_userids()[os.getlogin()]
     return params

@@ -26,12 +26,14 @@ def main():
         try:
             if config.verbosity:
                 print "Checking %s (%s)" % (fn, epu.Give_UTC_now())
+
             # Check the file and parse the header
             params = epu.prep_file(fn)
             
             # Move the File
-            destdir = epu.get_archive_dir(fn, site=params['site'], \
-                        backend=params['be:name'], psrname=params['name'])
+            destdir = epu.get_archive_dir(fn, site=params['telescop'], \
+                        backend=params['backend'], receiver=params['rcvr'], \
+                        psrname=params['name'])
             
             epu.print_info("%s will get archived to %s (%s)" % \
                         (fn, destdir, epu.Give_UTC_now()), 1)
