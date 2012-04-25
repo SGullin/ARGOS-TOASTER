@@ -7,6 +7,7 @@ import epta_timing_pipeline as epta_core
 
 import load_rawfile
 import database
+import errors
 
 def Parse_command_line():
     parser = epta.DefaultArguments(
@@ -72,13 +73,13 @@ def main():
     db.execute(query)
     template_id, master_parfile_id = db.fetchone()
     if template_id is None:
-        raise DatabaseError("There is no approriate master template " \
+        raise errors.DatabaseError("There is no approriate master template " \
                     "for this input file. Please add one using " \
                     "'load_template.py' with the '--master' flag.")
     else:
         print "Using template_id: %d" % template_id
     if master_parfile_id is None:
-        raise DatabaseError("There is no approriate master parfile " \
+        raise errors.DatabaseError("There is no approriate master parfile " \
                     "for this input file. Please add one using " \
                     "'load_parfile.py' with the '--master' flag.")
     else:
