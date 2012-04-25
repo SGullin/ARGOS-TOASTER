@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 import glob
+import tempfile
+import warnings
 
 import config
+import errors
 import epta_pipeline_utils as epu
+
 
 def get_header_params(fn):
     """Get a small set of header params that we might change.
@@ -15,37 +19,37 @@ def get_header_params(fn):
             params: A dictionary. The keys are values requested from 'psredit'
                 the values are the values reported by 'psredit'.
     """
-    params_to_get = ['rcvr:name', 'be:name', 'site']
-    return epu.parse_psrfits_header(fn, params_to_get)
+    params_to_get = ['rcvr', 'backend', 'telescop']
+    return epu.get_header_vals(fn, params_to_get)
 
 
-def set_header_param(fn, param, val):
-    """Set a header paramter using 'psredit'.
+def correct_header(fn, rcvr=None, backend=None):
+    """Set the receiver header paramter using 'pam'.
         
         Inputs:
             fn: The name of the file to set param for.
-            param: The 'psredit'-compatible parameter name.
-            val: The value to set the parameter as.
+            rcvr: The name of the receiver.
+                (Default: Do not update the receiver name.)
+            backend: The name of the backend.
+                (Default: Do not update the backend name.)
 
         Outputs:
             None
     """
-    cmd = "psredit -m -c '%s=%s' %s" % (param, val, fn)
-    epu.execute(cmd)
-
-
-def convert_file_to_psrfits(fn):
-    """Convert the given file to PSRFITS format using 'psrconv'.
-        This change is done in place.
-
-        Input:
-            fn: The name of the file to convert.
-
-        Outputs:
-            None
-    """
-    cmd = "psrconv -m -o PSRFITS %s" % fn
-    epu.execute(cmd)
+    cmd = "pam -m %s" % fn
+    if rcvr:
+        rcvr_file = tempfile.NamedTemporaryFile(suffix='.rcvr')
+        rcvr_file.write("%s\n" % rcvr)
+        rcvr_file.flush()
+        cmd += " --receiver %s" % (rcvr_file.name)
+    if backend:
+        cmd += " --inst %s" % (backend)
+    if not rcvr and not backend:
+        warnings.warn("Trying to correct file %s, but didn't provide " \
+                        "any new header values." % fn, \
+                        errors.EptaPipelineWarning)
+    else:
+        stdout, stderr = epu.execute(cmd)
 
 
 def main():
@@ -59,29 +63,27 @@ def main():
         print "%s:" % fn
         made_changes = False
         
-        # Convert archive to PSRFITS format
-        if args.convert:
-            print "    Convert to PSRFITS"
-            if not args.dry_run:
-                convert_file_to_psrfits(fn)
-            made_changes = True
-
         # Get header parameters we may want to change
         params = get_header_params(fn)
       
         # Correct receiver
         if (args.receiver is not None) and \
-                (args.force or (params['rcvr:name'] == args.old_receiver)):
-            print "    rcvr:name -- %s -> %s" % (params['rcvr:name'], args.receiver)
-            if not args.dry_run:
-                set_header_param(fn, 'rcvr:name', args.receiver)
-            made_changes = True
+                (args.force or (params['rcvr'] == args.old_receiver)):
+            new_receiver = args.receiver
+            print "    rcvr -- %s -> %s" % (params['rcvr'], args.receiver)
+        else:
+            new_receiver = None
+        
         # Correct backend
         if (args.backend is not None) and \
-                (args.force or (params['be:name'] == args.old_backend)):
-            print "    be:name -- %s -> %s" % (params['be:name'], args.backend)
-            if not args.dry_run:
-                set_header_param(fn, 'be:name', args.backend)
+                (args.force or (params['backend'] == args.old_backend)):
+            new_backend = args.backend
+            print "    backend -- %s -> %s" % (params['backend'], args.backend)
+        else:
+            new_backend = None
+        
+        if not args.dry_run:
+            correct_header(fn, rcvr=new_receiver, backend=new_backend)
             made_changes = True
 
         # Print a msg if no changes
@@ -95,11 +97,6 @@ if __name__ == '__main__':
     parser = epu.DefaultArguments()
     parser.add_argument("infiles", nargs='*', action='store', \
                         help="Files with headers to correct.")
-    parser.add_argument("--convert", action='store_true', \
-                        dest='convert', default=False, \
-                        help="First convert file to PSRFITS format " \
-                             "using 'psrconv'. NOTE: Conversion may be " \
-                             "neccessary. (Default: Don't convert format.)")
     parser.add_argument("-r", "--receiver", action='store', \
                         dest='receiver', default=None, type=str, \
                         help="Corrected receiver name. " \
