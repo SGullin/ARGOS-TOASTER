@@ -629,7 +629,7 @@ def archive_file(file, destdir):
             warnings.warn("Another version of this file (%s), with " \
                             "the same size (%d bytes) and the same " \
                             "MD5 (%s) is already in the archive. " \
-                            "Removing source file..." % \
+                            "Removing input file..." % \
                             (file, destsize, destmd5), \
                             errors.EptaPipelineWarning)
             if not config.debug.ARCHIVING:
