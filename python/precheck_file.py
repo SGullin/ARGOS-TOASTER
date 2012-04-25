@@ -6,7 +6,6 @@ import glob
 import epta_pipeline_utils as epu
 import errors
 import config
-import load_rawfile
 
 def main():
     # Collect input files
@@ -28,7 +27,7 @@ def main():
             if config.verbosity:
                 print "Checking %s (%s)" % (fn, epu.Give_UTC_now())
             # Check the file and parse the header
-            params = load_rawfile.prep_file(fn)
+            params = epu.prep_file(fn)
             
             # Move the File
             destdir = epu.get_archive_dir(fn, site=params['site'], \
