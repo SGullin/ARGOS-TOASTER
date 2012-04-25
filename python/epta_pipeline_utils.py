@@ -525,7 +525,7 @@ def prep_file(fn):
                             "recognized." % (params['name'], fn))
     else:
         # Normalise pulsar name
-        params['name'] = get_pulsar_names[params['name']]
+        params['name'] = get_pulsar_names()[params['name']]
         params['pulsar_id'] = psr_ids[params['name']]
 
     # Check if user_id is found
