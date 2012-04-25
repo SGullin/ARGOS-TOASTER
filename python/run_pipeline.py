@@ -71,8 +71,18 @@ def main():
             "WHERE rawfile_id=%d" % (rawfile_id)
     db.execute(query)
     template_id, master_parfile_id = db.fetchone()
-    print "Using template_id: %d" % template_id
-    print "Using master_parfile_id: %d" % master_parfile_id
+    if template_id is None:
+        raise DatabaseError("There is no approriate master template " \
+                    "for this input file. Please add one using " \
+                    "'load_template.py' with the '--master' flag.")
+    else:
+        print "Using template_id: %d" % template_id
+    if master_parfile_id is None:
+        raise DatabaseError("There is no approriate master parfile " \
+                    "for this input file. Please add one using " \
+                    "'load_parfile.py' with the '--master' flag.")
+    else:
+        print "Using master_parfile_id: %d" % master_parfile_id
     
     #Run pipeline script
     print rawfile_id, master_parfile_id,template_id,nchan,nsub,DM
