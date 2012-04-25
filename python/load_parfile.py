@@ -76,7 +76,12 @@ def set_as_master_parfile(db, parfile_id, pulsar_id):
 
 def main():
     fn = args.parfile
+    parfile_id = load_parfile(fn)
+    print "%s has been archived and loaded to the DB. rawfile_id: %d" % \
+            (fn, parfile_id)
 
+
+def load_parfile(fn):
     # Connect to the database
     db = database.Database()
     

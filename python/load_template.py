@@ -64,7 +64,12 @@ def populate_templates_table(db, fn, params, comments, is_analytic):
 
 def main():
     fn = args.template
-    
+    template_id = load_template(fn)
+    print "%s has been archived and loaded to the DB. template_id: %d" % \
+            (fn, template_id)
+
+
+def load_template(fn):
     # Connect to the database
     db = database.Database()
     

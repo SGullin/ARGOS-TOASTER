@@ -90,13 +90,13 @@ def populate_rawfiles_table(db, fn, params):
 
 def main():
     fn = args.infile
-    # Connect to the database
     rawfile_id = load_rawfile(fn)
     print "%s has been archived and loaded to the DB. rawfile_id: %d" % \
             (fn, rawfile_id)
 
 
 def load_rawfile(fn):
+    # Connect to the database
     db = database.Database()
     try:
         # Enter information in rawfiles table
