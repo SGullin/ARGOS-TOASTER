@@ -485,7 +485,7 @@ def prep_file(fn):
         raise error.FileError("The pulsar name %s (from file %s) is not " \
                             "recognized." % (params['name'], fn))
     else:
-        params['pulsar_id'] = psr_ids[psr_key]
+        params['pulsar_id'] = psr_ids[params['name']]
 
     # Check if user_id is found
     user_ids = get_userids()
