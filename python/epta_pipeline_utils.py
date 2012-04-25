@@ -478,8 +478,23 @@ def prep_file(fn):
                             (fn, t, r, b))
     else:
         params['obssystem_id'] = obssys_ids[obssys_key]
-    params['pulsar_id'] = get_pulsarids()[params['name']]
-    params['user_id'] = get_userids()[os.getlogin()]
+    
+    # Check if pulsar_id is found
+    psr_ids = get_pulsarids()
+    if params['name'] not in psr_ids:
+        raise error.FileError("The pulsar name %s (from file %s) is not " \
+                            "recognized." % (params['name'], fn))
+    else:
+        params['pulsar_id'] = psr_ids[psr_key]
+
+    # Check if user_id is found
+    user_ids = get_userids()
+    username = os.getlogin()
+    if username not in user_ids:
+        raise errors.FileError("The current user's username (%s) is not " \
+                            "registered in the database." % username)
+    else:
+        params['user_id'] = user_ids[username]
     return params
 
 
