@@ -33,6 +33,7 @@ def populate_parfiles_table(db, fn, params):
         if psr_id == params['pulsar_id']:
             warnings.warn("A parfile with this MD5 (%s) already exists " \
                             "in the DB for this pulsar (ID: %d). " \
+                            "The file will not be re-registed into the DB. " \
                             "Doing nothing..." % (md5, psr_id), \
                             errors.EptaPipelineWarning)
         else:
