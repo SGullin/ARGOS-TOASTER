@@ -34,10 +34,10 @@ def main():
             destdir = epu.get_archive_dir(fn, site=params['site'], \
                         backend=params['be:name'], psrname=params['name'])
             
-            print_info("%s will get archived to %s (%s)" % \
+            epu.print_info("%s will get archived to %s (%s)" % \
                         (fn, destdir, epu.Give_UTC_now()), 1)
 
-            print_info("Finished with %s - pre-check successful (%s)" % \
+            epu.print_info("Finished with %s - pre-check successful (%s)" % \
                         (fn, epu.Give_UTC_now()), 1)
 
         except errors.EptaPipelineError, msg:
