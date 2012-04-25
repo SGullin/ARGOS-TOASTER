@@ -962,7 +962,7 @@ def DB_load_TOA(tempo2_toa_string,DBcursor,template_id,rawfile_id):
     freq = toa.split()[1]
     imjd = toa.split()[2].split(".")[0]
     fmjd = "0." + toa.split()[2].split(".")[1]
-    errmjd = toa.split()[4]
+    errmjd = toa.split()[3]
 
     # Writes values to the toa table
     QUERY = "insert into toa (template_id,rawfile_id,imjd,fmjd,freq,toa_unc_us) values ('%s','%s','\%s','%s','%s','%s')"%(template_id,rawfile_id,imjd,fmjd,freq,errmjd)

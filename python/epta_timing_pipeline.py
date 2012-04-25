@@ -143,7 +143,7 @@ def pipeline_core(rawfile_id,parfile_id,template_id,nchan,nsub,DM):
     #Insert TOA into DB
     for toa in stdout.split("\n"):
         toa = toa.strip()
-        if toa:
+        if toa and not "FORMAT 1":
             print toa
             epta.DB_load_TOA(toa,DBcursor,template_id,rawfile_id)
 
