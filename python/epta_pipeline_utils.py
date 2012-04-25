@@ -341,7 +341,44 @@ def parse_psrfits_header(fn, hdritems):
     for key, val in zip(hdritems, outstr.split()):
         params[key] = val
     return params
-    
+   
+
+def get_pulsar_names(existing_db=None):
+    """Return a dictionary mapping pulsar names and ids 
+        to preferred pulsar names.
+        
+        Input:
+            existing_db: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Output:
+            pulsarids: A dictionary with pulsar names as keys
+                    and pulsar ids as values.
+    """
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existing_db or database.Database()
+    query = "SELECT pulsar_name, " \
+                "pulsar_jname, " \
+                "pulsar_bname, " \
+                "pulsar_id " \
+            "FROM pulsars"
+    db.execute(query)
+
+    rows = db.fetchall()
+    if not existing_db:
+        # Close the DB connection we opened
+        db.close()
+
+    # Create the mapping
+    pulsar_names = {}
+    for name, jname, bname, id in rows:
+        trimname = name.lower().lstrip('bj')
+        pulsar_names[trimname] = name
+        pulsar_names[bname] = name
+        pulsar_names[jname] = name
+        pulsar_names[id] = name
+    return pulsar_names
+
 
 def get_archive_dir(fn, data_archive_location=config.data_archive_location, \
                         site=None, backend=None, receiver=None, psrname=None):
@@ -383,7 +420,7 @@ def get_archive_dir(fn, data_archive_location=config.data_archive_location, \
         if receiver is None:
             receiver = params['rcvr']
         if psrname is None:
-            psrname = params['name']
+            psrname = get_pulsar_names()[params['name']]
     sitedir = telescope_to_dir[get_telescope(site)]
     
     dir = os.path.join(data_archive_location, psrname, sitedir.lower(), \
@@ -429,6 +466,8 @@ def prep_parfile(fn):
     else:
         params['pulsar_id'] = get_pulsarids()[params['psrb']]
         params['name'] = params['psrb']
+    # normalise pulsar name
+    params['name'] = get_pulsar_names()[params['name']]
     params['user_id'] = get_userids()[os.getlogin()]
     return params
 
@@ -485,6 +524,8 @@ def prep_file(fn):
         raise error.FileError("The pulsar name %s (from file %s) is not " \
                             "recognized." % (params['name'], fn))
     else:
+        # Normalise pulsar name
+        params['name'] = get_pulsar_names[params['name']]
         params['pulsar_id'] = psr_ids[params['name']]
 
     # Check if user_id is found
