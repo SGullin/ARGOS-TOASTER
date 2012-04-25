@@ -472,9 +472,10 @@ def prep_file(fn):
     obssys_ids = get_obssystemids()
     if obssys_key not in obssys_ids:
         t, r, b = obssys_key
-        raise errors.FileError("The observing system in the file %s is " \
-                            "not registered in the database. (Telescope: %s, " \
-                            "Receiver: %s; Backend: %s)." % (fn, t, r, b))
+        raise errors.FileError("The observing system combination in the file " \
+                            "%s is not registered in the database. " \
+                            "(Telescope: %s, Receiver: %s; Backend: %s)." % \
+                            (fn, t, r, b))
     else:
         params['obssystem_id'] = obssys_ids[obssys_key]
     params['pulsar_id'] = get_pulsarids()[params['name']]
