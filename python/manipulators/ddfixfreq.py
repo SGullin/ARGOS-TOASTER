@@ -1,3 +1,6 @@
+"""Set the centre frequency of an archive, dedisperse and fully scrunch.
+"""
+
 import manipulators
 
 plugin_name = 'ddfixfreq'

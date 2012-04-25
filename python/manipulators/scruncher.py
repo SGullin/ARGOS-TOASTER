@@ -1,3 +1,6 @@
+"""Use PSRCHIVE python bindings to scrunch an archive.
+"""
+
 import manipulators
 
 plugin_name = 'scruncher'

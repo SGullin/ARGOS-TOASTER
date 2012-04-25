@@ -1,3 +1,7 @@
+"""Use pam to scrunch an archive and (optionally) reinstall an
+    ephmemeris.
+"""
+
 import shutil
 
 import manipulators
