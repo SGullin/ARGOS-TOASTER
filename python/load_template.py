@@ -100,6 +100,7 @@ def load_template(fn):
     finally:
         # Close DB connection
         db.close()
+    return template_id
 
 
 if __name__=='__main__':
