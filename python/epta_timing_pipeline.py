@@ -57,21 +57,45 @@ def Parse_command_line():
     parser = epta.DefaultArguments(
         prog='epta_pipeline',
         description='')
-    #Raw data
-    parser.add_argument('--rawfile_id',
+    # Raw data
+    rawgroup = parser.add_mutually_exclusive_group(required=True)
+    # By file name
+    rawgroup.add_argument("rawfile",
+                        nargs='?',
+                        type=str,
+                        default=None,
+                        help="A raw file to archive/load to DB and generate TOAs for.")
+    # Or by rawfile ID
+    rawgroup.add_argument('-r', '--rawfile_id',
+                        dest='rawfile_id',
                         type=int,
                         default=None,
-                        help="ID of raw data file to use for running the full pipeline.")
+                        help="ID of an already archived/loaded raw data file to use for " \
+                                "running the full pipeline.")
     #Ephemeris
-    parser.add_argument('--parfile_id',
+    pargroup = parser.add_mutually_exclusive_group(required=False)
+    pargroup.add_argument('-p', '--parfile_id',
+                        dest='parfile_id', 
                         type=int,
                         default=None,
                         help="ID of ephemeris to use for running the full pipeline.")
+    pargroup.add_argument('--parfile', 
+                        dest='parfile',
+                        type=str,
+                        default=None,
+                        help="A parfile to archive/load to DB and use when generating TOAs.")
     #Template profile
-    parser.add_argument('--template_id',
+    tmpgroup = parser.add_mutually_exclusive_group(required=False)
+    tmpgroup.add_argument('-t', '--template_id',
+                        dest='template_id',
                         type=int,
                         default=None,
                         help="ID of template profile to use for running the full pipeline.")
+    tmpgroup.add_argument('--template',
+                        dest='template',
+                        type=str,
+                        default=None,
+                        help="A template to archive/load to DB and use when generating TOAs.")
     #Number of chans for scrunched archive
     parser.add_argument('--nchan',
                         type=int,
@@ -90,6 +114,48 @@ def Parse_command_line():
     
     args=parser.parse_args()
     return args
+
+def get_master_ids(rawfile_id, existdb=None):
+    """Given a rawfile_id, fetch the corresponding
+        master_template_id and master_parfile_id from
+        the database and return them.
+
+        Inputs:
+            rawfile_id: The raw file's ID number.
+            existdb: An existing database connection object.
+                (Default: establish a new DB connection)
+
+        Outputs:
+            master_template_id: The corresponding ID of the 
+                rawfile's master template. (None if there is
+                no appropriate master template).
+            master_parfile_id: The corresponding ID of the 
+                rawfile's master parfile. (None if there is
+                no appropriate master parfile).
+    """
+    if existdb:
+        db = existdb
+    else:
+        db = database.Database()
+
+    #Get ID numbers for master parfile and master template
+    query = "SELECT mtmp.template_id, " \
+                "psr.master_parfile_id " \
+            "FROM rawfiles AS r " \
+            "LEFT JOIN master_templates AS mtmp " \
+                "ON mtmp.obssystem_id=r.obssystem_id " \
+                    "AND mtmp.pulsar_id=r.pulsar_id " \
+            "LEFT JOIN pulsars AS psr " \
+                "ON psr.pulsar_id=r.pulsar_id " \
+            "WHERE rawfile_id=%d" % (rawfile_id)
+    db.execute(query)
+    master_template_id, master_parfile_id = db.fetchone()
+
+    if not existdb:
+        db.close()
+
+    return master_template_id, master_parfile_id
+
 
 def pipeline_core(rawfile_id,parfile_id,template_id,nchan,nsub,DM):
     #Start pipeline
@@ -165,6 +231,8 @@ def main():
 
     args = Parse_command_line()
 
+    
+    
     if not (args.rawfile_id and args.parfile_id and args.template_id):
         print "\nYou haven't specified a valid set of command line options.  Exiting..."
         Help()
