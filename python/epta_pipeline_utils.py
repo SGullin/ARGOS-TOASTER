@@ -19,6 +19,7 @@ import types
 import inspect
 import string
 import warnings
+import re
 
 import errors
 import colour
@@ -72,6 +73,10 @@ header_param_types = {'freq': float, \
                       'nbin': int, \
                       'nsub': int, \
                       'tbin': float}
+
+# The following regular expressions are used when parse parfiles
+float_re = re.compile(r"^[-+]?(\d+(\.\d*)?|\.\d+)([eEdD][-+]?\d+)?$")
+int_re = re.compile(r"^[-+]?\d+$")
 
 
 ##############################################################################
@@ -441,7 +446,8 @@ def prep_parfile(fn):
 
         Outputs:
             params: A dictionary of parameters contained in the file.
-                NOTE: All parameters are left as strings.
+                NOTE: parameters that look like ints or floats are cast
+                    as such.
     """
     # Check existence of file
     Verify_file_path(fn)
@@ -459,7 +465,18 @@ def prep_parfile(fn):
         if not line:
             continue
         key, valstr = line.split()[:2]
-        params[key.lower()] = valstr
+
+        if float_re.match(valstr):
+            # Looks like a float. Change 'D' to 'E' and cast to float.
+            val = float(valstr.upper().replace('D','E'))
+        elif int_re.match(valstr):
+            # Looks like an int. Cast to int.
+            val = int(valstr)
+        else:
+            # Doesn't seem like a number. Leave as string.
+            val = valstr
+
+        params[key.lower()] = val
     if "psrj" in params:
         params['pulsar_id'] = get_pulsarids()[params['psrj']]
         params['name'] = params['psrj']

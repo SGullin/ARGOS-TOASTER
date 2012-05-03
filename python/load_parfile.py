@@ -7,6 +7,7 @@ Script to upload par files to the EPTA timing database.
 # Import modules
 import os.path
 import warnings
+import types
 
 import database
 import config
@@ -51,14 +52,19 @@ def populate_parfiles_table(db, fn, params):
         colnames = [r[0].lower() for r in rows]
  
         # Insert the file
-        basequery = "INSERT INTO parfiles " + \
+        query = "INSERT INTO parfiles " + \
                     "SET md5sum = '%s', " % md5 + \
                        "filename = '%s', " % fn + \
                        "filepath = '%s', " % path + \
                        "add_time = NOW() "
-        toset = ["%s = '%s'" % (col, params[col]) for col in colnames \
-                        if col in params]
-        query = ', '.join([basequery]+toset)
+        for col in colnames:
+            if col in params:
+                if type(params[col]) is types.FloatType:
+                    query += ", %s = %.25g" % (col, params[col])
+                elif type(params[col]) is types.IntType:
+                    query += ", %s = %d" % (col, params[col])
+                else:
+                    query += ", %s = '%s'" % (col, params[col])
         db.execute(query)
         
         # Get the template_id of the file that was just entered
@@ -117,6 +123,7 @@ def load_parfile(fn):
     finally:
         # Close DB connection
         db.close()
+    return parfile_id
 
 
 if __name__=='__main__':
