@@ -12,8 +12,13 @@ from MySQLdb import *
 import os.path
 import datetime
 import argparse
+
 import manipulators
-import epta_pipeline_utils as epta
+import database
+import load_rawfile
+import load_parfile
+import load_template
+import epta_pipeline_utils as epu
 
 ##############################################################################
 # CONFIG PARAMS
@@ -54,11 +59,9 @@ def Help():
     exit(0)
 
 def Parse_command_line():
-    parser = epta.DefaultArguments(
-        prog='epta_pipeline',
-        description='')
+    parentparser = argparse.ArgumentParser(add_help=False)
     # Raw data
-    rawgroup = parser.add_mutually_exclusive_group(required=True)
+    rawgroup = parentparser.add_mutually_exclusive_group(required=True)
     # By file name
     rawgroup.add_argument("rawfile",
                         nargs='?',
@@ -73,7 +76,7 @@ def Parse_command_line():
                         help="ID of an already archived/loaded raw data file to use for " \
                                 "running the full pipeline.")
     #Ephemeris
-    pargroup = parser.add_mutually_exclusive_group(required=False)
+    pargroup = parentparser.add_mutually_exclusive_group(required=False)
     pargroup.add_argument('-p', '--parfile_id',
                         dest='parfile_id', 
                         type=int,
@@ -85,7 +88,7 @@ def Parse_command_line():
                         default=None,
                         help="A parfile to archive/load to DB and use when generating TOAs.")
     #Template profile
-    tmpgroup = parser.add_mutually_exclusive_group(required=False)
+    tmpgroup = parentparser.add_mutually_exclusive_group(required=False)
     tmpgroup.add_argument('-t', '--template_id',
                         dest='template_id',
                         type=int,
@@ -96,24 +99,33 @@ def Parse_command_line():
                         type=str,
                         default=None,
                         help="A template to archive/load to DB and use when generating TOAs.")
-    #Number of chans for scrunched archive
-    parser.add_argument('--nchan',
-                        type=int,
-                        default=1,
-                        help="Number of chans for scrunched archive. (Default: 1)")
-    #Number of sub-intervals for scrunched archive
-    parser.add_argument('--nsub',
-                        type=int,
-                        default=1,
-                        help="Number of sub-intervals for scrunched archive. (Default: 1)")
-    #Manually specified DM
-    parser.add_argument('--DM',
-                        type=int,
-                        default=None,
-                        help="Manually specified DM. This argument is not used at the moment!)")
     
-    args=parser.parse_args()
+    mainparser = epu.DefaultArguments(
+        prog='epta_pipeline',
+        description='Reduce an archive pre-loaded to the database. ' \
+                    'Both a pre-loaded parfile, and a pre-loaded template ' \
+                    'must be provided as well. TOAs generated are loaded ' \
+                    'into the database, as is information about the ' \
+                    'processing run.')
+
+    subparsers = mainparser.add_subparsers(dest='manipulator', \
+                            title="Manipulators", \
+                            description="The function used to manipulate " \
+                                "rawfiles before generating TOAs. Note: the " \
+                                "number of TOAs is (#subbands * #subints) in " \
+                                "the manipulated file.")
+    for name in manipulators.registered_manipulators:
+        m = manipulators.__dict__[name]
+        m_parser = subparsers.add_parser(m.plugin_name, help=m.__doc__, \
+                description="%s (The options listed below are '%s'-specific.)" % \
+                            (m.__doc__, name), \
+                parents=[parentparser])
+        m.add_arguments(m_parser)
+        m_parser.set_defaults(manipfunc=m.manipulate)
+
+    args=mainparser.parse_args()
     return args
+
 
 def get_master_ids(rawfile_id, existdb=None):
     """Given a rawfile_id, fetch the corresponding
@@ -157,7 +169,20 @@ def get_master_ids(rawfile_id, existdb=None):
     return master_template_id, master_parfile_id
 
 
-def pipeline_core(rawfile_id,parfile_id,template_id,nchan,nsub,DM):
+def pipeline_core(prepped_manipfunc, rawfile_id, parfile_id, template_id):
+    """Run a prepared manipulator function on the raw file with 
+        ID 'rawfile_id'. Then generate TOAs and load them into the DB.
+
+        Inputs:
+            prepped_manipfunc: A prepared manipulator function.
+            rawfile_id: The ID number of the raw file to generate TOAs from.
+            parfile_id: The ID number of the par file to install into the
+                raw file.
+            tempalte_id: The ID number of the template to use.
+
+        Outputs:
+            None
+    """
     #Start pipeline
     print "###################################################"
     print "Starting EPTA Timing Pipeline Version %.2f"%VERSION
@@ -226,27 +251,41 @@ def pipeline_core(rawfile_id,parfile_id,template_id,nchan,nsub,DM):
 def main():
 
     #Exit if there are no or insufficient arguments
-    if len(argv) < 2:
+    if not len(argv):
         Help()
 
     args = Parse_command_line()
 
-    
-    
-    if not (args.rawfile_id and args.parfile_id and args.template_id):
-        print "\nYou haven't specified a valid set of command line options.  Exiting..."
-        Help()
+    if args.rawfile is not None:
+        epu.print_info("Loading rawfile %s" % args.rawfile, 1)
+        args.rawfile_id = load_rawfile.load_rawfile(args.rawfile)
 
-    #Grab command line options
-    rawfile_id = args.rawfile_id
-    parfile_id = args.parfile_id
-    template_id = args.template_id
-    nsub = args.nsub
-    nchan = args.nchan
-    DM = args.DM
+    if args.parfile is not None:
+        epu.print_info("Loading parfile %s" % args.parfile, 1)
+        args.parfile_id = load_parfile.load_parfile(args.parfile)
+        
+    if args.template is not None:
+        epu.print_info("Loading template %s" % args.template, 1)
+        args.template_id = load_template.load_template(args.template)
 
-    #Run pipeline core
-    pipeline_core(rawfile_id,parfile_id,template_id)
+    if (args.parfile_id is None) or (args.template_id is None):
+        master_template_id, master_parfile_id = get_master_ids(args.rawfile_id)
+        if args.parfile_id is None:
+            args.parfile_id = master_parfile_id
+        if args.template_id is None:
+            args.template_id = master_template_id
+
+    epu.print_info("Using the following IDs:\n" \
+                     "    rawfile_id: %d\n" \
+                     "    parfile_id: %d\n" \
+                     "    template_id: %d\n" % \
+                     (args.rawfile_id, args.parfile_id, args.template_id), 1)
+
+    manip_kwargs = manipulators.extract_manipulator_arguments(args.manipfunc, args)
+    prepped_manipfunc = manipulators.prepare_manipulator(args.manipfunc, manip_kwargs)
+    # Run pipeline core
+    pipeline_core(rawfile_id,parfile_id,template_id, prepped_manipfunc)
+
 
 if __name__ == "__main__":
     main()
