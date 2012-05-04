@@ -12,7 +12,9 @@ from MySQLdb import *
 import os.path
 import datetime
 import argparse
+import warnings
 
+import errors
 import manipulators
 import database
 import load_rawfile
@@ -29,16 +31,6 @@ DB_HOST = "localhost"
 DB_NAME = "epta"
 DB_USER = "epta"
 DB_PASS = "psr1937"
-
-#Python version to use
-PYTHON = "/usr/bin/python"
-
-#Archive base path storage directories
-interfile_path="/home/epta/database/data/"
-
-#Debugging flags
-VERBOSE = 1 #Print extra output
-TEST = 0 #Prints commands and other actions without running them
 
 ###############################################################################
 # DO NOT EDIT BELOW HERE
@@ -256,6 +248,14 @@ def main():
 
     args = Parse_command_line()
 
+    if epu.is_gitrepo_dirty():
+        if debug.PIPELINE:
+            warnings.warn("Git repository is dirty! Will tolerate because " \
+                            "pipeline debugging is on.", \
+                            errors.EptaPipelineWarning)
+        else:
+            raise errors.EptaPipelineError("Git repository is dirty. Aborting!")
+
     if args.rawfile is not None:
         epu.print_info("Loading rawfile %s" % args.rawfile, 1)
         args.rawfile_id = load_rawfile.load_rawfile(args.rawfile)
@@ -284,7 +284,7 @@ def main():
     manip_kwargs = manipulators.extract_manipulator_arguments(args.manipfunc, args)
     prepped_manipfunc = manipulators.prepare_manipulator(args.manipfunc, manip_kwargs)
     # Run pipeline core
-    pipeline_core(rawfile_id,parfile_id,template_id, prepped_manipfunc)
+    pipeline_core(prepped_manipfunc, rawfile_id, parfile_id, template_id)
 
 
 if __name__ == "__main__":
