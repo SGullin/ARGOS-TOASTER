@@ -20,15 +20,6 @@ import load_parfile
 import load_template
 import epta_pipeline_utils as epu
 import config
-##############################################################################
-# CONFIG PARAMS
-##############################################################################
-
-#Database parameters
-DB_HOST = "localhost"
-DB_NAME = "epta"
-DB_USER = "epta"
-DB_PASS = "psr1937"
 
 ###############################################################################
 # DO NOT EDIT BELOW HERE
