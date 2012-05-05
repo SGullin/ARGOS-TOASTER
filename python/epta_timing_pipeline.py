@@ -6,9 +6,7 @@ VERSION = 0.2
 ##################################
 
 #Imported modules
-from sys import argv, exit
-from os import system, popen
-from MySQLdb import *
+import sys
 import os.path
 import datetime
 import argparse
@@ -21,7 +19,7 @@ import load_rawfile
 import load_parfile
 import load_template
 import epta_pipeline_utils as epu
-
+import config
 ##############################################################################
 # CONFIG PARAMS
 ##############################################################################
@@ -48,7 +46,7 @@ def Help():
     print "Please use 'epta_timing_pipeline.py -h' for a full list of command line options. \n"
 
     print "\n"
-    exit(0)
+    sys.exit(0)
 
 def Parse_command_line():
     parentparser = argparse.ArgumentParser(add_help=False)
@@ -161,7 +159,8 @@ def get_master_ids(rawfile_id, existdb=None):
     return master_template_id, master_parfile_id
 
 
-def pipeline_core(prepped_manipfunc, rawfile_id, parfile_id, template_id):
+def pipeline_core(prepped_manipfunc, rawfile_id, parfile_id, template_id, \
+                        existdb=None):
     """Run a prepared manipulator function on the raw file with 
         ID 'rawfile_id'. Then generate TOAs and load them into the DB.
 
@@ -171,6 +170,8 @@ def pipeline_core(prepped_manipfunc, rawfile_id, parfile_id, template_id):
             parfile_id: The ID number of the par file to install into the
                 raw file.
             tempalte_id: The ID number of the template to use.
+            existdb: An existing database connection object.
+                (Default: establish a new DB connection)
 
         Outputs:
             None
@@ -178,34 +179,25 @@ def pipeline_core(prepped_manipfunc, rawfile_id, parfile_id, template_id):
     #Start pipeline
     print "###################################################"
     print "Starting EPTA Timing Pipeline Version %.2f"%VERSION
-    proc_id = epta.Make_Proc_ID()
+    proc_id = epu.Make_Proc_ID()
     print "Proc ID (UTC start datetime): %s"%proc_id
-    print "Start time: %s"%epta.Give_UTC_now()
+    print "Start time: %s"%epu.Give_UTC_now()
     print "###################################################"
-
-    #Temporary? Source to get right environment
-    epta.execute("source /raid1/home/epta/login/bash.bashrc")
-    epta.execute("source /raid1/home/epta/login/bash.bash_profile")
-
-    #Make DB connection
-    DBcursor, DBconn = epta.DBconnect(DB_HOST,DB_NAME,DB_USER,DB_PASS)
+    
+    if existdb:
+        db = existdb
+    else:
+        db = database.Database()
 
     #Fill pipeline table
-    fake_command_line = "epta_timing_pipeline.py --rawfile_id %d --parfile_id %d --template_id %d" % (rawfile_id,parfile_id,template_id)
-    if nchan != 1:
-        fake_command_line += " --nchan %d" % nchan
-    if nsub != 1:
-        fake_commnd_line += " --nsub %d" % nsub
-    if DM is not None:
-        fake_command_line += " --DM %d" % DM
-
-    process_id = epta.Fill_process_table(DBcursor,VERSION,rawfile_id,parfile_id,template_id,fake_command_line,nchan,nsub)
+    cmdline = " ".join(sys.argv)
+    process_id = epu.Fill_process_table(VERSION, rawfile_id, parfile_id, template_id, cmdline, nchan, nsub, db)
     
     #Get raw data from rawfile_id and verify MD5SUM
-    raw_file, raw_file_name = epta.get_file_and_id('rawfile',rawfile_id,DBcursor)
+    raw_file, raw_file_name = epu.get_file_and_id('rawfile',rawfile_id,db)
         
     #Get ephemeris from parfile_id and verify MD5SUM
-    parfile, parfile_name = epta.get_file_and_id('parfile',parfile_id,DBcursor)
+    parfile, parfile_name = epu.get_file_and_id('parfile',parfile_id,db)
 
     #Scrunch data in time/freq and optionally re-install ephemeris and change DM
     #Use Patrick's manipulator
@@ -213,13 +205,13 @@ def pipeline_core(prepped_manipfunc, rawfile_id, parfile_id, template_id):
     manipulators.pamit.manipulate([raw_file], scrunch_file, nsub=nsub, nchan=nchan, nbin=None)
 
     #Make diagnostic plots of scrunched data
-    epta.execute("pav -g '%s.ps/CPS' -DFTp %s"%(scrunch_file,scrunch_file))
+    epu.execute("pav -g '%s.ps/CPS' -DFTp %s"%(scrunch_file,scrunch_file))
 
     #Get template from template_id and verify MD5SUM
-    template, template_name = epta.get_file_and_id('template',template_id,DBcursor)
+    template, template_name = epu.get_file_and_id('template',template_id,db)
 
     #Generate TOA with pat
-    stdout, stderr = epta.execute("pat -f tempo2 -s %s %s"%(template,scrunch_file))
+    stdout, stderr = epu.execute("pat -f tempo2 -s %s %s"%(template,scrunch_file))
     
     #Make plots associated with the TOA generation
 
@@ -228,33 +220,38 @@ def pipeline_core(prepped_manipfunc, rawfile_id, parfile_id, template_id):
         toa = toa.strip()
         if toa and not toa == "FORMAT 1":
             print toa
-            epta.DB_load_TOA(toa,DBcursor,template_id,rawfile_id)
+            epu.DB_load_TOA(toa,template_id,rawfile_id, db)
 
     #Close DB connection
-    print "Closing DB connection..."
-    DBconn.close()
+    if not existdb:
+        db.close()
+
 
     #End pipeline
     print "###################################################"
     print "Finished EPTA Timing Pipeline Version %.2f"%VERSION
-    print "End time: %s"%epta.Give_UTC_now()
+    print "End time: %s"%epu.Give_UTC_now()
     print "###################################################"    
 
 def main():
 
     #Exit if there are no or insufficient arguments
-    if not len(argv):
+    if not len(sys.argv):
         Help()
 
     args = Parse_command_line()
 
-    if epu.is_gitrepo_dirty():
+    if epu.is_gitrepo_dirty(config.epta_pipeline_dir):
         if debug.PIPELINE:
             warnings.warn("Git repository is dirty! Will tolerate because " \
                             "pipeline debugging is on.", \
                             errors.EptaPipelineWarning)
         else:
-            raise errors.EptaPipelineError("Git repository is dirty. Aborting!")
+            raise errors.EptaPipelineError("Pipeline's git repository is dirty. Aborting!")
+
+    if epu.is_gitrepo_dirty(config.psrchive_dir):
+        raise errors.EptaPipelineError("PSRCHIVE's git repository is dirty. " \
+                                        "Clean up your act!")
 
     if args.rawfile is not None:
         epu.print_info("Loading rawfile %s" % args.rawfile, 1)

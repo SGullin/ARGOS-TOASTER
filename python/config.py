@@ -1,3 +1,4 @@
+import os.path
 ##############################################################################
 # CONFIG PARAMS
 #############################################################################
@@ -15,6 +16,11 @@ dbpass = "psr1937"
 python = "/usr/bin/python"
 
 data_archive_location = '/raid1/database/data/'
+
+# Location of software packages
+epta_pipeline_dir = os.path.split(os.path.abspath(__file__))[0]
+psrchive_dir = "/raid1/home/bassa/linux/src/psrchive/"
+tempo2_dir = "/raid1/home/bassa/linux/src/tempo2/"
 
 #Debugging flags
 colour = True # Colourise terminal output
