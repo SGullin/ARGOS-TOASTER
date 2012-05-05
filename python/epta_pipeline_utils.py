@@ -556,18 +556,17 @@ def prep_file(fn):
     return params
 
 
-def is_gitrepo_dirty():
+def is_gitrepo_dirty(repodir):
     """Return True if the git repository has local changes.
 
         Inputs:
-            None
+            repodir: The location of the git repository.
 
         Output:
             is_dirty: True if git repository has local changes. False otherwise.
     """
-    codedir = os.path.split(__file__)[0]
     try:
-        stdout, stderr = execute("git diff --quiet", dir=codedir)
+        stdout, stderr = execute("git diff --quiet", dir=repodir)
     except errors.SystemCallError:
         # Exit code is non-zero
         return True
@@ -576,22 +575,70 @@ def is_gitrepo_dirty():
         return False
 
 
-def get_githash():
-    """Get the Coast Guard project's git hash.
+def get_githash(repodir):
+    """Get the pipeline's git hash.
 
         Inputs:
-            None
+            repodir: The location of the git repository.
 
         Output:
             githash: The githash
     """
-    if is_gitrepo_dirty():
+    if is_gitrepo_dirty(repodir):
         warnings.warn("Git repository has uncommitted changes!", \
                         errors.EptaPipelineWarning)
-    codedir = os.path.split(__file__)[0]
-    stdout, stderr = execute("git rev-parse HEAD", dir=codedir)
+    stdout, stderr = execute("git rev-parse HEAD", dir=repodir)
     githash = stdout.strip()
     return githash
+
+
+def get_version_id(existdb=None):
+    """Get the pipeline version number.
+        If the version number isn't in the database, add it.
+
+        Input:
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Output:
+            version_id: The version ID for the current pipeline/psrchive
+                combination.
+    """
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existdb or database.Database()
+
+    pipeline_githash = get_githash(config.epta_pipeline_dir)
+    psrchive_githash = get_githash(config.psrchive_dir)
+    
+    query = "SELECT version_id FROM versions " \
+            "WHERE pipeline_githash='%s' AND " \
+                "psrchive_githash='%s' AND " \
+                "tempo2_cvsrevno='Not available'" % \
+            (pipeline_githash, psrchive_githash)
+    db.execute(query)
+    rows = db.fetchall()
+    if len(rows) > 1:
+        raise errors.DatabaseError("There are too many (%d) matching " \
+                                    "version IDs" % len(rows))
+    elif len(rows) == 1:
+        version_id = rows[0].version_id
+    else:
+        # Insert the current versions
+        query = "INSERT INTO versions " \
+                "SET pipeline_githash='%s', " % pipeline_githash + \
+                    "psrchive_githash='%s', " % psrchive_githash + \
+                    "tempo2_cvsrevno='Not available'"
+        db.execute(query)
+        
+        # Get the newly add version ID
+        query = "SELECT LAST_INSERT_ID()"
+        db.execute(query)
+        version_id = db.fetchone()[0]
+    return version_id
+
+    if not existdb:
+        # Close the DB connection we opened
+        db.close()
 
 
 def archive_file(file, destdir):
