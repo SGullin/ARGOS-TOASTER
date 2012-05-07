@@ -9,5 +9,5 @@ CREATE TABLE IF NOT EXISTS toa (
 	imjd MEDIUMINT NOT NULL,
 	fmjd double NOT NULL,
 	freq float NOT NULL,
-	mjd_err float NOT NULL
+	toa_unc_us float NOT NULL
 );
