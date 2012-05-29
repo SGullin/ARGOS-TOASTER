@@ -38,8 +38,11 @@ class Database(object):
             self.conn = MySQLdb.connect(host=config.dbhost, \
                                         db=config.dbname, \
                                         user=config.dbuser, \
-                                        passwd=config.dbpass, \
-                                        autocommit=False)
+                                        passwd=config.dbpass)
+            # Turn autocommit off
+            self.conn.autocommit(False)
+
+            # Create cursor
             self.cursor = self.conn.cursor(MySQLdb.cursors.Cursor)
             epu.print_debug("Successfully connected to database %s.%s as %s" % \
                         (config.dbhost, config.dbname, config.dbuser), \
