@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS process (
 	process_id BIGINT not null AUTO_INCREMENT PRIMARY KEY,
 	version_id BIGINT not null,
 	rawfile_id BIGINT not null,
-	proc_start_time DATETIME not null, 
+	add_time DATETIME not null, 
 	input_args TEXT not null,
 	template_id BIGINT not null,
 	parfile_id BIGINT not null,
