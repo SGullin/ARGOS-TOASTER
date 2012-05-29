@@ -83,7 +83,7 @@ def Parse_command_line():
     
     mainparser = epu.DefaultArguments(
         prog='epta_pipeline',
-        description='Reduce an archive pre-loaded to the database. ' \
+        description='Reduce an already-uploaded archive. ' \
                     'Both a pre-loaded parfile, and a pre-loaded template ' \
                     'must be provided as well. TOAs generated are loaded ' \
                     'into the database, as is information about the ' \

@@ -24,7 +24,7 @@ tempo2_dir = "/raid1/home/bassa/linux/src/tempo2/"
 
 #Debugging flags
 colour = True # Colourise terminal output
-verbosity = 0 # Print extra output
+verbosity = 1 # Print extra output
 helpful_debugging = True # Add info about file/line when debugging
 excessive_verbosity = True # Add info about file/line when being verbose
 import debug
