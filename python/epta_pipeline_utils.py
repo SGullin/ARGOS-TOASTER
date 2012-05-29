@@ -124,14 +124,9 @@ def Verify_file_path(file):
     return file_path, file_name
 
 
-def Fill_process_table(DBcursor,version_id,rawfile_id,parfile_id,template_id,argv,nchan,nsub):
-    #Calculate md5sum of pipeline script
-    #MD5SUM = popen("md5sum %s"%argv[0],"r").readline().split()[0].strip()
-    #QUERY = "INSERT INTO pipeline (pipeline_name, pipeline_version, md5sum) " \
-    #        "VALUES ('%s','%s','%s')" % (config.pipe_name, config.version, MD5SUM)
-    #DBcursor.execute(QUERY)
-    #Get pipeline_id
-    QUERY = "INSERT INTO process (version_id,rawfile_id,proc_start_time,input_args,parfile_id,template_id,nchan,nsub) VALUES ('%s','%s','%s','%s','%s','%s','%s','%s')" % (version_id,rawfile_id,Make_Tstamp(),string.join(argv," "),parfile_id,template_id,nchan,nsub)
+def Fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
+                            cmdline, nchan, nsub, db):
+    query = "INSERT INTO process (version_id,rawfile_id,proc_start_time,input_args,parfile_id,template_id,nchan,nsub) VALUES ('%s','%s','%s','%s','%s','%s','%s','%s')" % (version_id,rawfile_id,Make_Tstamp(),string.join(argv," "),parfile_id,template_id,nchan,nsub)
     DBcursor.execute(QUERY)
     QUERY = "SELECT LAST_INSERT_ID()"
     DBcursor.execute(QUERY)
@@ -152,11 +147,11 @@ def Give_UTC_now():
     return "UTC %d:%02d:%02d on %d%02d%02d"%(utcnow.hour,utcnow.minute,utcnow.second,utcnow.year,utcnow.month,utcnow.day)
 
 
-def get_userids(existing_db=None):
+def get_userids(existdb=None):
     """Return a dictionary mapping user names to user ids.
 
         Input:
-            existing_db: A (optional) existing database connection object.
+            existdb: A (optional) existing database connection object.
                 (Default: Establish a db connection)
 
         Output:
@@ -164,12 +159,12 @@ def get_userids(existing_db=None):
                     and user ids as values.
     """
     # Use the exisitng DB connection, or open a new one if None was provided
-    db = existing_db or database.Database()
+    db = existdb or database.Database()
     query = "SELECT user_name, user_id FROM users"
     db.execute(query)
 
     rows = db.fetchall()
-    if not existing_db:
+    if not existdb:
         # Close the DB connection we opened
         db.close()
 
@@ -180,11 +175,11 @@ def get_userids(existing_db=None):
     return userids
 
 
-def get_pulsarids(existing_db=None):
+def get_pulsarids(existdb=None):
     """Return a dictionary mapping pulsar names to pulsar ids.
 
         Input:
-            existing_db: A (optional) existing database connection object.
+            existdb: A (optional) existing database connection object.
                 (Default: Establish a db connection)
 
         Output:
@@ -192,7 +187,7 @@ def get_pulsarids(existing_db=None):
                     and pulsar ids as values.
     """
     # Use the exisitng DB connection, or open a new one if None was provided
-    db = existing_db or database.Database()
+    db = existdb or database.Database()
     query = "SELECT pulsar_name, " \
                 "pulsar_jname, " \
                 "pulsar_bname, " \
@@ -201,7 +196,7 @@ def get_pulsarids(existing_db=None):
     db.execute(query)
 
     rows = db.fetchall()
-    if not existing_db:
+    if not existdb:
         # Close the DB connection we opened
         db.close()
 
@@ -216,12 +211,12 @@ def get_pulsarids(existing_db=None):
     return pulsarids
 
 
-def get_obssystemids(existing_db=None):
+def get_obssystemids(existdb=None):
     """Return a dictionary mapping fronend/backend combinations
         to obs system ids.
 
         Input:
-            existing_db: A (optional) existing database connection object.
+            existdb: A (optional) existing database connection object.
                 (Default: Establish a db connection)
 
         Output:
@@ -229,7 +224,7 @@ def get_obssystemids(existing_db=None):
                     and obs system ids as values.
     """
     # Use the exisitng DB connection, or open a new one if None was provided
-    db = existing_db or database.Database()
+    db = existdb or database.Database()
     query = "SELECT t.name, " \
                 "o.frontend, " \
                 "o.backend, " \
@@ -240,7 +235,7 @@ def get_obssystemids(existing_db=None):
     db.execute(query)
 
     rows = db.fetchall()
-    if not existing_db:
+    if not existdb:
         # Close the DB connection we opened
         db.close()
 
@@ -485,7 +480,7 @@ def prep_parfile(fn):
         params['name'] = params['psrb']
     # normalise pulsar name
     params['name'] = get_pulsar_names()[params['name']]
-    params['user_id'] = get_userids()[os.getlogin()]
+    params['user_id'] = get_current_users_id()
     return params
 
 
@@ -545,15 +540,37 @@ def prep_file(fn):
         params['name'] = get_pulsar_names()[params['name']]
         params['pulsar_id'] = psr_ids[params['name']]
 
+        params['user_id'] = get_current_users_id()
+    return params
+
+
+def get_current_users_id(existdb=None):
+    """Get the user ID of the current user and return it.
+        
+        Input:
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Output:
+            user_id: The current user's ID.
+    """
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existdb or database.Database()
+
     # Check if user_id is found
-    user_ids = get_userids()
+    user_ids = get_userids(db)
     username = os.getlogin()
     if username not in user_ids:
         raise errors.FileError("The current user's username (%s) is not " \
                             "registered in the database." % username)
     else:
-        params['user_id'] = user_ids[username]
-    return params
+        user_id = user_ids[username]
+
+    if not existdb:
+        # Close the DB connection we opened
+        db.close()
+
+    return user_id
 
 
 def is_gitrepo_dirty(repodir):
@@ -634,11 +651,12 @@ def get_version_id(existdb=None):
         query = "SELECT LAST_INSERT_ID()"
         db.execute(query)
         version_id = db.fetchone()[0]
-    return version_id
-
+    
     if not existdb:
         # Close the DB connection we opened
         db.close()
+
+    return version_id
 
 
 def archive_file(file, destdir):
@@ -995,40 +1013,110 @@ class DefaultArguments(argparse.ArgumentParser):
                 print "    %s: %s" % (name, desc)
             sys.exit(1)
 
-def get_file_and_id(type,type_id,DBcursor):
-    """
-    Return a file path for a particular file ID and cross-check the md5sum with the database.
-    File type can be 'rawfile', 'parfile', or 'template'.
-    """
-    if type == "rawfile" or type == "parfile" or type == "template":
-        print "Looking-up file type %s"%type
-    else:
-        print "Type is not recognized.  Exiting!"
-        return 1
+def get_file_from_id(ftype,type_id, existdb):
+    """Return a file path for a particular file ID and 
+        cross-check the md5sum with the database.
+        
+        Inputs:
+            ftype: File type. Can be 'rawfile', 'parfile', or 'template'.
+            id: The ID number from the database.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
 
-    print "Retrieving %s_id = %d"%(type,type_id)
-    DBcursor.execute("select filename, filepath, md5sum from %ss where %s_id = %d"%(type,type,type_id))
-    #HOW TO HANDLE ERROR IF NOTHING RETURNED?
-    filename, filepath, md5sum_DB = DBcursor.fetchall()[0]
-    file_type = os.path.join(filepath,filename)
-    Verify_file_path(file_type)
-    md5sum_file = Get_md5sum(file_type)
-    if md5sum_DB == md5sum_file:
-        print "md5sum check succeeded"
-        print "Returning %s %s"%(type,file_type)
-        return file_type, filename
-    else:
-        print "md5sum check failed"
-        return 1
+        Output:
+            fn: The full file path.
+    """
+    if ftype.lower() not in ("rawfile", "parfile", "template"):
+        raise errors.UnrecognizedValueError("File type (%s) is not recognized." % \
+                                                ftype)
 
-def DB_load_TOA(tempo2_toa_string,DBcursor,template_id,rawfile_id):
-    toa = tempo2_toa_string
-    freq = toa.split()[1]
-    imjd = toa.split()[2].split(".")[0]
-    fmjd = "0." + toa.split()[2].split(".")[1]
-    errmjd = toa.split()[3]
+    column_name = "%s_id" % ftype
+    table_name = "%ss" % ftype
+
+    print_info("Looking-up file of type %s with %s_id == %d" % \
+                (ftype, column_name, id))
+
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existdb or database.Database()
+    
+    query = "SELECT filename, " \
+                "filepath, " \
+                "md5sum " \
+            "FROM %s " \
+            "WHERE %s = %d" % \
+                (table_name, column_name, id)
+    db.execute(query)
+
+    rows = db.fetchall()
+    if len(rows) == 1:
+        filename, filepath, md5sum_DB = rows[0]
+    else:
+        raise errors.DatabaseError("Bad number (%d) of matching " \
+                                    "%s IDs" % (ftype, len(rows)))
+        
+    fullpath = os.path.join(filepath,filename)
+    Verify_file_path(fullpath)
+    md5sum_file = Get_md5sum(fullpath)
+    if md5sum_DB != md5sum_file:
+        raise errors.FileError("md5sum check failed! MD5 from DB (%s) " \
+                                "!= MD5 from archived file (%s)" % \
+                                (md5sum_DB, md5sum_file))
+    
+    if not existdb:
+        # Close the DB connection we opened
+        db.close()
+    
+    return fullpath
+
+
+def DB_load_TOA(tempo2_toa_string, process_id, template_id, rawfile_id, existdb=None):
+    """Upload a TOA to the database.
+
+        Inputs:
+            tempo2_toa_string: A TEMPO2 format toa line.
+            process_id: The ID of the processing run that generated the TOA.
+            template_id: The ID of the template used for generating the TOA.
+            rawfile_id: The ID of the raw data file the TOA is derived from.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Outputs:
+            None
+    """
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existdb or database.Database()
+    
+    toastr = tempo2_toa_string
+    freq = float(toastr.split()[1])
+    imjd = float(toastr.split()[2].split(".")[0])
+    fmjd = float("0." + toastr.split()[2].split(".")[1])
+    err = float(toastr.split()[3])
 
     # Writes values to the toa table
-    QUERY = "insert into toa (template_id,rawfile_id,imjd,fmjd,freq,toa_unc_us) values ('%s','%s','\%s','%s','%s','%s')"%(template_id,rawfile_id,imjd,fmjd,freq,errmjd)
-    DBcursor.execute(QUERY)
+    query = "INSERT INTO toa " \
+                "(process_id, " \
+                "template_id, " \
+                "rawfile_id, " \
+                "pulsar_id, " \
+                "obssystem_id, " \
+                "imjd, " \
+                "fmjd, " \
+                "freq, " \
+                "toa_unc_us) " \
+            "SELECT %d, " % process_id + \
+                "%d, " % template_id + \
+                "r.rawfile_id, " + \
+                "r.pulsar_id, " + \
+                "r.obssystem_id, " + \
+                "%.20g, " % imjd + \
+                "%.20g, " % fmjd + \
+                "%.20g, " % freq + \
+                "%.20g, " % err + \
+            "FROM rawfiles AS r " \
+            "WHERE r.rawfile_id=%d" % rawfile_id
+    db.execute(query)
+    
+    if not existdb:
+        # Close the DB connection we opened
+        db.close()
     

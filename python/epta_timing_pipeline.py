@@ -180,49 +180,63 @@ def pipeline_core(prepped_manipfunc, rawfile_id, parfile_id, template_id, \
     else:
         db = database.Database()
 
-    #Fill pipeline table
-    cmdline = " ".join(sys.argv)
-    process_id = epu.Fill_process_table(VERSION, rawfile_id, parfile_id, template_id, cmdline, nchan, nsub, db)
-    
+    # Get version ID
+    version_id = epu.get_version_id(db)
+
     #Get raw data from rawfile_id and verify MD5SUM
-    raw_file, raw_file_name = epu.get_file_and_id('rawfile',rawfile_id,db)
+    rawfile = epu.get_file_from_id('rawfile', rawfile_id, db)
         
     #Get ephemeris from parfile_id and verify MD5SUM
-    parfile, parfile_name = epu.get_file_and_id('parfile',parfile_id,db)
+    parfile = epu.get_file_from_id('parfile', parfile_id, db)
 
-    #Scrunch data in time/freq and optionally re-install ephemeris and change DM
-    #Use Patrick's manipulator
-    scrunch_file = raw_file_name.split(".")[0]+".scrunch"
-    manipulators.pamit.manipulate([raw_file], scrunch_file, nsub=nsub, nchan=nchan, nbin=None)
+    # Use Patrick's manipulator
+    tmpfile, manipfn = tempfile.mkstemp()
+    tmpfile.close()
+    prepped_manipfunc([rawfile], manipfn)
 
-    #Make diagnostic plots of scrunched data
-    epu.execute("pav -g '%s.ps/CPS' -DFTp %s"%(scrunch_file,scrunch_file))
+    raise NotImplementedError("Make sure diagnostics have process_id in name so they don't get overwritten")
+    raise NotImplementedError("Wrap function in try/except block. Make diagnostics at end.")
 
     #Get template from template_id and verify MD5SUM
-    template, template_name = epu.get_file_and_id('template',template_id,db)
+    template = epu.get_file_from_id('template', template_id, db)
 
     #Generate TOA with pat
-    stdout, stderr = epu.execute("pat -f tempo2 -s %s %s"%(template,scrunch_file))
-    
-    #Make plots associated with the TOA generation
+    stdout, stderr = epu.execute("pat -f tempo2 -s %s %s"%(template, outname))
 
+    # Check version ID is still the same. Just in case.
+    new_version_id = epu.get_version_id(db)
+    if version_id != new_version_id:
+        raise errors.EptaPipelineError("Weird... Version ID at the start " \
+                                        "of processing (%s) is different " \
+                                        "from at the end (%d)!" % \
+                                        (version_id, new_version_id))
+
+    #Fill pipeline table
+    cmdline = " ".join(sys.argv)
+    hdr = epu.get_header_vals(manipfn, ['nchan', 'nsub'])
+    process_id = epu.Fill_process_table(version_id, rawfile_id, parfile_id, \
+                        template_id, cmdline, hdr['nchan'], hdr['nsub'], db)
+    
     #Insert TOA into DB
-    for toa in stdout.split("\n"):
-        toa = toa.strip()
-        if toa and not toa == "FORMAT 1":
-            print toa
-            epu.DB_load_TOA(toa,template_id,rawfile_id, db)
+    for toastr in stdout.split("\n"):
+        toastr = toastr.strip()
+        if toastr and not toastr == "FORMAT 1":
+            print toastr
+            epu.DB_load_TOA(toastr, process_id, template_id, rawfile_id, db)
+    
+    #Make diagnostic plots of scrunched data
+    epu.execute("pav -g '%s.ps/CPS' -DFTp %s"%(outname, outname))
 
     #Close DB connection
     if not existdb:
         db.close()
 
-
     #End pipeline
     print "###################################################"
-    print "Finished EPTA Timing Pipeline Version %.2f"%VERSION
-    print "End time: %s"%epu.Give_UTC_now()
+    print "Finished EPTA Timing Pipeline"
+    print "End time: %s" % epu.Give_UTC_now()
     print "###################################################"    
+
 
 def main():
 
