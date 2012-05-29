@@ -150,12 +150,57 @@ def get_master_ids(rawfile_id, existdb=None):
     return master_template_id, master_parfile_id
 
 
-def pipeline_core(prepped_manipfunc, rawfile_id, parfile_id, template_id, \
+def create_diagnostics_plots(archivefn, dir, suffix=""):
+    """Given an archive create diagnostic plots to be uploaded
+        to the DB.
+
+        Inputs:
+            archivefn: The archive's name.
+            dir: The directory where the plots should be created.
+            suffix: A string to add to the end of the base output
+                file name. (Default: Don't add a suffix).
+            
+        NOTE: No dot, underscore, etc is added between the base
+            file name and the suffix.
+
+        Outputs:
+            diagfns: A dictionary of diagnostic files created.
+                The keys are the plot type descriptions, and 
+                the values are the full path to the plots.
+    """
+    hdr = get_header_vals(archivefn, ['name', 'intmjd', 'fracmjd'])
+    hdr['secs'] = int(hdr['fracmjd']*24*3600+0.5) # Add 0.5 so result is 
+                                                  # rounded to nearest int
+    basefn = "%(name)_%(intmjd)_%(secs)" % hdr
+    # Add the suffix to the end of the base file name
+    basefn += suffix
+
+    # Create Time vs. Phase plot (pav -dYFp).
+    outfn = os.path.join(dir, "%s.dYFp.png" % basefn)
+    epu.execute("pav -dYFp -g %s/PNG %s" % (outfn, fn))
+    diagfns['Time vs. Phase'] = outfn
+
+    # Create Freq vs. Phase plot (pav -dGTp).
+    outfn = os.path.join(dir, "%s.dGTp.png" % basefn)
+    epu.execute("pav -dGTp -g %s/PNG %s" % (outfn, fn))
+    diagfns['Freq vs. Phase'] = outfn
+
+    # Create summed profile, with polarisation information (pav -dSFT).
+    outfn = os.path.join(dir, "%s.dSFT.png" % basefn)
+    epu.execute("pav -dSFT -g %s/PNG %s" % (outfn, fn))
+    diagfns['Profile'] = outfn
+    
+    return diagfns
+
+
+def pipeline_core(manip_name, prepped_manipfunc, \
+                        rawfile_id, parfile_id, template_id, \
                         existdb=None):
     """Run a prepared manipulator function on the raw file with 
         ID 'rawfile_id'. Then generate TOAs and load them into the DB.
 
         Inputs:
+            manip_name: The name of the manipulator being used.
             prepped_manipfunc: A prepared manipulator function.
             rawfile_id: The ID number of the raw file to generate TOAs from.
             parfile_id: The ID number of the par file to install into the
@@ -169,9 +214,7 @@ def pipeline_core(prepped_manipfunc, rawfile_id, parfile_id, template_id, \
     """
     #Start pipeline
     print "###################################################"
-    print "Starting EPTA Timing Pipeline Version %.2f"%VERSION
-    proc_id = epu.Make_Proc_ID()
-    print "Proc ID (UTC start datetime): %s"%proc_id
+    print "Starting EPTA Timing Pipeline"
     print "Start time: %s"%epu.Give_UTC_now()
     print "###################################################"
     
@@ -180,83 +223,95 @@ def pipeline_core(prepped_manipfunc, rawfile_id, parfile_id, template_id, \
     else:
         db = database.Database()
 
-    # Get version ID
-    version_id = epu.get_version_id(db)
-
-    #Get raw data from rawfile_id and verify MD5SUM
-    rawfile = epu.get_file_from_id('rawfile', rawfile_id, db)
+    try:
+        # Get version ID
+        version_id = epu.get_version_id(db)
+ 
+        #Get raw data from rawfile_id and verify MD5SUM
+        rawfile = epu.get_file_from_id('rawfile', rawfile_id, db)
+            
+        #Get ephemeris from parfile_id and verify MD5SUM
+        parfile = epu.get_file_from_id('parfile', parfile_id, db)
+ 
+        # Manipulate the raw file
+        # Create a temporary file for the results
+        tmpfile, manipfn = tempfile.mkstemp()
+        tmpfile.close()
+        # Run the manipulator
+        prepped_manipfunc([rawfile], manipfn)
+ 
+        #Get template from template_id and verify MD5SUM
+        template = epu.get_file_from_id('template', template_id, db)
+ 
+        #Generate TOA with pat
+        stdout, stderr = epu.execute("pat -f tempo2 -s %s %s"%(template, outname))
+ 
+        # Check version ID is still the same. Just in case.
+        new_version_id = epu.get_version_id(db)
+        if version_id != new_version_id:
+            raise errors.EptaPipelineError("Weird... Version ID at the start " \
+                                            "of processing (%s) is different " \
+                                            "from at the end (%d)!" % \
+                                            (version_id, new_version_id))
+ 
+        #Fill pipeline table
+        cmdline = " ".join(sys.argv)
+        hdr = epu.get_header_vals(manipfn, ['nchan', 'nsub'])
+        process_id = epu.Fill_process_table(version_id, rawfile_id, parfile_id, \
+                            template_id, cmdline, hdr['nchan'], hdr['nsub'], db)
         
-    #Get ephemeris from parfile_id and verify MD5SUM
-    parfile = epu.get_file_from_id('parfile', parfile_id, db)
+        #Insert TOA into DB
+        for toastr in stdout.split("\n"):
+            toastr = toastr.strip()
+            if toastr and not toastr == "FORMAT 1":
+                print toastr
+                epu.DB_load_TOA(toastr, process_id, template_id, rawfile_id, db)
+        
+        # Create processing diagnostics
+        diagdir = epu.make_proc_diagnostics_dir(manipfn, process_id)
+        suffix = "_%s_procid%d" % (manip_name, process_id)
+        diagfns = create_diagnostics_plots(manipfn, diagdir, suffix)
+        
+        # Load processing diagnostics
+        for diagtype, diagpath in diagfns.iteritems():
+            dir, fn = os.path.split(diagpath)
+            query = "INSERT INTO proc_diagnostic_plots " + \
+                    "SET filename='%s', " % fn + \
+                        "filepath='%s', " % dir + \
+                        "plot_type='%s'" % diagtype
+            db.execute(query)
+            query = "SELECT LAST_INSERT_ID()"
+            db.execute(query)
+            id = db.fetchone()[0]
+            print_info("Inserted processing diagnostic plot (type: %s). " \
+                            "ID number: %d" % (diagtype, id), 2)
+    except:
+        db.rollback()
+        sys.stdout.write("Error encountered. Rolling back DB transaction!")
+        raise
+    else:
+        # No exceptions encountered
+        # Commit database transaction
+        db.commit()
+    finally:
+        #End pipeline
+        print "###################################################"
+        print "Finished EPTA Timing Pipeline"
+        print "End time: %s" % epu.Give_UTC_now()
+        print "###################################################"    
+        
+        # Close DB connection
+        if not existdb:
+            db.close()
 
-    # Use Patrick's manipulator
-    tmpfile, manipfn = tempfile.mkstemp()
-    tmpfile.close()
-    prepped_manipfunc([rawfile], manipfn)
-
-    raise NotImplementedError("Make sure diagnostics have process_id in name so they don't get overwritten")
-    raise NotImplementedError("Wrap function in try/except block. Make diagnostics at end.")
-
-    #Get template from template_id and verify MD5SUM
-    template = epu.get_file_from_id('template', template_id, db)
-
-    #Generate TOA with pat
-    stdout, stderr = epu.execute("pat -f tempo2 -s %s %s"%(template, outname))
-
-    # Check version ID is still the same. Just in case.
-    new_version_id = epu.get_version_id(db)
-    if version_id != new_version_id:
-        raise errors.EptaPipelineError("Weird... Version ID at the start " \
-                                        "of processing (%s) is different " \
-                                        "from at the end (%d)!" % \
-                                        (version_id, new_version_id))
-
-    #Fill pipeline table
-    cmdline = " ".join(sys.argv)
-    hdr = epu.get_header_vals(manipfn, ['nchan', 'nsub'])
-    process_id = epu.Fill_process_table(version_id, rawfile_id, parfile_id, \
-                        template_id, cmdline, hdr['nchan'], hdr['nsub'], db)
-    
-    #Insert TOA into DB
-    for toastr in stdout.split("\n"):
-        toastr = toastr.strip()
-        if toastr and not toastr == "FORMAT 1":
-            print toastr
-            epu.DB_load_TOA(toastr, process_id, template_id, rawfile_id, db)
-    
-    #Make diagnostic plots of scrunched data
-    epu.execute("pav -g '%s.ps/CPS' -DFTp %s"%(outname, outname))
-
-    #Close DB connection
-    if not existdb:
-        db.close()
-
-    #End pipeline
-    print "###################################################"
-    print "Finished EPTA Timing Pipeline"
-    print "End time: %s" % epu.Give_UTC_now()
-    print "###################################################"    
 
 
 def main():
-
     #Exit if there are no or insufficient arguments
     if not len(sys.argv):
         Help()
 
     args = Parse_command_line()
-
-    if epu.is_gitrepo_dirty(config.epta_pipeline_dir):
-        if debug.PIPELINE:
-            warnings.warn("Git repository is dirty! Will tolerate because " \
-                            "pipeline debugging is on.", \
-                            errors.EptaPipelineWarning)
-        else:
-            raise errors.EptaPipelineError("Pipeline's git repository is dirty. Aborting!")
-
-    if epu.is_gitrepo_dirty(config.psrchive_dir):
-        raise errors.EptaPipelineError("PSRCHIVE's git repository is dirty. " \
-                                        "Clean up your act!")
 
     if args.rawfile is not None:
         epu.print_info("Loading rawfile %s" % args.rawfile, 1)
@@ -271,6 +326,8 @@ def main():
         args.template_id = load_template.load_template(args.template)
 
     if (args.parfile_id is None) or (args.template_id is None):
+        # Get master parfile and template IDs together to reduce number of
+        # DB queries required.
         master_template_id, master_parfile_id = get_master_ids(args.rawfile_id)
         if args.parfile_id is None:
             args.parfile_id = master_parfile_id
@@ -285,8 +342,22 @@ def main():
 
     manip_kwargs = manipulators.extract_manipulator_arguments(args.manipfunc, args)
     prepped_manipfunc = manipulators.prepare_manipulator(args.manipfunc, manip_kwargs)
+    
+    if len(manip_kwargs):
+        manip_arglist = []
+        for key in sorted(manip_kwargs.keys()):
+            manip_arglist.append("%s = %s" % (key, manip_kwargs[args]))
+        manip_argstr = "\n    ".join(arglist)
+    else:
+        manip_argstr = "None"
+
+    epu.print_into("Manipuator being used: %s\n" \
+                    "Arguments provided:\n" \
+                    "    %s" % (args.manipuator, manip_argstr), 1) 
+                    
     # Run pipeline core
-    pipeline_core(prepped_manipfunc, rawfile_id, parfile_id, template_id)
+    pipeline_core(args.manipuator, prepped_manipfunc, \
+                    rawfile_id, parfile_id, template_id)
 
 
 if __name__ == "__main__":

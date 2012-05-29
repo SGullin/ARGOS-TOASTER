@@ -134,10 +134,6 @@ def Fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
     print "Added pipeline name and version to pipeline table with pipeline_id = %s"%process_id
     return process_id
     
-def Make_Proc_ID():
-    utcnow = datetime.datetime.utcnow()
-    return "%d%02d%02d_%02d%02d%02d.%d"%(utcnow.year,utcnow.month,utcnow.day,utcnow.hour,utcnow.minute,utcnow.second,utcnow.microsecond)
-
 def Make_Tstamp():
         utcnow = datetime.datetime.utcnow()
         return "%04d-%02d-%02d %02d:%02d:%02d"%(utcnow.year,utcnow.month,utcnow.day,utcnow.hour,utcnow.minute,utcnow.second)
@@ -621,12 +617,16 @@ def get_version_id(existdb=None):
             version_id: The version ID for the current pipeline/psrchive
                 combination.
     """
-    # Use the exisitng DB connection, or open a new one if None was provided
-    db = existdb or database.Database()
-
+    # Check to make sure the repositories are clean
+    check_repos()
+    # Get git hashes
     pipeline_githash = get_githash(config.epta_pipeline_dir)
     psrchive_githash = get_githash(config.psrchive_dir)
     
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existdb or database.Database()
+
+    # Check to see if this combination of versions is in the database
     query = "SELECT version_id FROM versions " \
             "WHERE pipeline_githash='%s' AND " \
                 "psrchive_githash='%s' AND " \
@@ -657,6 +657,29 @@ def get_version_id(existdb=None):
         db.close()
 
     return version_id
+
+
+def check_repos():
+    """Check git repositories for the pipeline code, and for PSRCHIVE.
+        If the repos are dirty raise and error.
+
+        Inputs:
+            None
+
+        Outputs:
+            None
+    """
+    if epu.is_gitrepo_dirty(config.epta_pipeline_dir):
+        if debug.PIPELINE:
+            warnings.warn("Git repository is dirty! Will tolerate because " \
+                            "pipeline debugging is on.", \
+                            errors.EptaPipelineWarning)
+        else:
+            raise errors.EptaPipelineError("Pipeline's git repository is dirty. Aborting!")
+
+    if epu.is_gitrepo_dirty(config.psrchive_dir):
+        raise errors.EptaPipelineError("PSRCHIVE's git repository is dirty. " \
+                                        "Clean up your act!")
 
 
 def archive_file(file, destdir):
@@ -835,6 +858,40 @@ def get_master_template(pulsar_id, obssystem_id):
             return None, None
         else:
             return mastertmp_id, os.path.join(path, fn)
+
+
+def make_proc_diagnostics_dir(fn, proc_id):
+    """Given an archive, create the appropriate diagnostics
+        directory, and cross-references.
+
+        Inputs:
+            fn: The file to create a diagnostic directory for.
+            proc_id: The processing ID number to create a diagnostic
+                directory for.
+        
+        Outputs:
+            dir: The diagnostic directory's name.
+    """
+    basedir = epu.get_archive_dir(fn, \
+                    data_archive_location=config.diagnostics_location)
+    dir = os.path.join(basedir, "procid_%d" % proc_id)
+    # Make sure directory exists
+    if not os.path.isdir(dir):
+        # Create directory
+        print_info("Making diagnostic directory: %s" % dir, 2)
+        os.makedirs(dir, 0770)
+
+    crossrefdir = os.path.join(config.diagnostics_location, "processing")
+    if not os.path.isdir(crossrefdir):
+        # Create directory
+        print_info("Making diagnostic crossref dir: %s" % crossrefdir, 2)
+        os.makedirs(crossrefdir, 0770)
+
+    crossref = os.path.join(crossrefdir, "procid_%d" % proc_id)
+    if not os.path.islink(crossref):
+        # Create symlink
+        print_info("Making crossref to diagnostic dir: %s" % crossref, 2)
+        os.symlink(dir, crossref)
 
 
 def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, \
