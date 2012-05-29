@@ -56,7 +56,8 @@ def Help():
 def Parse_command_line():
     parser = epta.DefaultArguments(
         prog='epta_pipeline',
-        description='')
+        description='Generate TOAs from already-archived files, and load ' \
+                    'the newly created TOAs into the database.')
     #Raw data
     parser.add_argument('--rawfile_id',
                         type=int,

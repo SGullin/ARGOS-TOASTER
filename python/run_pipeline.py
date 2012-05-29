@@ -12,7 +12,9 @@ import errors
 def Parse_command_line():
     parser = epta.DefaultArguments(
         prog='run_pipeline',
-        description='')
+        description='A convenience script that first loads files ' \
+                    'to the archive, then runs the pipeline to generate ' \
+                    'TOAs and uploads then to the database.')
     #Rawfile name
     parser.add_argument('--rawfile',
                         type=str,
