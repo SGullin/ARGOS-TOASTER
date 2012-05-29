@@ -3,6 +3,7 @@
 """
 
 import shutil
+import argparse
 
 import manipulators
 import epta_pipeline_utils as epu
@@ -77,18 +78,23 @@ def add_arguments(parser):
             None
     """
     parser.add_argument("--nsub", type=int, dest='nsub', \
+                        default=1, \
                         help="Number of sub-ints to scrunch to. " \
                             "(Default: 1).")
     parser.add_argument("--nchan", type=int, dest='nchan', \
+                        default=1, \
                         help="Number of sub-bands to scrunch to. " \
                             "(Default: 1).")
     parser.add_argument("--nbin", type=int, dest='nbin', \
+                        default=argparse.SUPPRESS, \
                         help="Number of bins to scrunch to. " \
                             "(Default: don't bin scrunch).")
     parser.add_argument("--ephem", type=str, dest='ephem', \
+                        default=argparse.SUPPRESS, \
                         help="Install the provided ephemeris. " \
                             "(Default: Do not install a new ephemeris.)")
     parser.add_argument("--update-dm", dest='update_dm', \
+                        default=False, \
                         action='store_true', \
                         help="If an ephemeris is provided also update " \
                             "the header's DM value with the DM from " \

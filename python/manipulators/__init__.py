@@ -94,7 +94,9 @@ def extract_manipulator_arguments(manipulator_func, cmdopts):
     for arg in args:
         # Don't pass along arguments that we include explicitly
         if arg not in ("infns", "outname"):
-            kwargs[arg] = getattr(cmdopts, arg)
+            if hasattr(cmdopts, arg):
+                # Assume arguments that are not provided have default values
+                kwargs[arg] = getattr(cmdopts, arg)
     return kwargs 
 
 
