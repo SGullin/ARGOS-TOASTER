@@ -15,6 +15,10 @@ dbpass = "psr1937"
 #Python version to use
 python = "/usr/bin/python"
 
+# TOA generation configurations
+toa_fitting_method = "PGS" # see PSRCHIVE program 'pat' for 
+                           # a list of valid fitting methods
+
 data_archive_location = '/raid1/database/data/'
 diagdir = os.path.join(data_archive_location, "diagnostics")
 
