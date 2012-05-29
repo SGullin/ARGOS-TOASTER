@@ -16,6 +16,7 @@ dbpass = "psr1937"
 python = "/usr/bin/python"
 
 data_archive_location = '/raid1/database/data/'
+diagdir = os.path.join(data_archive_location, "diagnostics")
 
 # Location of software packages
 epta_pipeline_dir = os.path.split(os.path.abspath(__file__))[0]
