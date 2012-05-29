@@ -124,16 +124,6 @@ def Verify_file_path(file):
     return file_path, file_name
 
 
-def Fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
-                            cmdline, nchan, nsub, db):
-    query = "INSERT INTO process (version_id,rawfile_id,proc_start_time,input_args,parfile_id,template_id,nchan,nsub) VALUES ('%s','%s','%s','%s','%s','%s','%s','%s')" % (version_id,rawfile_id,Make_Tstamp(),string.join(argv," "),parfile_id,template_id,nchan,nsub)
-    DBcursor.execute(QUERY)
-    QUERY = "SELECT LAST_INSERT_ID()"
-    DBcursor.execute(QUERY)
-    process_id = DBcursor.fetchall()[0][0]
-    print "Added pipeline name and version to pipeline table with pipeline_id = %s"%process_id
-    return process_id
-    
 def Make_Tstamp():
         utcnow = datetime.datetime.utcnow()
         return "%04d-%02d-%02d %02d:%02d:%02d"%(utcnow.year,utcnow.month,utcnow.day,utcnow.hour,utcnow.minute,utcnow.second)

@@ -193,6 +193,39 @@ def create_diagnostics_plots(archivefn, dir, suffix=""):
     return diagfns
 
 
+def fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
+                            cmdline, nchan, nsub, db):
+    query = "INSERT INTO process " \
+                "(version_id, " \
+                "rawfile_id, " \
+                "add_time, " \
+                "input_args, " \
+                "parfile_id, " \
+                "template_id, " \
+                "nchan, " \
+                "nsub, " \
+                "toa_fitting_method, " \
+                "dm) " \
+            "SELECT %d, " % version_id + \
+                "%d, " % rawfile_id + \
+                "NOW(), " + \
+                "'%s', " % cmdline + \
+                "par.parfile_id, " % parfile_id + \
+                "%d, " % template_id + \
+                "%d, " % nchan + \
+                "%d, " % nsub + \
+                "%s, " + config.toa_fitting_method + \
+                "par.dm " \
+            "FROM parfiles AS par " \
+            "WHERE par.parfile_id = %d" % parfile_id
+    db.execute(query)
+    query = "SELECT LAST_INSERT_ID()"
+    db.execute(query)
+    process_id = DBcursor.fetchone()[0]
+    print_info("Added processing run to DB. Processing ID: %d" % process_id, 1)
+    return process_id
+    
+
 def pipeline_core(manip_name, prepped_manipfunc, \
                         rawfile_id, parfile_id, template_id, \
                         existdb=None):
@@ -244,7 +277,8 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         template = epu.get_file_from_id('template', template_id, db)
  
         #Generate TOA with pat
-        stdout, stderr = epu.execute("pat -f tempo2 -s %s %s"%(template, outname))
+        stdout, stderr = epu.execute("pat -f tempo2 -A %s -s %s %s" % \
+                        (config.toa_fitting_method, template, outname))
  
         # Check version ID is still the same. Just in case.
         new_version_id = epu.get_version_id(db)
@@ -254,13 +288,13 @@ def pipeline_core(manip_name, prepped_manipfunc, \
                                             "from at the end (%d)!" % \
                                             (version_id, new_version_id))
  
-        #Fill pipeline table
+        # Fill pipeline table
         cmdline = " ".join(sys.argv)
         hdr = epu.get_header_vals(manipfn, ['nchan', 'nsub'])
-        process_id = epu.Fill_process_table(version_id, rawfile_id, parfile_id, \
+        process_id = fill_process_table(version_id, rawfile_id, parfile_id, \
                             template_id, cmdline, hdr['nchan'], hdr['nsub'], db)
         
-        #Insert TOA into DB
+        # Insert TOA into DB
         for toastr in stdout.split("\n"):
             toastr = toastr.strip()
             if toastr and not toastr == "FORMAT 1":
@@ -303,7 +337,6 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         # Close DB connection
         if not existdb:
             db.close()
-
 
 
 def main():
