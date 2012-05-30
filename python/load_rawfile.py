@@ -19,10 +19,10 @@ import errors
 import database
 
 
-def populate_rawfiles_table(db, fn, params):
+def populate_rawfiles_table(db, archivefn, params):
     # md5sum helper function in epu
-    md5 = epu.Get_md5sum(fn);
-    path, fn = os.path.split(os.path.abspath(fn))
+    md5 = epu.Get_md5sum(archivefn)
+    path, fn = os.path.split(os.path.abspath(archivefn))
     
     # Does this file exist already?
     query = "SELECT rawfile_id, pulsar_id " \
@@ -85,6 +85,21 @@ def populate_rawfiles_table(db, fn, params):
         query = "SELECT LAST_INSERT_ID()"
         db.execute(query)
         rawfile_id = db.fetchone()[0]
+
+        # Create rawfile diagnostics
+        diagfns = epu.create_datafile_diagnostic_plots(archivefn, path)
+        # Load processing diagnostics
+        for diagtype, diagpath in diagfns.iteritems():
+            diagdir, diagfn = os.path.split(diagpath)
+            query = "INSERT INTO rawfile_diagnostic_plots " + \
+                    "SET rawfile_id=%d, " % rawfile_id + \
+                        "filename='%s', " % diagfn + \
+                        "filepath='%s', " % diagdir + \
+                        "plot_type='%s'" % diagtype
+            db.execute(query)
+            epu.print_info("Inserted rawfile diagnostic plot (type: %s)." % \
+                        diagtype, 2)
+
     return rawfile_id
 
 
