@@ -88,9 +88,10 @@ def main():
 
         # Print a msg if no changes
         if not made_changes:
-            print "    No changes to be made"
-        elif args.dry_run:
-            print "    No changes were made (dry run)"
+            if args.dry_run:
+                print "    No changes were made (dry run)"
+            else:
+                print "    No changes to be made"
             
 
 if __name__ == '__main__':
