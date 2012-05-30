@@ -11,6 +11,9 @@ modes = [('syscalls', 'Print commands being executed as system calls.'), \
          ('database', 'Print database connection info.'), \
          ('archiving', "Don't remove file after it has been archived."), \
          ('manipulator', "Print debugging info for manioulators."), \
+         ('gittest', "Raise warnings instead of errors when checking " \
+                        "git repos. This is useful for testing " \
+                        "un-committed changes."), \
             ]
 
 modes.sort()
