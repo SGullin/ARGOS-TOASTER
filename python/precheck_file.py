@@ -42,7 +42,7 @@ def main():
                         (fn, epu.Give_UTC_now()), 1)
 
         except errors.EptaPipelineError, msg:
-            sys.stderr.write("Pre-check of %s failed!\n%s.\nSkipping...\n" % \
+            sys.stderr.write("Pre-check of %s failed!\n%s\nSkipping...\n" % \
                                 (fn, msg))
     
 
