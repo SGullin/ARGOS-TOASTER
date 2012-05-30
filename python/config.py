@@ -20,7 +20,7 @@ toa_fitting_method = "PGS" # see PSRCHIVE program 'pat' for
                            # a list of valid fitting methods
 
 data_archive_location = '/raid1/database/data/'
-diagdir = os.path.join(data_archive_location, "diagnostics")
+diagnostics_location = os.path.join(data_archive_location, "diagnostics")
 
 # Location of software packages
 epta_pipeline_dir = os.path.split(os.path.abspath(__file__))[0]
