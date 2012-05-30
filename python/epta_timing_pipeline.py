@@ -7,11 +7,15 @@ VERSION = 0.2
 
 #Imported modules
 import sys
+import os
 import os.path
 import datetime
 import argparse
 import warnings
+import tempfile
+import shutil
 
+import colour
 import errors
 import manipulators
 import database
@@ -150,49 +154,6 @@ def get_master_ids(rawfile_id, existdb=None):
     return master_template_id, master_parfile_id
 
 
-def create_diagnostics_plots(archivefn, dir, suffix=""):
-    """Given an archive create diagnostic plots to be uploaded
-        to the DB.
-
-        Inputs:
-            archivefn: The archive's name.
-            dir: The directory where the plots should be created.
-            suffix: A string to add to the end of the base output
-                file name. (Default: Don't add a suffix).
-            
-        NOTE: No dot, underscore, etc is added between the base
-            file name and the suffix.
-
-        Outputs:
-            diagfns: A dictionary of diagnostic files created.
-                The keys are the plot type descriptions, and 
-                the values are the full path to the plots.
-    """
-    hdr = get_header_vals(archivefn, ['name', 'intmjd', 'fracmjd'])
-    hdr['secs'] = int(hdr['fracmjd']*24*3600+0.5) # Add 0.5 so result is 
-                                                  # rounded to nearest int
-    basefn = "%(name)_%(intmjd)_%(secs)" % hdr
-    # Add the suffix to the end of the base file name
-    basefn += suffix
-
-    # Create Time vs. Phase plot (pav -dYFp).
-    outfn = os.path.join(dir, "%s.dYFp.png" % basefn)
-    epu.execute("pav -dYFp -g %s/PNG %s" % (outfn, fn))
-    diagfns['Time vs. Phase'] = outfn
-
-    # Create Freq vs. Phase plot (pav -dGTp).
-    outfn = os.path.join(dir, "%s.dGTp.png" % basefn)
-    epu.execute("pav -dGTp -g %s/PNG %s" % (outfn, fn))
-    diagfns['Freq vs. Phase'] = outfn
-
-    # Create summed profile, with polarisation information (pav -dSFT).
-    outfn = os.path.join(dir, "%s.dSFT.png" % basefn)
-    epu.execute("pav -dSFT -g %s/PNG %s" % (outfn, fn))
-    diagfns['Profile'] = outfn
-    
-    return diagfns
-
-
 def fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
                             cmdline, nchan, nsub, db):
     query = "INSERT INTO process " \
@@ -210,19 +171,20 @@ def fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
                 "%d, " % rawfile_id + \
                 "NOW(), " + \
                 "'%s', " % cmdline + \
-                "par.parfile_id, " % parfile_id + \
+                "par.parfile_id, " + \
                 "%d, " % template_id + \
                 "%d, " % nchan + \
                 "%d, " % nsub + \
-                "%s, " + config.toa_fitting_method + \
+                "'%s', " % config.toa_fitting_method + \
                 "par.dm " \
             "FROM parfiles AS par " \
             "WHERE par.parfile_id = %d" % parfile_id
     db.execute(query)
     query = "SELECT LAST_INSERT_ID()"
     db.execute(query)
-    process_id = DBcursor.fetchone()[0]
-    print_info("Added processing run to DB. Processing ID: %d" % process_id, 1)
+    process_id = db.fetchone()[0]
+    epu.print_info("Added processing run to DB. Processing ID: %d" % \
+                        process_id, 1)
     return process_id
     
 
@@ -269,16 +231,21 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         # Manipulate the raw file
         # Create a temporary file for the results
         tmpfile, manipfn = tempfile.mkstemp()
-        tmpfile.close()
+        os.close(tmpfile)
         # Run the manipulator
         prepped_manipfunc([rawfile], manipfn)
  
         #Get template from template_id and verify MD5SUM
         template = epu.get_file_from_id('template', template_id, db)
- 
+        
+        # Create a temporary file for the toa diagnostic plots
+        tmpfile, toadiagfn = tempfile.mkstemp()
+        os.close(tmpfile)
+
         #Generate TOA with pat
-        stdout, stderr = epu.execute("pat -f tempo2 -A %s -s %s %s" % \
-                        (config.toa_fitting_method, template, outname))
+        stdout, stderr = epu.execute("pat -f tempo2 -A %s -s %s " \
+                                        "-t -K %s/PNG %s" % \
+                    (config.toa_fitting_method, template, toadiagfn, manipfn))
  
         # Check version ID is still the same. Just in case.
         new_version_id = epu.get_version_id(db)
@@ -294,34 +261,58 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         process_id = fill_process_table(version_id, rawfile_id, parfile_id, \
                             template_id, cmdline, hdr['nchan'], hdr['nsub'], db)
         
-        # Insert TOA into DB
+        # Insert TOAs into DB
+        toa_ids = []
         for toastr in stdout.split("\n"):
             toastr = toastr.strip()
-            if toastr and not toastr == "FORMAT 1":
+            if toastr and (toastr != "FORMAT 1") and \
+                        (toastr != "Plotting %s" % manipfn):
                 print toastr
-                epu.DB_load_TOA(toastr, process_id, template_id, rawfile_id, db)
-        
+                toa_id = epu.DB_load_TOA(toastr, process_id, \
+                                            template_id, rawfile_id, db)
+                toa_ids.append(toa_id)
+                 
         # Create processing diagnostics
         diagdir = epu.make_proc_diagnostics_dir(manipfn, process_id)
-        suffix = "_%s_procid%d" % (manip_name, process_id)
-        diagfns = create_diagnostics_plots(manipfn, diagdir, suffix)
-        
+        suffix = "_procid%d.%s" % (process_id, manip_name)
+        diagfns = epu.create_datafile_diagnostic_plots(manipfn, diagdir, suffix)
+       
+        # Copy TOA diagnostic plots and register them into DB
+        hdr = epu.get_header_vals(manipfn, ['name', 'intmjd', 'fracmjd'])
+        hdr['secs'] = int(hdr['fracmjd']*24*3600+0.5) # Add 0.5 so result is 
+                                                      # rounded to nearest int
+        basefn = "%(name)s_%(intmjd)05d_%(secs)05d" % hdr
+
+        for ii, toa_id in enumerate(toa_ids):
+            outfn = basefn+"_procid%d.TOA%d.png" % (process_id, ii+1)
+            if ii == 0:
+                fn = toadiagfn
+            else:
+                fn = "%s_%d" % (toadiagfn, ii+1)
+            shutil.move(fn, os.path.join(diagdir, outfn))
+            query = "INSERT INTO toa_diagnostic_plots " + \
+                    "SET toa_id=%d, " % toa_id + \
+                        "filename='%s', " % outfn + \
+                        "filepath='%s', " % diagdir + \
+                        "plot_type='Prof-Temp Resids'"
+            db.execute(query)
+        epu.print_info("Inserted %d TOA diagnostic plots." % len(toa_ids), 2)
+
         # Load processing diagnostics
         for diagtype, diagpath in diagfns.iteritems():
             dir, fn = os.path.split(diagpath)
             query = "INSERT INTO proc_diagnostic_plots " + \
-                    "SET filename='%s', " % fn + \
+                    "SET process_id=%d, " % process_id + \
+                        "filename='%s', " % fn + \
                         "filepath='%s', " % dir + \
                         "plot_type='%s'" % diagtype
             db.execute(query)
-            query = "SELECT LAST_INSERT_ID()"
-            db.execute(query)
-            id = db.fetchone()[0]
-            print_info("Inserted processing diagnostic plot (type: %s). " \
-                            "ID number: %d" % (diagtype, id), 2)
+            epu.print_info("Inserted processing diagnostic plot (type: %s)." % \
+                        diagtype, 2)
     except:
         db.rollback()
-        sys.stdout.write("Error encountered. Rolling back DB transaction!")
+        sys.stdout.write(colour.cstring("Error encountered. " \
+                            "Rolling back DB transaction!\n", 'error'))
         raise
     else:
         # No exceptions encountered
@@ -372,25 +363,27 @@ def main():
                      "    parfile_id: %d\n" \
                      "    template_id: %d\n" % \
                      (args.rawfile_id, args.parfile_id, args.template_id), 1)
-
+    
+    print args
     manip_kwargs = manipulators.extract_manipulator_arguments(args.manipfunc, args)
     prepped_manipfunc = manipulators.prepare_manipulator(args.manipfunc, manip_kwargs)
     
     if len(manip_kwargs):
         manip_arglist = []
         for key in sorted(manip_kwargs.keys()):
-            manip_arglist.append("%s = %s" % (key, manip_kwargs[args]))
-        manip_argstr = "\n    ".join(arglist)
+            manip_arglist.append("%s = %s" % (key, manip_kwargs[key]))
+        manip_argstr = "\n    ".join(manip_arglist)
     else:
         manip_argstr = "None"
 
-    epu.print_into("Manipuator being used: %s\n" \
+    epu.print_info("Manipuator being used: %s\n" \
                     "Arguments provided:\n" \
-                    "    %s" % (args.manipuator, manip_argstr), 1) 
-                    
+                    "    %s" % (args.manipulator, manip_argstr), 1) 
+              
+    
     # Run pipeline core
-    pipeline_core(args.manipuator, prepped_manipfunc, \
-                    rawfile_id, parfile_id, template_id)
+    pipeline_core(args.manipulator, prepped_manipfunc, \
+                    args.rawfile_id, args.parfile_id, args.template_id)
 
 
 if __name__ == "__main__":

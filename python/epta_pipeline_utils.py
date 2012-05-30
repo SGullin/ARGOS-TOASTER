@@ -20,6 +20,7 @@ import inspect
 import string
 import warnings
 import re
+import tempfile
 
 import errors
 import colour
@@ -659,15 +660,15 @@ def check_repos():
         Outputs:
             None
     """
-    if epu.is_gitrepo_dirty(config.epta_pipeline_dir):
-        if debug.PIPELINE:
+    if is_gitrepo_dirty(config.epta_pipeline_dir):
+        if config.debug.GITTEST:
             warnings.warn("Git repository is dirty! Will tolerate because " \
                             "pipeline debugging is on.", \
                             errors.EptaPipelineWarning)
         else:
             raise errors.EptaPipelineError("Pipeline's git repository is dirty. Aborting!")
 
-    if epu.is_gitrepo_dirty(config.psrchive_dir):
+    if is_gitrepo_dirty(config.psrchive_dir):
         raise errors.EptaPipelineError("PSRCHIVE's git repository is dirty. " \
                                         "Clean up your act!")
 
@@ -850,6 +851,59 @@ def get_master_template(pulsar_id, obssystem_id):
             return mastertmp_id, os.path.join(path, fn)
 
 
+def create_datafile_diagnostic_plots(archivefn, dir, suffix=""):
+    """Given an archive create diagnostic plots to be uploaded
+        to the DB.
+
+        Inputs:
+            archivefn: The archive's name.
+            dir: The directory where the plots should be created.
+            suffix: A string to add to the end of the base output
+                file name. (Default: Don't add a suffix).
+            
+        NOTE: No dot, underscore, etc is added between the base
+            file name and the suffix.
+
+        Outputs:
+            diagfns: A dictionary of diagnostic files created.
+                The keys are the plot type descriptions, and 
+                the values are the full path to the plots.
+    """
+    hdr = get_header_vals(archivefn, ['name', 'intmjd', 'fracmjd'])
+    hdr['secs'] = int(hdr['fracmjd']*24*3600+0.5) # Add 0.5 so result is 
+                                                  # rounded to nearest int
+    basefn = "%(name)s_%(intmjd)05d_%(secs)05d" % hdr
+    # Add the suffix to the end of the base file name
+    basefn += suffix
+    # To keep track of all diagnostics created, keyed by their description
+    diagfns = {}
+ 
+    # Create a temporary file for the plots 
+    # (PSRCHIVE truncates long filenames)
+    tmpfile, tmpfn = tempfile.mkstemp()
+    os.close(tmpfile)
+
+    # Create Time vs. Phase plot (pav -dYFp).
+    outfn = os.path.join(dir, "%s.dYFp.png" % basefn)
+    execute("pav -dYFp -g %s/PNG %s" % (tmpfn, archivefn))
+    shutil.move(tmpfn, outfn)
+    diagfns['Time vs. Phase'] = outfn
+
+    # Create Freq vs. Phase plot (pav -dGTp).
+    outfn = os.path.join(dir, "%s.dGTp.png" % basefn)
+    execute("pav -dGTp -g %s/PNG %s" % (tmpfn, archivefn))
+    shutil.move(tmpfn, outfn)
+    diagfns['Freq vs. Phase'] = outfn
+
+    # Create summed profile, with polarisation information (pav -dSFT).
+    outfn = os.path.join(dir, "%s.dSFT.png" % basefn)
+    execute("pav -dSFT -g %s/PNG %s" % (tmpfn, archivefn))
+    shutil.move(tmpfn, outfn)
+    diagfns['Profile'] = outfn
+    
+    return diagfns
+
+
 def make_proc_diagnostics_dir(fn, proc_id):
     """Given an archive, create the appropriate diagnostics
         directory, and cross-references.
@@ -862,7 +916,7 @@ def make_proc_diagnostics_dir(fn, proc_id):
         Outputs:
             dir: The diagnostic directory's name.
     """
-    basedir = epu.get_archive_dir(fn, \
+    basedir = get_archive_dir(fn, \
                     data_archive_location=config.diagnostics_location)
     dir = os.path.join(basedir, "procid_%d" % proc_id)
     # Make sure directory exists
@@ -882,7 +936,8 @@ def make_proc_diagnostics_dir(fn, proc_id):
         # Create symlink
         print_info("Making crossref to diagnostic dir: %s" % crossref, 2)
         os.symlink(dir, crossref)
-
+    
+    return dir
 
 def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, \
                 dir=None, stdinstr=None):
@@ -1066,7 +1121,7 @@ def get_file_from_id(ftype,type_id, existdb):
         
         Inputs:
             ftype: File type. Can be 'rawfile', 'parfile', or 'template'.
-            id: The ID number from the database.
+            type_id: The ID number from the database.
             existdb: A (optional) existing database connection object.
                 (Default: Establish a db connection)
 
@@ -1080,8 +1135,8 @@ def get_file_from_id(ftype,type_id, existdb):
     column_name = "%s_id" % ftype
     table_name = "%ss" % ftype
 
-    print_info("Looking-up file of type %s with %s_id == %d" % \
-                (ftype, column_name, id))
+    print_info("Looking-up file of type %s with %s == %d" % \
+                (ftype, column_name, type_id), 1)
 
     # Use the exisitng DB connection, or open a new one if None was provided
     db = existdb or database.Database()
@@ -1091,7 +1146,7 @@ def get_file_from_id(ftype,type_id, existdb):
                 "md5sum " \
             "FROM %s " \
             "WHERE %s = %d" % \
-                (table_name, column_name, id)
+                (table_name, column_name, type_id)
     db.execute(query)
 
     rows = db.fetchall()
@@ -1128,7 +1183,7 @@ def DB_load_TOA(tempo2_toa_string, process_id, template_id, rawfile_id, existdb=
                 (Default: Establish a db connection)
 
         Outputs:
-            None
+            toa_id: The ID number of the TOA in the DB.
     """
     # Use the exisitng DB connection, or open a new one if None was provided
     db = existdb or database.Database()
@@ -1158,12 +1213,17 @@ def DB_load_TOA(tempo2_toa_string, process_id, template_id, rawfile_id, existdb=
                 "%.20g, " % imjd + \
                 "%.20g, " % fmjd + \
                 "%.20g, " % freq + \
-                "%.20g, " % err + \
+                "%.20g " % err + \
             "FROM rawfiles AS r " \
             "WHERE r.rawfile_id=%d" % rawfile_id
     db.execute(query)
+    query = "SELECT LAST_INSERT_ID()"
+    db.execute(query)
+    toa_id = db.fetchone()[0]
+    print_info("Added TOA to DB. TOA ID: %d" % toa_id, 2)
     
     if not existdb:
         # Close the DB connection we opened
         db.close()
     
+    return toa_id
