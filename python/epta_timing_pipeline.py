@@ -107,6 +107,8 @@ def Parse_command_line():
                 parents=[parentparser])
         m.add_arguments(m_parser)
         m_parser.set_defaults(manipfunc=m.manipulate)
+        m_parser.add_standard_group()
+        m_parser.add_debug_group()
 
     args=mainparser.parse_args()
     return args
