@@ -168,7 +168,8 @@ def fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
                 "nchan, " \
                 "nsub, " \
                 "toa_fitting_method, " \
-                "dm) " \
+                "dm, " \
+                "user_id) " \
             "SELECT %d, " % version_id + \
                 "%d, " % rawfile_id + \
                 "NOW(), " + \
@@ -178,7 +179,8 @@ def fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
                 "%d, " % nchan + \
                 "%d, " % nsub + \
                 "'%s', " % config.toa_fitting_method + \
-                "par.dm " \
+                "par.dm, " \
+                "%d " % epu.get_current_users_id(db) + \
             "FROM parfiles AS par " \
             "WHERE par.parfile_id = %d" % parfile_id
     db.execute(query)
@@ -231,6 +233,7 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         parfile = epu.get_file_from_id('parfile', parfile_id, db)
  
         # Manipulate the raw file
+        epu.print_info("Manipulating file", 0)
         # Create a temporary file for the results
         tmpfile, manipfn = tempfile.mkstemp()
         os.close(tmpfile)
@@ -243,8 +246,8 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         # Create a temporary file for the toa diagnostic plots
         tmpfile, toadiagfn = tempfile.mkstemp()
         os.close(tmpfile)
-
-        #Generate TOA with pat
+        # Generate TOAs with pat
+        epu.print_info("Computing TOAs", 0)
         stdout, stderr = epu.execute("pat -f tempo2 -A %s -s %s " \
                                         "-t -K %s/PNG %s" % \
                     (config.toa_fitting_method, template, toadiagfn, manipfn))
@@ -275,6 +278,7 @@ def pipeline_core(manip_name, prepped_manipfunc, \
                 toa_ids.append(toa_id)
                  
         # Create processing diagnostics
+        epu.print_info("Generating proessing diagnostics", 0)
         diagdir = epu.make_proc_diagnostics_dir(manipfn, process_id)
         suffix = "_procid%d.%s" % (process_id, manip_name)
         diagfns = epu.create_datafile_diagnostic_plots(manipfn, diagdir, suffix)
