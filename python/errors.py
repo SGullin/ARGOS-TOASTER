@@ -35,6 +35,9 @@ class ArchivingError(EptaPipelineError):
     pass
 
 
+class NoMasterError(EptaPipelineError):
+    pass
+
 # Custom Warnings
 class EptaPipelineWarning(Warning):
     def __str__(self):
