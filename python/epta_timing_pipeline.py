@@ -54,7 +54,7 @@ def Parse_command_line():
                         default=None,
                         help="A raw file to archive/load to DB and generate TOAs for.")
     # Or by rawfile ID
-    rawgroup.add_argument('-r', '--rawfile_id',
+    rawgroup.add_argument('-r', '--rawfile-id',
                         dest='rawfile_id',
                         type=int,
                         default=None,
@@ -62,7 +62,7 @@ def Parse_command_line():
                                 "running the full pipeline.")
     #Ephemeris
     pargroup = parentparser.add_mutually_exclusive_group(required=False)
-    pargroup.add_argument('-p', '--parfile_id',
+    pargroup.add_argument('-p', '--parfile-id',
                         dest='parfile_id', 
                         type=int,
                         default=None,
@@ -74,7 +74,7 @@ def Parse_command_line():
                         help="A parfile to archive/load to DB and use when generating TOAs.")
     #Template profile
     tmpgroup = parentparser.add_mutually_exclusive_group(required=False)
-    tmpgroup.add_argument('-t', '--template_id',
+    tmpgroup.add_argument('-t', '--template-id',
                         dest='template_id',
                         type=int,
                         default=None,
@@ -374,7 +374,7 @@ def main():
     epu.print_info("Using the following IDs:\n" \
                      "    rawfile_id: %d\n" \
                      "    parfile_id: %d\n" \
-                     "    template_id: %d\n" % \
+                     "    template_id: %d" % \
                      (args.rawfile_id, args.parfile_id, args.template_id), 1)
     
     manip_kwargs = manipulators.extract_manipulator_arguments(args.manipfunc, args)
