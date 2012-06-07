@@ -149,6 +149,13 @@ def get_master_ids(rawfile_id, existdb=None):
             "WHERE rawfile_id=%d" % (rawfile_id)
     db.execute(query)
     master_template_id, master_parfile_id = db.fetchone()
+    
+    if master_template_id is None:
+        raise errors.NoMasterError("No master template found for " \
+                                    "rawfile (ID: %d)" % rawfile_id)
+    if master_parfile_id is None:
+        raise errors.NoMasterError("No master parfile found for " \
+                                    "rawfile (ID: %d)" % rawfile_id)
 
     if not existdb:
         db.close()
