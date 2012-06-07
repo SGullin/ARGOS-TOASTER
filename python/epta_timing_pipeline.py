@@ -370,7 +370,6 @@ def main():
                      "    template_id: %d\n" % \
                      (args.rawfile_id, args.parfile_id, args.template_id), 1)
     
-    print args
     manip_kwargs = manipulators.extract_manipulator_arguments(args.manipfunc, args)
     prepped_manipfunc = manipulators.prepare_manipulator(args.manipfunc, manip_kwargs)
     
