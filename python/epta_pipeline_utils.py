@@ -1071,9 +1071,17 @@ class DefaultArguments(argparse.ArgumentParser):
         group = self.add_argument_group("Standard Options", \
                     "The following options get used by various programs.")
         group.add_argument('-v', '--more-verbose', nargs=0, \
-                            action= self.TurnUpVerbosity, \
+                            action=self.TurnUpVerbosity, \
                             help="Be more verbose. (Default: " \
-                                 "Don't be verbose at all.)")
+                                 "verbosity level = %d)." % config.verbosity)
+        group.add_argument('--less-verbose', nargs=0, \
+                            action=self.TurnDownVerbosity, \
+                            help="Be less verbose. (Default: " \
+                                 "verbosity level = %d)." % config.verbosity)
+        group.add_argument('--set-verbosity', nargs=1, dest='level', \
+                            action=self.SetVerbosity, \
+                            help="Set verbosity level. (Default: " \
+                                 "verbosity level = %d)." % config.verbosity)
 
     def add_debug_group(self):
         group = self.add_argument_group("Debug Options", \
@@ -1086,7 +1094,7 @@ class DefaultArguments(argparse.ArgumentParser):
         group.add_argument('--debug-all', nargs=0, \
                             action=self.SetAllDebugModes, \
                             help="Turn on all debugging modes. (Same as -d/--debug).")
-        group.add_argument('--set-debug-mode', nargs=1, \
+        group.add_argument('--set-debug-mode', nargs=1, dest='mode', \
                             action=self.SetDebugMode, \
                             help="Turn on specified debugging mode. Use " \
                                 "--list-debug-modes to see the list of " \
@@ -1096,9 +1104,18 @@ class DefaultArguments(argparse.ArgumentParser):
                             action=self.ListDebugModes, \
                             help="List available debugging modes and " \
                                 "descriptions, then exit")
+
     class TurnUpVerbosity(argparse.Action):
         def __call__(self, parse, namespace, values, option_string):
             config.verbosity += 1
+
+    class TurnDownVerbosity(argparse.Action):
+        def __call__(self, parse, namespace, values, option_string):
+            config.verbosity -= 1
+
+    class SetVerbosity(argparse.Action):
+        def __call__(self, parse, namespace, values, option_string):
+            config.verbosity = values[0]
 
     class SetDebugMode(argparse.Action): 
         def __call__(self, parser, namespace, values, option_string):
