@@ -65,7 +65,9 @@ def get_templates(args):
                 "ON u.user_id=t.user_id " \
             "WHERE (psr.pulsar_name LIKE %s) "
     query_args = [args.pulsar_name]
-
+    if args.template_id is not None:
+        query += "AND t.template_id = %s "
+        query_args.append(args.template_id)
     if args.start_date is not None:
         query += "AND t.add_time >= %s "
         query_args.append(args.start_date)
@@ -171,6 +173,12 @@ if __name__=='__main__':
     parser = epu.DefaultArguments(description="Get a listing of tempalte_id " \
                                         "values from the DB to help the user" \
                                         "find the appropriate one to use.")
+    parser.add_argument('--template-id', dest='template_id', \
+                        type=int, default=None, \
+                        help="A template ID. This is useful for checking " \
+                            "the details of a single template, identified " \
+                            "by its ID number. NOTE: No other templates " \
+                            "will match if this option is provided.")
     parser.add_argument('-p', '--psr', dest='pulsar_name', \
                         type=str, default='%', \
                         help="The pulsar to grab templates for. " \
