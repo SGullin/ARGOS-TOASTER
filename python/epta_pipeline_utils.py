@@ -705,7 +705,7 @@ def archive_file(file, destdir):
             raise errors.ArchivingError("File copy failed! (Source MD5: %s, " \
                         "Dest MD5: %s; Source size: %d, Dest size: %d)" % \
                         (srcmd5, destmd5, srcsize, destmd5))
-    elif destdir == srcdir:
+    elif os.path.abspath(destdir) == os.path.abspath(srcdir):
         # File is already located in its destination
         # Do nothing
         warnings.warn("Source file %s is already in the archive (and in " \
