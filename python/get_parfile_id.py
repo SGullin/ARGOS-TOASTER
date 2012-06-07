@@ -18,11 +18,12 @@ import errors
 import colour
 
 def main():
-    parfiles = get_parfiles(args.pulsar_name, args.start_date, args.end_date)
+    parfiles = get_parfiles(args.pulsar_name, args.start_date, args.end_date, \
+                            args.parfile_id)
     show_parfiles(parfiles)
 
 
-def get_parfiles(psr, start=None, end=None):
+def get_parfiles(psr, start=None, end=None, parid=None):
     """Return a dictionary of information for each parfile
         in the DB that matches the search criteria provided.
 
@@ -35,6 +36,8 @@ def get_parfiles(psr, start=None, end=None):
             end: string represenation of a datetime object in
                 a format understood by sql. no parfiles added
                 after this date are returned.
+            parid: get the parfile with this parfile_id number
+                only.
 
         Output:
             rows: A list of dicts for each matching row. 
@@ -55,6 +58,9 @@ def get_parfiles(psr, start=None, end=None):
             "WHERE (par.PSRJ LIKE %s OR par.PSRB LIKE %s) "
     query_args = [psr, psr]
 
+    if parid is not None:
+        query += "AND parfile_id = %s "
+        query_args.append(parid)
     if start is not None:
         query += "AND add_time >= %s "
         query_args.append(start)
@@ -98,6 +104,12 @@ if __name__=='__main__':
                         type=str, default='%', \
                         help="The pulsar to grab parfiles for. " \
                             "NOTE: SQL regular expression syntax may be used")
+    parser.add_argument('--parfile-id', dest='parfile_id', \
+                        type=int, default=None, \
+                        help="A parfile ID. This is useful for checking " \
+                            "the details of a single parfile, identified " \
+                            "by its ID number. NOTE: No other parfiles " \
+                            "will match if this option is provided.")
     parser.add_argument('-s', '--start-date', dest='start_date', \
                         type=str, default=None, \
                         help="Do not return parfiles added to the DB " \
