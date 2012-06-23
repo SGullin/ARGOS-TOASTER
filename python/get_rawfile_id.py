@@ -91,8 +91,12 @@ def get_rawfiles(args):
         query += "AND (obs.name LIKE %s) "
         query_args.append(args.obssystem_name)
     if args.telescope:
+        telname = args.telescope.lower()
+        if telname not in epu.site_to_telescope.keys():
+            raise errors.UnrecognizedValueError("Telescope identifier '%s' " \
+                        "is not recognized!" % args.telescope)
         query += "AND (t.name LIKE %s) "
-        query_args.append(args.telescope)
+        query_args.append(epu.site_to_telescope[telname])
     if args.frontend:
         query += "AND (obs.frontend LIKE %s) "
         query_args.append(args.frontend)
