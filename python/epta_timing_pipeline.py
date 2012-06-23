@@ -241,11 +241,20 @@ def pipeline_core(manip_name, prepped_manipfunc, \
  
         # Manipulate the raw file
         epu.print_info("Manipulating file", 0)
-        # Create a temporary file for the results
+        
+        # Create a temporary file for the adjusted results
+        tmpfile, adjustfn = tempfile.mkstemp()
+        os.close(tmpfile)
+        # Re-install ephemeris
+        shutil.copy(rawfile, adjustfn)
+        cmd = "pam -m -E %s --update-dm %s" % (parfile, adjustfn)
+        epu.execute(cmd)
+        
+        # Create a temporary file for the manipulated results
         tmpfile, manipfn = tempfile.mkstemp()
         os.close(tmpfile)
         # Run the manipulator
-        prepped_manipfunc([rawfile], manipfn)
+        prepped_manipfunc([adjustfn], manipfn)
  
         #Get template from template_id and verify MD5SUM
         template = epu.get_file_from_id('template', template_id, db)

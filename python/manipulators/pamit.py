@@ -10,13 +10,10 @@ import epta_pipeline_utils as epu
 
 plugin_name = 'pamit'
 
-def manipulate(infns, outname, nsub=1, nchan=1, nbin=None, \
-                ephem=None, update_dm=False):
+def manipulate(infns, outname, nsub=1, nchan=1, nbin=None):
     """Scrunch the given archive in polarization, as well as
         in frequency to 'nchan' channels, and in time to 
         'nsub' subints. Also bin scrunch to 'nbin'.
-        Optionally, a new ephemeris will be installed and the DM will
-        be updated accordingly.
         
         **Note: The Scruncher manipulation only works on
             one archive, so if the list 'infns' contains 
@@ -32,11 +29,6 @@ def manipulate(infns, outname, nsub=1, nchan=1, nbin=None, \
                 (Default: 1)
             nbin: Number of output bins requested.
                 (Default: Don't bin scrunch.)
-            ephem: The filename of the ephemeris to install.
-                (Default: Don't install a new ephemeris.)
-            update_dm: If True, update the archive's DM value in
-                its header to be the same as what is in the newly
-                installed ephemeris. (Default: False).
 
         Outputs:
             None
@@ -53,11 +45,6 @@ def manipulate(infns, outname, nsub=1, nchan=1, nbin=None, \
 
     cmd = "pam -m --setnchn %d --setnsub %d %s" % \
             (nchan, nsub, outname)
-
-    if ephem is not None:
-        cmd += " -E %s" % ephem
-        if update_dm:
-            cmd += " --update-dm"
 
     if nbin is not None:
         cmd += " --setnbin %d" % nbin
@@ -89,13 +76,3 @@ def add_arguments(parser):
                         default=argparse.SUPPRESS, \
                         help="Number of bins to scrunch to. " \
                             "(Default: don't bin scrunch).")
-    parser.add_argument("--ephem", type=str, dest='ephem', \
-                        default=argparse.SUPPRESS, \
-                        help="Install the provided ephemeris. " \
-                            "(Default: Do not install a new ephemeris.)")
-    parser.add_argument("--update-dm", dest='update_dm', \
-                        default=False, \
-                        action='store_true', \
-                        help="If an ephemeris is provided also update " \
-                            "the header's DM value with the DM from " \
-                            "the ephemeris. (Default: False)")
