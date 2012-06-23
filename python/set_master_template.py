@@ -37,16 +37,23 @@ def get_template_id(db, template):
     # is being used
     path, fn = os.path.split(os.path.abspath(template))
     md5sum = epu.Get_md5sum(template)
-    query = "SELECT template_id " \
+    query = "SELECT template_id, md5sum " \
             "FROM templates " \
-            "WHERE filename=%s " \
-                "AND md5sum=%s"
+            "WHERE filename=%s"
     db.execute(query, (fn, md5sum))
     rows = db.fetchall()
     if rows == 1:
-        return rows[0].template_id
+        if rows[0].md5sum != md5sum:
+            raise errors.FileError("Template (%s) found in database but " \
+                                    "MD5sum in DB (%s) doesn't match MD5sum" \
+                                    "of the file provided (%s)!" % \
+                                    (filename, rows[0].md5sum, md5sum))
+        else:
+            return rows[0].template_id
     elif rows == 0:
-        raise errors.EptaPipelineError("No matching template found!")
+        raise errors.EptaPipelineError("No matching template found! " \
+                                        "Use 'load_template.py' to add " \
+                                        "a new template to the DB.")
     else:
         raise errors.InconsistentDatabaseError("Multiple templates have " \
                                                 "the same file path/name!")
