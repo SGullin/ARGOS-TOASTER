@@ -68,7 +68,10 @@ def get_rawfiles(args):
                 "ON u.user_id=r.user_id " \
             "WHERE (psr.pulsar_bname LIKE %s OR psr.pulsar_jname LIKE %s) "
     query_args = [args.pulsar_name, args.pulsar_name]
-
+    
+    if args.rawfile_id is not None:
+        query += "AND r.rawfile_id = %s "
+        query_args.append(args.rawfile_id)
     if args.start_date is not None:
         query += "AND r.add_time >= %s "
         query_args.append(args.start_date)
@@ -88,8 +91,12 @@ def get_rawfiles(args):
         query += "AND (obs.name LIKE %s) "
         query_args.append(args.obssystem_name)
     if args.telescope:
+        telname = args.telescope.lower()
+        if telname not in epu.site_to_telescope.keys():
+            raise errors.UnrecognizedValueError("Telescope identifier '%s' " \
+                        "is not recognized!" % args.telescope)
         query += "AND (t.name LIKE %s) "
-        query_args.append(args.telescope)
+        query_args.append(epu.site_to_telescope[telname])
     if args.frontend:
         query += "AND (obs.frontend LIKE %s) "
         query_args.append(args.frontend)
@@ -145,6 +152,12 @@ if __name__=='__main__':
     parser = epu.DefaultArguments(description="Get a listing of rawfile_id " \
                                         "values from the DB to help the user " \
                                         "find the appropriate one to use.")
+    parser.add_argument('-r', '--rawfile-id', dest='rawfile_id', \
+                        type=int, default=None, \
+                        help="A raw file ID. This is useful for checking " \
+                            "the details of a single raw file, identified " \
+                            "by its ID number. NOTE: No other raw files " \
+                            "will match if this option is provided.")
     parser.add_argument('-p', '--psr', dest='pulsar_name', \
                         type=str, default='%', \
                         help="The pulsar to grab rawfiles for. " \

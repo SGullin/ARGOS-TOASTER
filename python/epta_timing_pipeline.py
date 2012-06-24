@@ -54,7 +54,7 @@ def Parse_command_line():
                         default=None,
                         help="A raw file to archive/load to DB and generate TOAs for.")
     # Or by rawfile ID
-    rawgroup.add_argument('-r', '--rawfile_id',
+    rawgroup.add_argument('-r', '--rawfile-id',
                         dest='rawfile_id',
                         type=int,
                         default=None,
@@ -62,7 +62,7 @@ def Parse_command_line():
                                 "running the full pipeline.")
     #Ephemeris
     pargroup = parentparser.add_mutually_exclusive_group(required=False)
-    pargroup.add_argument('-p', '--parfile_id',
+    pargroup.add_argument('-p', '--parfile-id',
                         dest='parfile_id', 
                         type=int,
                         default=None,
@@ -74,7 +74,7 @@ def Parse_command_line():
                         help="A parfile to archive/load to DB and use when generating TOAs.")
     #Template profile
     tmpgroup = parentparser.add_mutually_exclusive_group(required=False)
-    tmpgroup.add_argument('-t', '--template_id',
+    tmpgroup.add_argument('-t', '--template-id',
                         dest='template_id',
                         type=int,
                         default=None,
@@ -107,6 +107,8 @@ def Parse_command_line():
                 parents=[parentparser])
         m.add_arguments(m_parser)
         m_parser.set_defaults(manipfunc=m.manipulate)
+        m_parser.add_standard_group()
+        m_parser.add_debug_group()
 
     args=mainparser.parse_args()
     return args
@@ -147,6 +149,13 @@ def get_master_ids(rawfile_id, existdb=None):
             "WHERE rawfile_id=%d" % (rawfile_id)
     db.execute(query)
     master_template_id, master_parfile_id = db.fetchone()
+    
+    if master_template_id is None:
+        raise errors.NoMasterError("No master template found for " \
+                                    "rawfile (ID: %d)" % rawfile_id)
+    if master_parfile_id is None:
+        raise errors.NoMasterError("No master parfile found for " \
+                                    "rawfile (ID: %d)" % rawfile_id)
 
     if not existdb:
         db.close()
@@ -166,7 +175,8 @@ def fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
                 "nchan, " \
                 "nsub, " \
                 "toa_fitting_method, " \
-                "dm) " \
+                "dm, " \
+                "user_id) " \
             "SELECT %d, " % version_id + \
                 "%d, " % rawfile_id + \
                 "NOW(), " + \
@@ -176,7 +186,8 @@ def fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
                 "%d, " % nchan + \
                 "%d, " % nsub + \
                 "'%s', " % config.toa_fitting_method + \
-                "par.dm " \
+                "par.dm, " \
+                "%d " % epu.get_current_users_id(db) + \
             "FROM parfiles AS par " \
             "WHERE par.parfile_id = %d" % parfile_id
     db.execute(query)
@@ -229,11 +240,21 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         parfile = epu.get_file_from_id('parfile', parfile_id, db)
  
         # Manipulate the raw file
-        # Create a temporary file for the results
+        epu.print_info("Manipulating file", 0)
+        
+        # Create a temporary file for the adjusted results
+        tmpfile, adjustfn = tempfile.mkstemp()
+        os.close(tmpfile)
+        # Re-install ephemeris
+        shutil.copy(rawfile, adjustfn)
+        cmd = "pam -m -E %s --update-dm %s" % (parfile, adjustfn)
+        epu.execute(cmd)
+        
+        # Create a temporary file for the manipulated results
         tmpfile, manipfn = tempfile.mkstemp()
         os.close(tmpfile)
         # Run the manipulator
-        prepped_manipfunc([rawfile], manipfn)
+        prepped_manipfunc([adjustfn], manipfn)
  
         #Get template from template_id and verify MD5SUM
         template = epu.get_file_from_id('template', template_id, db)
@@ -241,8 +262,8 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         # Create a temporary file for the toa diagnostic plots
         tmpfile, toadiagfn = tempfile.mkstemp()
         os.close(tmpfile)
-
-        #Generate TOA with pat
+        # Generate TOAs with pat
+        epu.print_info("Computing TOAs", 0)
         stdout, stderr = epu.execute("pat -f tempo2 -A %s -s %s " \
                                         "-t -K %s/PNG %s" % \
                     (config.toa_fitting_method, template, toadiagfn, manipfn))
@@ -273,6 +294,7 @@ def pipeline_core(manip_name, prepped_manipfunc, \
                 toa_ids.append(toa_id)
                  
         # Create processing diagnostics
+        epu.print_info("Generating proessing diagnostics", 0)
         diagdir = epu.make_proc_diagnostics_dir(manipfn, process_id)
         suffix = "_procid%d.%s" % (process_id, manip_name)
         diagfns = epu.create_datafile_diagnostic_plots(manipfn, diagdir, suffix)
@@ -361,10 +383,9 @@ def main():
     epu.print_info("Using the following IDs:\n" \
                      "    rawfile_id: %d\n" \
                      "    parfile_id: %d\n" \
-                     "    template_id: %d\n" % \
+                     "    template_id: %d" % \
                      (args.rawfile_id, args.parfile_id, args.template_id), 1)
     
-    print args
     manip_kwargs = manipulators.extract_manipulator_arguments(args.manipfunc, args)
     prepped_manipfunc = manipulators.prepare_manipulator(args.manipfunc, manip_kwargs)
     

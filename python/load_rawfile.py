@@ -91,7 +91,7 @@ def populate_rawfiles_table(db, archivefn, params):
         # Load processing diagnostics
         for diagtype, diagpath in diagfns.iteritems():
             diagdir, diagfn = os.path.split(diagpath)
-            query = "INSERT INTO rawfile_diagnostic_plots " + \
+            query = "INSERT INTO raw_diagnostic_plots " + \
                     "SET rawfile_id=%d, " % rawfile_id + \
                         "filename='%s', " % diagfn + \
                         "filepath='%s', " % diagdir + \
