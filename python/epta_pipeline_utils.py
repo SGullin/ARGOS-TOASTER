@@ -83,19 +83,6 @@ int_re = re.compile(r"^[-+]?\d+$")
 # Functions
 ##############################################################################
 
-def DBconnect(Host=config.dbhost, DBname=config.dbname, \
-                Username=config.dbuser, Password=config.dbpass, \
-                cursor_class=cursors.Cursor):
-    #To make a connection to the database
-    try:
-        connection = connect(host=Host,db=DBname,user=Username,passwd=Password)
-        cursor = connection.cursor(cursor_class)
-        print_debug("Successfully connected to database %s.%s as %s"%(Host,DBname,Username), 'database')
-    except OperationalError:
-        print "Could not connect to database!"
-        raise
-    return cursor, connection
-                    
 def Run_python_script(script, args_list, verbose=0, test=0):
     #Use to run an external python script in the shell
     COMMAND = config.python+" "+script+" "+" ".join("%s" % arg for arg in args_list)
@@ -745,6 +732,10 @@ def archive_file(file, destdir):
     os.chmod(dest, 0440) # "0440" is an integer in base 8. It works
                          # the same way 440 does for chmod on cmdline
     return dest
+
+
+def hash_password(pw):
+    return hashlib.md5(pw).hexdigest()
 
 
 def Get_md5sum(fname, block_size=16*8192):
