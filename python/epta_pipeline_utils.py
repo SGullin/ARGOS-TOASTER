@@ -7,7 +7,6 @@
 #Imported modules
 
 import sys
-from MySQLdb import *
 import os
 import shutil
 import os.path

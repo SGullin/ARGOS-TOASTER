@@ -6,7 +6,8 @@ import os.path
 pipe_name = "epta_pipeline"
 version = 0.1
 
-#Database parameters
+# Database parameters
+dburl = "sqlite:///test.db"
 dbhost = "eptadata.jb.man.ac.uk"
 dbname = "epta"
 dbuser = "epta"
