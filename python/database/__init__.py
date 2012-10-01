@@ -3,7 +3,7 @@ import sqlalchemy as sa
 
 import errors
 import config
-
+import schema
 
 class Database(object):
     def __init__(self, autocommit=True, url=config.dburl, *args, **kwargs):
@@ -14,17 +14,7 @@ class Database(object):
         self.autocommit = autocommit
 
         # The database description (metadata)
-        self.metadata = sa.MetaData()
- 
-        # Create users table
-        sa.Table('users', self.metadata, \
-                sa.Column('user_id', sa.Integer, primary_key=True, \
-                            autoincrement=True), \
-                sa.Column('user_name', sa.String(64), nullable=False), \
-                sa.Column('real_name', sa.String(64), nullable=False), \
-                sa.Column('email_address', sa.String(64), nullable=False), \
-                sa.Column('passwd_hash', sa.String(64)), \
-                mysql_engine='InnoDB')
+        self.metadata = schema.metadata
         self.tables = self.metadata.tables
 
     def connect(self):
