@@ -98,7 +98,7 @@ sa.Table('toa_diagnostic_plots', metadata, \
         sa.UniqueConstraint('toa_id', 'plot_type'), \
         mysql_engine='InnoDB')
 
-# Define timefiles table
+# Define timfiles table
 sa.Table('timfiles', metadata, \
         sa.Column('timfile_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
@@ -114,7 +114,7 @@ sa.Table('timfiles', metadata, \
 # Define toa_tim table (mapping which TOAs are included in which .tim files)
 sa.Table('toa_tim', metadata, \
         sa.Column('timfile_id', sa.Integer, \
-                    sa.ForeignKey("timefiles.timfile_id"), \
+                    sa.ForeignKey("timfiles.timfile_id"), \
                     nullable=False), \
         sa.Column('toa_id', sa.Integer, \
                     sa.ForeignKey("toas.toa_id"), \
@@ -238,9 +238,6 @@ sa.Table('pulsars', metadata, \
         sa.Column('pulsar_jname', sa.String(20), nullable=False, \
                     unique=True), \
         sa.Column('pulsar_bname', sa.String(20), nullable=True), \
-        sa.Column('master_parfile_id', sa.Integer, 
-                    sa.ForeignKey('parfiles.parfile_id'), \
-                    nullable=True), \
         mysql_engine='InnoDB')
 
 # Define proc_diagnostics table
@@ -345,4 +342,14 @@ sa.Table('master_templates', metadata, \
                     sa.ForeignKey("obssystems.obssystem_id"), \
                     nullable=False), \
         sa.UniqueConstraint('pulsar_id', 'obssystem_id'), \
+        mysql_engine='InnoDB')
+
+# Create master_parfiles table
+sa.Table('master_parfiles', metadata, \
+        sa.Column('parfile_id', sa.Integer, \
+                    sa.ForeignKey("parfiles.parfile_id"), \
+                    nullable=False), \
+        sa.Column('pulsar_id', sa.Integer, \
+                    sa.ForeignKey('pulsars.pulsar_id'), \
+                    nullable=False, unique=True), \
         mysql_engine='InnoDB')
