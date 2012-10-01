@@ -8,7 +8,7 @@ Patrick Lazarus, Feb. 9, 2012
 """
 
 modes = [('syscalls', 'Print commands being executed as system calls.'), \
-         ('database', 'Print database connection info.'), \
+         ('queries', 'Print database queries being executed.'), \
          ('archiving', "Don't remove file after it has been archived."), \
          ('manipulator', "Print debugging info for manioulators."), \
          ('gittest', "Raise warnings instead of errors when checking " \
