@@ -1018,7 +1018,7 @@ def print_info(msg, level=1):
             colour.cprint(msg, 'info')
 
 
-def print_debug(msg, category):
+def print_debug(msg, category, stepsback=1):
     """Print a debugging message if the given debugging category
         is turned on.
 
@@ -1027,6 +1027,9 @@ def print_debug(msg, category):
         Inputs:
             msg: The message to print.
             category: The debugging category of the message.
+            stepsback: The number of steps back into the call stack
+                to get function calling information from. 
+                (Default: 1).
 
         Outputs:
             None
@@ -1034,7 +1037,7 @@ def print_debug(msg, category):
     if config.debug.is_on(category):
         if config.helpful_debugging:
             # Get caller info
-            fn, lineno, funcnm = inspect.stack()[1][1:4]
+            fn, lineno, funcnm = inspect.stack()[stepsback][1:4]
             to_print = colour.cstring("DEBUG %s [%s:%d - %s(...)]:\n" % \
                         (category.upper(), os.path.split(fn)[-1], lineno, funcnm), \
                             'debughdr')
