@@ -43,7 +43,7 @@ sa.Table('toas', metadata, \
         sa.Column('imjd', sa.Integer, nullable=False), \
         sa.Column('fmjd', sa.Float(53), nullable=False), \
         sa.Column('freq', sa.Float(24), nullable=False), \
-        sa.Column('toa_unc_us' sa.Float(24), nullable=False), \
+        sa.Column('toa_unc_us', sa.Float(24), nullable=False), \
         mysql_engine='InnoDB')
 
 # Define process table
@@ -64,7 +64,7 @@ sa.Table('process', metadata, \
                     nullable=False), \
         sa.Column('user_id', sa.Integer, \
                     sa.ForeignKey("users.user_id"), \
-                    nullable=False)
+                    nullable=False), \
         sa.Column('add_time', sa.DateTime, nullable=False), \
         sa.Column('input_args', sa.Text, nullable=False), \
         sa.Column('nchan', sa.Integer, nullable=False), \
@@ -91,7 +91,7 @@ sa.Table('toa_diagnostic_plots', metadata, \
                     autoincrement=True, nullable=False), \
         sa.Column('toa_id', sa.Integer, \
                     sa.ForeignKey("toas.toa_id"), \
-                    nullable=False)
+                    nullable=False), \
         sa.Column('filename', sa.String(512), nullable=False), \
         sa.Column('filepath', sa.String(512), nullable=False), \
         sa.Column('plot_type', sa.String(16), nullable=False), \
@@ -166,7 +166,7 @@ sa.Table('rawfiles', metadata, \
         sa.Column('rawfile_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('filename', sa.String(512), nullable=False), \
-        sa.Column('filepath' sa.String(512), nullable=False), \
+        sa.Column('filepath', sa.String(512), nullable=False), \
         sa.Column('md5sum', sa.String(512), nullable=False), \
         sa.Column('add_time', sa.DateTime, nullable=False, \
                     default=sa.func.now()), \
@@ -222,7 +222,7 @@ sa.Table('raw_diagnostic_plots', metadata, \
                     autoincrement=True, nullable=False), \
         sa.Column('rawfile_id', sa.Integer, \
                     sa.ForeignKey("rawfiles.rawfile_id"), \
-                    nullable=False)
+                    nullable=False), \
         sa.Column('filename', sa.String(512), nullable=False), \
         sa.Column('filepath', sa.String(512), nullable=False), \
         sa.Column('plot_type', sa.String(16), nullable=False), \
@@ -261,7 +261,7 @@ sa.Table('proc_diagnostic_plots', metadata, \
                     autoincrement=True, nullable=False), \
         sa.Column('process_id', sa.Integer, \
                     sa.ForeignKey("process.process_id"), \
-                    nullable=False)
+                    nullable=False), \
         sa.Column('filename', sa.String(512), nullable=False), \
         sa.Column('filepath', sa.String(512), nullable=False), \
         sa.Column('plot_type', sa.String(16), nullable=False), \
@@ -269,11 +269,11 @@ sa.Table('proc_diagnostic_plots', metadata, \
         mysql_engine='InnoDB')
 
 # Define parfiles table
-sa.table('parfiles', metadata, \
+sa.Table('parfiles', metadata, \
         sa.Column('parfile_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('filename', sa.String(512), nullable=False), \
-        sa.Column('filepath' sa.String(512), nullable=False), \
+        sa.Column('filepath', sa.String(512), nullable=False), \
         sa.Column('md5sum', sa.String(512), nullable=False), \
         sa.Column('add_time', sa.DateTime, nullable=False, \
                     default=sa.func.now()), \
@@ -283,8 +283,8 @@ sa.table('parfiles', metadata, \
         sa.Column('pulsar_id', sa.Integer, \
                     sa.ForeignKey('pulsars.pulsar_id'), \
                     nullable=False), \
-        sa.Column('PSRJ', sa.String(12),, nullable=True), \
-        sa.Column('PSRB', sa.String(12),, nullable=True), \
+        sa.Column('PSRJ', sa.String(12), nullable=True), \
+        sa.Column('PSRB', sa.String(12), nullable=True), \
         sa.Column('RAJ', sa.String(32), nullable=True), \
         sa.Column('DECJ', sa.String(32), nullable=True), \
         sa.Column('PEPOCH', sa.Float(53), nullable=True), \
