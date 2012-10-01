@@ -1,3 +1,4 @@
 import database
 
-database.metadata.create_all(database.engine)
+db = database.Database()
+db.metadata.create_all(db.engine)
