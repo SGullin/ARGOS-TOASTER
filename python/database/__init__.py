@@ -4,6 +4,8 @@ import sqlalchemy as sa
 import errors
 import config
 import schema
+import epta_pipeline_utils as epu
+
 
 class Database(object):
     def __init__(self, autocommit=True, url=config.dburl, *args, **kwargs):
@@ -11,6 +13,8 @@ class Database(object):
         """
         # Create the database engine
         self.engine = sa.create_engine(url, *args, **kwargs)
+        sa.event.listen(self.engine, "before_cursor_execute", \
+                            self.before_cursor_execute)
         self.autocommit = autocommit
 
         # The database description (metadata)
@@ -32,6 +36,21 @@ class Database(object):
         self.open_transactions = []
         self.result = None
         return self.conn
+
+    def before_cursor_execute(self, conn, cursor, statement, parameters, \
+                                context, executemany):
+        """An event to be executed before execution of SQL queries.
+
+            See SQLAlchemy for details about event triggers.
+        """
+        # Step back 7 levels through the call stack to find
+        # the function that called 'execute'
+        msg = str(statement)
+        if executemany:
+            msg += "\n    Executing %d statements" % len(parameters)
+        else:
+            msg += "\n    Params: %s" % str(parameters)
+        epu.print_debug(msg, "queries", stepsback=7)
 
     def execute(self, *args, **kwargs):
         """Execute a query.
