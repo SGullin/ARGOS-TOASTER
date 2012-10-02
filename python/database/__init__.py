@@ -21,6 +21,15 @@ class Database(object):
         self.metadata = schema.metadata
         self.tables = self.metadata.tables
 
+    def get_table(self, tablename):
+        return self.tables[tablename]
+
+    def __getitem__(self, key):
+        return self.get_table(key)
+
+    def __getattr__(self, key):
+        return self.get_table(key)
+
     def connect(self):
         """Connect to the database, setting self.conn.
             
@@ -46,9 +55,9 @@ class Database(object):
         # Step back 7 levels through the call stack to find
         # the function that called 'execute'
         msg = str(statement)
-        if executemany:
+        if executemany and len(parameters) > 1:
             msg += "\n    Executing %d statements" % len(parameters)
-        else:
+        elif parameters:
             msg += "\n    Params: %s" % str(parameters)
         epu.print_debug(msg, "queries", stepsback=7)
 
@@ -66,6 +75,10 @@ class Database(object):
                 result: The SQLAlchemy ResultProxy object returned
                     by the call to self.conn.execute(...).
         """
+        if not hasattr(self, 'conn'):
+            raise errors.DatabaseError("Connection to database not " \
+                    "established. Be sure self.connect(...) is called " \
+                    "before attempting to execute queries.")
         if self.result is not None:
             self.result.close()
         self.result = self.conn.execute(*args, **kwargs)
@@ -168,4 +181,17 @@ class Database(object):
         """
         self.execute(*args, **kwargs)
         return self.fetchall()
-        
+       
+    @staticmethod
+    def select(*args, **kwargs):
+        """A staticmethod for returning a select object.
+
+            Inputs:
+                ** All arguments are directly passed to 
+                    'sqlalchemy.sql.select'.
+
+            Outputs:
+                select: The select object returned by \
+                    'sqlalchemy.sql.select'.
+        """      
+        return sa.sql.select(*args, **kwargs)
