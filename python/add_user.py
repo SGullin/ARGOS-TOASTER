@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import re
 import sys
 import getpass
@@ -74,9 +75,9 @@ def validate_proposed_user(db, user_name, real_name, email_address):
 
 def main():
     db = database.Database()
-    # Check if user already exists in DB
     db.connect()
 
+    # Check if user already exists in DB
     validate_proposed_user(db, args.user_name, args.real_name, \
                             args.email_address)
     # Get password interactively, if necessary
@@ -98,7 +99,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Add a new user to the DB")
+    parser = epu.DefaultArguments(description="Add a new user to the DB.")
     parser.add_argument('-u', '--user-name', dest='user_name', \
                         type=str, required=True, \
                         help="The new user's username. NOTE: This is required.")
@@ -118,6 +119,5 @@ if __name__=='__main__':
                             "log it somewhere in plain text.")
     pwgroup.add_argument('--passhash', dest='passwd_hash', type=str, \
                         help="The MD5 hash of the new user's password.")
-
     args = parser.parse_args()
     main()
