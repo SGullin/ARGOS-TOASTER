@@ -6,9 +6,12 @@ metadata = sa.MetaData()
 sa.Table('users', metadata, \
         sa.Column('user_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
-        sa.Column('user_name', sa.String(64), nullable=False), \
-        sa.Column('real_name', sa.String(64), nullable=False), \
-        sa.Column('email_address', sa.String(64), nullable=False), \
+        sa.Column('user_name', sa.String(64), nullable=False, \
+                    unique=True), \
+        sa.Column('real_name', sa.String(64), nullable=False, \
+                    unique=True), \
+        sa.Column('email_address', sa.String(64), nullable=False, \
+                    unique=True), \
         sa.Column('passwd_hash', sa.String(64)), \
         mysql_engine='InnoDB')
 
@@ -19,6 +22,8 @@ sa.Table('versions', metadata, \
         sa.Column('pipeline_githash', sa.String(64), nullable=False), \
         sa.Column('psrchive_githash', sa.String(64), nullable=False), \
         sa.Column('tempo2_cvsrevno', sa.String(64), nullable=False), \
+        sa.UniqueConstraint('pipeline_githash', 'psrchive_githash', \
+                                'tempo2_cvsrevno'), \
         mysql_engine='InnoDB')
 
 # Define toas table
@@ -92,7 +97,8 @@ sa.Table('toa_diagnostic_plots', metadata, \
         sa.Column('toa_id', sa.Integer, \
                     sa.ForeignKey("toas.toa_id"), \
                     nullable=False), \
-        sa.Column('filename', sa.String(512), nullable=False), \
+        sa.Column('filename', sa.String(512), nullable=False, \
+                    unique=True), \
         sa.Column('filepath', sa.String(512), nullable=False), \
         sa.Column('plot_type', sa.String(16), nullable=False), \
         sa.UniqueConstraint('toa_id', 'plot_type'), \
@@ -138,8 +144,10 @@ sa.Table('templates', metadata, \
         sa.Column('nbin', sa.Integer, nullable=True), \
         sa.Column('is_analytic', sa.Boolean, nullable=False), \
         sa.Column('filepath', sa.String(512), nullable=False), \
-        sa.Column('filename', sa.String(512), nullable=False), \
-        sa.Column('md5sum', sa.String(64), nullable=False), \
+        sa.Column('filename', sa.String(512), nullable=False, \
+                    unique=True), \
+        sa.Column('md5sum', sa.String(64), nullable=False, \
+                    unique=True), \
         sa.Column('add_time', sa.DateTime, nullable=False, \
                     default=sa.func.now()), \
         sa.Column('comments', sa.Text, nullable=False), \
@@ -150,7 +158,8 @@ sa.Table('templates', metadata, \
 sa.Table('telescopes', metadata, \
         sa.Column('telescope_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
-        sa.Column('name', sa.String(64), nullable=False), \
+        sa.Column('name', sa.String(64), nullable=False, \
+                    unique=True), \
         sa.Column('latitude', sa.Float(53), nullable=True), \
         sa.Column('longitude', sa.Float(53), nullable=True), \
         sa.Column('datum', sa.String(64), nullable=True), \
@@ -165,9 +174,11 @@ sa.Table('telescopes', metadata, \
 sa.Table('rawfiles', metadata, \
         sa.Column('rawfile_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
-        sa.Column('filename', sa.String(512), nullable=False), \
+        sa.Column('filename', sa.String(512), nullable=False, \
+                    unique=True), \
         sa.Column('filepath', sa.String(512), nullable=False), \
-        sa.Column('md5sum', sa.String(512), nullable=False), \
+        sa.Column('md5sum', sa.String(512), nullable=False, \
+                    unique=True), \
         sa.Column('add_time', sa.DateTime, nullable=False, \
                     default=sa.func.now()), \
         sa.Column('user_id', sa.Integer, \
@@ -223,7 +234,8 @@ sa.Table('raw_diagnostic_plots', metadata, \
         sa.Column('rawfile_id', sa.Integer, \
                     sa.ForeignKey("rawfiles.rawfile_id"), \
                     nullable=False), \
-        sa.Column('filename', sa.String(512), nullable=False), \
+        sa.Column('filename', sa.String(512), nullable=False, \
+                    unique=True), \
         sa.Column('filepath', sa.String(512), nullable=False), \
         sa.Column('plot_type', sa.String(16), nullable=False), \
         sa.UniqueConstraint('rawfile_id', 'plot_type'), \
@@ -267,7 +279,8 @@ sa.Table('proc_diagnostic_plots', metadata, \
         sa.Column('process_id', sa.Integer, \
                     sa.ForeignKey("process.process_id"), \
                     nullable=False), \
-        sa.Column('filename', sa.String(512), nullable=False), \
+        sa.Column('filename', sa.String(512), nullable=False, \
+                    unique=True), \
         sa.Column('filepath', sa.String(512), nullable=False), \
         sa.Column('plot_type', sa.String(16), nullable=False), \
         sa.UniqueConstraint('process_id', 'plot_type'), \
@@ -277,9 +290,11 @@ sa.Table('proc_diagnostic_plots', metadata, \
 sa.Table('parfiles', metadata, \
         sa.Column('parfile_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
-        sa.Column('filename', sa.String(512), nullable=False), \
+        sa.Column('filename', sa.String(512), nullable=False, \
+                    unique=True), \
         sa.Column('filepath', sa.String(512), nullable=False), \
-        sa.Column('md5sum', sa.String(512), nullable=False), \
+        sa.Column('md5sum', sa.String(512), nullable=False, \
+                    unique=True), \
         sa.Column('add_time', sa.DateTime, nullable=False, \
                     default=sa.func.now()), \
         sa.Column('user_id', sa.Integer, \
@@ -328,7 +343,8 @@ sa.Table('parfiles', metadata, \
 sa.Table('obssystems', metadata, \
         sa.Column('obssystem_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
-        sa.Column('name', sa.String(64), nullable=False), \
+        sa.Column('name', sa.String(64), nullable=False, \
+                    unique=True), \
         sa.Column('telescope_id', sa.Integer, \
                     sa.ForeignKey('telescopes.telescope_id'), \
                     nullable=False), \
@@ -336,6 +352,8 @@ sa.Table('obssystems', metadata, \
         sa.Column('backend', sa.String(64), nullable=False), \
         sa.Column('clock', sa.String(64), nullable=False), \
         sa.Column('code', sa.String(5), nullable=False), \
+        sa.UniqueConstraint('telescope_id', 'frontend', 'backend', \
+                            'clock'), \
         mysql_engine='InnoDB')
 
 # Create master_templates table
