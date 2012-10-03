@@ -235,9 +235,17 @@ sa.Table('pulsars', metadata, \
                     autoincrement=True, nullable=False), \
         sa.Column('pulsar_name', sa.String(20), nullable=False, \
                     unique=True), \
-        sa.Column('pulsar_jname', sa.String(20), nullable=False, \
+        mysql_engine='InnoDB')
+
+# Define pulsar_aliases table
+sa.Table('pulsar_aliases', metadata, \
+        sa.Column('alias_id', sa.Integer, primary_key=True, \
+                    autoincrement=True, nullable=False), \
+        sa.Column('pulsar_id', sa.Integer, \
+                    sa.ForeignKey('pulsars.pulsar_id'), \
+                    nullable=False), \
+        sa.Column('alias_name', sa.String(20), nullable=False, \
                     unique=True), \
-        sa.Column('pulsar_bname', sa.String(20), nullable=True), \
         mysql_engine='InnoDB')
 
 # Define proc_diagnostics table
