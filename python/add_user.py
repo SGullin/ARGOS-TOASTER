@@ -78,9 +78,15 @@ def main():
     db = database.Database()
     db.connect()
 
-    # Check if user already exists in DB
-    validate_proposed_user(db, args.user_name, args.real_name, \
-                            args.email_address)
+    if args.passwd_hash is None:
+        # Sloppily pre-check to make sure we don't ask for a password
+        # for an account that will not be valid. Note that since we're 
+        # not locking the DB table, it's possible the account becomes 
+        # invalid between this check and the actual insert. We do, 
+        # however re-check (properly, using transactions) if the account 
+        # is valid at insert-time.
+        validate_proposed_user(db, args.user_name, args.real_name, \
+                                args.email_address)
     # Get password interactively, if necessary
     while args.passwd_hash is None:
         # No password (or hash) provided on command line
