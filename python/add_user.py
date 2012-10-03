@@ -58,12 +58,11 @@ def validate_proposed_user(db, user_name, real_name, email_address):
         Outputs:
             None
     """
-    select = "SELECT * FROM users " \
-             "WHERE user_name=? OR " \
-                "real_name=? OR " \
-                "email_address=?"
-    values = (user_name, real_name, email_address)
-    result = db.execute(select, values)
+    select = db.select([db.users], \
+                        (db.users.c.user_name==user_name) | \
+                        (db.users.c.real_name==real_name) | \
+                        (db.users.c.email_address==email_address))
+    result = db.execute(select)
     row = result.fetchone()
     result.close()
     if row is not None:
