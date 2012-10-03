@@ -3,7 +3,7 @@ import database
 import errors
 
 
-def valiadate_pulsar_name(db, pulsar_name):
+def validate_pulsar_name(db, pulsar_name):
     """Check if the given pulsar_name is already in use.
         If so, raise errors.BadInputError.
 
@@ -36,7 +36,8 @@ def validate_aliases(db, aliases):
         Outputs:
             None
     """
-    select = db.select([db.aliases], db.aliases.c.alias_name.in_[aliases])
+    select = db.select([db.pulsar_aliases], \
+                        db.pulsar_aliases.c.alias_name.in_(aliases))
     result = db.execute(select)
     aliases_in_use = []
     for row in result:
@@ -68,7 +69,7 @@ def add_pulsar(db, pulsar_name, aliases):
     trans = db.begin() # Open a transaction
     try:
         validate_pulsar_name(db, pulsar_name)
-        valiadate_aliases(db, aliases)
+        validate_aliases(db, aliases)
     except errors.BadInputError:
         db.rollback()
         raise
@@ -79,7 +80,7 @@ def add_pulsar(db, pulsar_name, aliases):
     result.close()
 
     # Insert new aliases into the database
-    ins = db.aliases.insert()
+    ins = db.pulsar_aliases.insert()
     values = []
     for alias in aliases:
         values.append({'pulsar_id':pulsar_id, \
