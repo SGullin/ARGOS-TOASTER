@@ -32,13 +32,14 @@ def add_new_user(db, user_name, real_name, email_address, passwd_hash):
         db.rollback()
         raise
     # Insert new user into the database
-    ins = db.tables['users'].insert()
+    ins = db.users.insert()
     values = {'user_name':user_name, \
                'real_name':real_name, \
                'email_address':email_address, \
                'passwd_hash':passwd_hash}
     result = db.execute(ins, values)
     user_id = result.inserted_primary_key[0]
+    result.close()
     db.commit()
     return user_id
 
