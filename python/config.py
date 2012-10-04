@@ -20,15 +20,18 @@ python = "/usr/bin/python"
 toa_fitting_method = "PGS" # see PSRCHIVE program 'pat' for 
                            # a list of valid fitting methods
 
-data_archive_location = '/raid1/database/data/'
+data_archive_location = '/media/Data/toaster/archive/'
 diagnostics_location = os.path.join(data_archive_location, "diagnostics")
 
 # Location of software packages
 epta_pipeline_dir = os.path.split(os.path.abspath(__file__))[0]
-psrchive_dir = "/raid1/home/bassa/linux/src/psrchive/"
-tempo2_dir = "/raid1/home/bassa/linux/src/tempo2/"
+psrchive_dir = "/home/plazar/packages/psrchive-git/"
+tempo2_dir = "/home/plazar/research/pulsar-code/linux/src/tempo2/"
 
-#Debugging flags
+# Should we do archiving?
+archive = False
+
+# Debugging flags
 colour = True # Colourise terminal output
 verbosity = 1 # Print extra output
 helpful_debugging = True # Add info about file/line when debugging
