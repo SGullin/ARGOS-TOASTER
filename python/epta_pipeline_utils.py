@@ -431,16 +431,16 @@ def prep_parfile(fn):
             # Doesn't seem like a number. Leave as string.
             val = valstr
 
-        params[key.upper()] = val
-    if "PSRJ" in params:
-        params['pulsar_id'] = get_pulsarids()[params['PSRJ']]
-        params['name'] = params['PSRJ']
-    elif "PSRB" in params:
-        params['pulsar_id'] = get_pulsarids()[params['PSRB']]
-        params['name'] = params['PSRB']
+        params[key.lower()] = val
+    if "psrj" in params:
+        params['pulsar_id'] = get_pulsarids()[params['psrj']]
+        params['name'] = params['psrj']
+    elif "psrb" in params:
+        params['pulsar_id'] = get_pulsarids()[params['psrb']]
+        params['name'] = params['psrb']
     else:
-        params['pulsar_id'] = get_pulsarids()[params['PSR']]
-        params['name'] = params['PSR']
+        params['pulsar_id'] = get_pulsarids()[params['psr']]
+        params['name'] = params['psr']
         
     # normalise pulsar name
     params['name'] = get_pulsar_names()[params['name']]
