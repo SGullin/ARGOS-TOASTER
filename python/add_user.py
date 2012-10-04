@@ -12,7 +12,8 @@ class HashPasswordAction(epu.argparse.Action):
         setattr(namespace, self.dest, epu.hash_password(values))
 
 
-def add_new_user(db, user_name, real_name, email_address, passwd_hash):
+def add_new_user(db, user_name, real_name, email_address, passwd_hash, \
+                    is_active=True, is_admin=False):
     """Add a new user to the database.
         
         Inputs:
@@ -21,6 +22,10 @@ def add_new_user(db, user_name, real_name, email_address, passwd_hash):
             real_name: The user's real name.
             email_address: The user's email address.
             passwd_hash: The MD5 hash of the user's password.
+            is_active: True, if the account should be immediately 
+                activated. (Default: True).
+            is_admin: True if the account should be given admin
+                privileges. (Default: False).
 
         Output:
             user_id: The user_id of the new user.
@@ -36,7 +41,9 @@ def add_new_user(db, user_name, real_name, email_address, passwd_hash):
     values = {'user_name':user_name, \
                'real_name':real_name, \
                'email_address':email_address, \
-               'passwd_hash':passwd_hash}
+               'passwd_hash':passwd_hash, \
+               'active':is_active, \
+               'admin':is_admin}
     result = db.execute(ins, values)
     user_id = result.inserted_primary_key[0]
     result.close()
@@ -99,7 +106,8 @@ def main():
             sys.stderr.write("Passwords don't match. Try again.\n")
     
     user_id = add_new_user(db, args.user_name, args.real_name, \
-                            args.email_address, args.passwd_hash)
+                            args.email_address, args.passwd_hash, \
+                            args.is_active, args.is_admin)
     print "Successfully inserted new user. " \
                 "Returned user_id: %d" % user_id
 
@@ -116,6 +124,18 @@ if __name__=='__main__':
                         type=str, required=True, \
                         help="The new user's email address. NOTE: This " \
                             "is required.")
+    parser.add_argument('--admin', dest='is_admin', default=False, \
+                        action='store_true', \
+                        help="If this flag is provided the user will be " \
+                            "given administrative priviliges. (Default: " \
+                            "newly created accounts do not have admin " \
+                            "privileges.)")
+    parser.add_argument('--inactive', dest='is_active', default=True, \
+                        action='store_false', \
+                        help="If this flag is provided the newly created " \
+                            "account will not be flagged as active. " \
+                            "(Default: newly created accounts are " \
+                            "immediately activated.)")
     pwgroup = parser.add_mutually_exclusive_group(required=False)
     pwgroup.add_argument('-p', '--password', dest='passwd_hash',
                         type=str, action=HashPasswordAction, \

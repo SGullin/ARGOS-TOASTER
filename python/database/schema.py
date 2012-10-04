@@ -13,6 +13,10 @@ sa.Table('users', metadata, \
         sa.Column('email_address', sa.String(64), nullable=False, \
                     unique=True), \
         sa.Column('passwd_hash', sa.String(64)), \
+        sa.Column('active', sa.Boolean, nullable=False, \
+                    default=True), \
+        sa.Column('admin', sa.Boolean, nullable=False, \
+                    default=False), \
         mysql_engine='InnoDB')
 
 # Define versions table
