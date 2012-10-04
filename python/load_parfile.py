@@ -55,7 +55,6 @@ def populate_parfiles_table(db, fn, params):
                   'filepath':path}
 
         values.update(params)
-        print params
         result = db.execute(ins, values)
         parfile_id = result.inserted_primary_key[0]
         result.close()
