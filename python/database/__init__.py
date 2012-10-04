@@ -13,6 +13,8 @@ class Database(object):
         """
         # Create the database engine
         self.engine = sa.create_engine(url, *args, **kwargs)
+        self.conn = None # No connection is established 
+                         # until self.connect() is called
         sa.event.listen(self.engine, "before_cursor_execute", \
                             self.before_cursor_execute)
         self.autocommit = autocommit
@@ -30,6 +32,17 @@ class Database(object):
     def __getattr__(self, key):
         return self.get_table(key)
 
+    def is_connected(self):
+        """Return True if an open connection is established.
+
+            Inputs:
+                None
+
+            Output:
+                isconn: True if an open connection is established.
+        """
+        return self.conn and not self.conn.closed
+
     def connect(self):
         """Connect to the database, setting self.conn.
             
@@ -40,10 +53,13 @@ class Database(object):
                 conn: The established SQLAlchemy Connection object, 
                     which is also available as self.conn.
         """
-        self.conn = self.engine.connect()
-        self.conn.execution_options(autocommit=self.autocommit)
-        self.open_transactions = []
-        self.result = None
+        # Only open a connection if not already connected
+        if not self.is_connected():
+            # Establish a connection
+            self.conn = self.engine.connect()
+            self.conn.execution_options(autocommit=self.autocommit)
+            self.open_transactions = []
+            self.result = None
         return self.conn
 
     def before_cursor_execute(self, conn, cursor, statement, parameters, \
@@ -75,7 +91,7 @@ class Database(object):
                 result: The SQLAlchemy ResultProxy object returned
                     by the call to self.conn.execute(...).
         """
-        if not hasattr(self, 'conn'):
+        if not self.is_connected():
             raise errors.DatabaseError("Connection to database not " \
                     "established. Be sure self.connect(...) is called " \
                     "before attempting to execute queries.")
