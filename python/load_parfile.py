@@ -19,14 +19,16 @@ def populate_parfiles_table(db, fn, params):
     # md5sum helper function in epu
     md5 = epu.Get_md5sum(fn);
     path, fn = os.path.split(os.path.abspath(fn))
-    
+   
+    db.begin() # Begin a transaction
     # Does this file exist already?
-    query = "SELECT parfile_id, pulsar_id " \
-            "FROM parfiles " \
-            "WHERE md5sum = '%s'" % md5
-    db.execute(query)
-    rows = db.fetchall()
+    select = db.select([db.parfiles.c.parfile_id, db.parfiles.c.pulsar_id], \
+                        db.parfiles.c.md5sum==md5)
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
     if len(rows) > 1:
+        db.rollback()
         raise errors.InconsistentDatabaseError("There are %d parfiles " \
                     "with MD5 (%s) in the database already" % (len(rows), md5))
     elif len(rows) == 1:
@@ -38,6 +40,7 @@ def populate_parfiles_table(db, fn, params):
                             "Doing nothing..." % (md5, psr_id), \
                             errors.EptaPipelineWarning)
         else:
+            db.rollback()
             raise errors.InconsistentDatabaseError("A parfile with this " \
                             "MD5 (%s) already exists in the DB, but for " \
                             "a different pulsar (ID: %d)!" % (md5, psr_id))
@@ -45,52 +48,62 @@ def populate_parfiles_table(db, fn, params):
         # Based on its MD5, this parfile doesn't already 
         # exist in the DB. Insert it.
 
-        # Get column names for parfiles table
-        query = "DESCRIBE parfiles"
-        db.execute(query)
-        rows = db.fetchall()
-        colnames = [r[0].lower() for r in rows]
- 
-        # Insert the file
-        query = "INSERT INTO parfiles " + \
-                    "SET md5sum = '%s', " % md5 + \
-                       "filename = '%s', " % fn + \
-                       "filepath = '%s', " % path + \
-                       "add_time = NOW() "
-        for col in colnames:
-            if col in params:
-                if type(params[col]) is types.FloatType:
-                    query += ", %s = %.25g" % (col, params[col])
-                elif type(params[col]) is types.IntType:
-                    query += ", %s = %d" % (col, params[col])
-                else:
-                    query += ", %s = '%s'" % (col, params[col])
-        db.execute(query)
-        
-        # Get the template_id of the file that was just entered
-        query = "SELECT LAST_INSERT_ID()"
-        parfile_id = db.execute_and_fetchone(query)[0]
+        # Insert the parfile
+        ins = db.parfiles.insert()
+        values = {'md5sum':md5, \
+                  'filename':fn, \
+                  'filepath':path}
+
+        values.update(params)
+        print params
+        result = db.execute(ins, values)
+        parfile_id = result.inserted_primary_key[0]
+        result.close()
+    
+    db.commit()
     return parfile_id 
 
 
 def set_as_master_parfile(db, parfile_id, pulsar_id):
-    query = "UPDATE pulsars " \
-            "SET master_parfile_id = %d " \
-            "WHERE pulsar_id = %s" %(parfile_id, pulsar_id)
-    db.execute(query)
+    db.begin()
+    # Check if this pulsar already has a master parfile in the DB
+    select = db.master_parfiles.select().\
+                    where(db.master_parfiles.c.pulsar_id==pulsar_id)
+    result = db.execute(select)
+    row = result.fetchone()
+    result.close()
+    if row:
+        # Update the existing entry
+        query = db.master_parfiles.update().\
+                    where(db.master_parfiles.c.pulsar_id==pulsar_id)
+        values = {'parfile_id':parfile_id}
+    else:
+        # Insert a new entry
+        query = db.master_parfiles.insert()
+        values = {'parfile_id':parfile_id, \
+                  'pulsar_id':pulsar_id}
+    try:
+        result = db.execute(query, values)
+    except:
+        db.rollback()
+        raise
+    else:
+        db.commit()
+        result.close()
 
 
 def main():
     fn = args.parfile
     parfile_id = load_parfile(fn)
-    print "%s has been archived and loaded to the DB. rawfile_id: %d" % \
+    print "%s has been loaded to the DB. parfile_id: %d" % \
             (fn, parfile_id)
 
 
 def load_parfile(fn):
     # Connect to the database
     db = database.Database()
-    
+    db.connect()
+
     try:
         # Now load the parfile file into database
         epu.print_info("Working on %s (%s)" % (fn, epu.Give_UTC_now()), 1)
@@ -98,12 +111,10 @@ def load_parfile(fn):
         # Check the parfile and parse it
         params = epu.prep_parfile(fn)
 
-        # Move the parfile
+        # Archive the parfile
         destdir = os.path.join(config.data_archive_location, \
                     'parfiles', params['name'])
         newfn = epu.archive_file(fn, destdir)
-
-        epu.print_info("%s moved to %s (%s)" % (fn, newfn, epu.Give_UTC_now()), 1)
 
         # Register the parfile into the database
         parfile_id = populate_parfiles_table(db, newfn, params)

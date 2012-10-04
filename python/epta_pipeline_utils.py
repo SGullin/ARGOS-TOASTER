@@ -133,6 +133,7 @@ def get_userids(existdb=None):
     """
     # Use the exisitng DB connection, or open a new one if None was provided
     db = existdb or database.Database()
+    db.connect()
     query = "SELECT user_name, user_id FROM users"
     db.execute(query)
 
@@ -148,39 +149,32 @@ def get_userids(existdb=None):
     return userids
 
 
-def get_pulsarids(existdb=None):
+def get_pulsarids():
     """Return a dictionary mapping pulsar names to pulsar ids.
 
         Input:
-            existdb: A (optional) existing database connection object.
-                (Default: Establish a db connection)
+            db: A connected Database object.
 
         Output:
             pulsarids: A dictionary with pulsar names as keys
                     and pulsar ids as values.
     """
-    # Use the exisitng DB connection, or open a new one if None was provided
-    db = existdb or database.Database()
-    query = "SELECT pulsar_name, " \
-                "pulsar_jname, " \
-                "pulsar_bname, " \
-                "pulsar_id " \
-            "FROM pulsars"
-    db.execute(query)
+    db = database.Database()
+    db.connect()
 
-    rows = db.fetchall()
-    if not existdb:
-        # Close the DB connection we opened
+    try:
+        select = db.select([db.pulsar_aliases.c.alias_name, \
+                            db.pulsar_aliases.c.pulsar_id])
+        result = db.execute(select)
+        rows = result.fetchall()
+        result.close()
+    finally:
         db.close()
 
     # Create the mapping
     pulsarids = {}
-    for name, jname, bname, id in rows:
-        trimname = name.lower().lstrip('bj')
-        pulsarids[trimname] = id
-        pulsarids[name] = id
-        pulsarids[jname] = id
-        pulsarids[bname] = id
+    for row in rows:
+        pulsarids[row['alias_name']] = row['pulsar_id']
     return pulsarids
 
 
@@ -316,40 +310,33 @@ def parse_psrfits_header(fn, hdritems):
     return params
    
 
-def get_pulsar_names(existing_db=None):
+def get_pulsar_names():
     """Return a dictionary mapping pulsar names and ids 
         to preferred pulsar names.
         
-        Input:
-            existing_db: A (optional) existing database connection object.
-                (Default: Establish a db connection)
+        Inputs:
+            None
 
         Output:
-            pulsarids: A dictionary with pulsar names as keys
-                    and pulsar ids as values.
+            pulsars: A dictionary with pulsar names/ids as keys
+                    and pulsar names as values.
     """
-    # Use the exisitng DB connection, or open a new one if None was provided
-    db = existing_db or database.Database()
-    query = "SELECT pulsar_name, " \
-                "pulsar_jname, " \
-                "pulsar_bname, " \
-                "pulsar_id " \
-            "FROM pulsars"
-    db.execute(query)
+    db = database.Database()
+    db.connect()
 
-    rows = db.fetchall()
-    if not existing_db:
-        # Close the DB connection we opened
-        db.close()
+    select = db.select([db.pulsar_aliases, db.pulsars.c.pulsar_name], \
+                        db.pulsar_aliases.c.pulsar_id==db.pulsars.c.pulsar_id)
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
+    db.close()
 
     # Create the mapping
     pulsar_names = {}
-    for name, jname, bname, id in rows:
-        trimname = name.lower().lstrip('bj')
-        pulsar_names[trimname] = name
-        pulsar_names[bname] = name
-        pulsar_names[jname] = name
-        pulsar_names[id] = name
+    for row in rows:
+        name = row['pulsar_name']
+        pulsar_names[row['pulsar_id']] = name
+        pulsar_names[row['alias_name']] = name
     return pulsar_names
 
 
@@ -444,13 +431,17 @@ def prep_parfile(fn):
             # Doesn't seem like a number. Leave as string.
             val = valstr
 
-        params[key.lower()] = val
-    if "psrj" in params:
-        params['pulsar_id'] = get_pulsarids()[params['psrj']]
-        params['name'] = params['psrj']
+        params[key.upper()] = val
+    if "PSRJ" in params:
+        params['pulsar_id'] = get_pulsarids()[params['PSRJ']]
+        params['name'] = params['PSRJ']
+    elif "PSRB" in params:
+        params['pulsar_id'] = get_pulsarids()[params['PSRB']]
+        params['name'] = params['PSRB']
     else:
-        params['pulsar_id'] = get_pulsarids()[params['psrb']]
-        params['name'] = params['psrb']
+        params['pulsar_id'] = get_pulsarids()[params['PSR']]
+        params['name'] = params['PSR']
+        
     # normalise pulsar name
     params['name'] = get_pulsar_names()[params['name']]
     params['user_id'] = get_current_users_id()
@@ -659,8 +650,13 @@ def check_repos():
                                         "Clean up your act!")
 
 
-def archive_file(file, destdir):
-    srcdir, fn = os.path.split(file)
+def archive_file(toarchive, destdir):
+    if not config.archive:
+        # Configured to not archive files
+        warnings.warn("Configurations are to _not_ archive files. " \
+                        "Doing nothing...", errors.EptaPipelineWarning)
+        return toarchive
+    srcdir, fn = os.path.split(toarchive)
     dest = os.path.join(destdir, fn)
 
     # Check if the directory exists
@@ -674,19 +670,19 @@ def archive_file(file, destdir):
     # If it does exist do nothing but print a warning
     if not os.path.isfile(dest):
         # Copy file to 'dest'
-        print_info("Moving %s to %s" % (file, dest), 2)
-        shutil.copy2(file, dest)
+        print_info("Moving %s to %s" % (toarchive, dest), 2)
+        shutil.copy2(toarchive, dest)
         
         # Check that file copied successfully
-        srcmd5 = Get_md5sum(file)
-        srcsize = os.path.getsize(file)
+        srcmd5 = Get_md5sum(toarchive)
+        srcsize = os.path.getsize(toarchive)
         destmd5 = Get_md5sum(dest)
         destsize = os.path.getsize(dest)
         if (srcmd5==destmd5) and (srcsize==destsize):
             print_info("File copied successfully to %s. Removing %s." % \
-                        (dest, file), 2)
+                        (dest, toarchive), 2)
             if not config.debug.ARCHIVING:
-                os.remove(file)
+                os.remove(toarchive)
         else:
             raise errors.ArchivingError("File copy failed! (Source MD5: %s, " \
                         "Dest MD5: %s; Source size: %d, Dest size: %d)" % \
@@ -695,14 +691,14 @@ def archive_file(file, destdir):
         # File is already located in its destination
         # Do nothing
         warnings.warn("Source file %s is already in the archive (and in " \
-                        "the correct place). Doing nothing..." % file, \
+                        "the correct place). Doing nothing..." % toarchive, \
                         errors.EptaPipelineWarning)
         pass
     else:
         # Another file with the same name is the destination directory
         # Compare the files
-        srcmd5 = Get_md5sum(file)
-        srcsize = os.path.getsize(file)
+        srcmd5 = Get_md5sum(toarchive)
+        srcsize = os.path.getsize(toarchive)
         destmd5 = Get_md5sum(dest)
         destsize = os.path.getsize(dest)
         if (srcmd5==destmd5) and (srcsize==destsize):
@@ -712,10 +708,10 @@ def archive_file(file, destdir):
                             "the same size (%d bytes) and the same " \
                             "MD5 (%s) is already in the archive. " \
                             "Removing input file..." % \
-                            (file, destsize, destmd5), \
+                            (toarchive, destsize, destmd5), \
                             errors.EptaPipelineWarning)
             if not config.debug.ARCHIVING:
-                os.remove(file)
+                os.remove(toarchive)
         else:
             # The files are not the same! This is not good.
             # Raise an exception.
@@ -725,12 +721,15 @@ def archive_file(file, destdir):
                     "the two files are _not_ identical. " \
                     "(source: MD5=%s, size=%d bytes; dest: MD5=%s, " \
                     "size=%d bytes)" % \
-                    (file, dest, srcmd5, srcsize, destmd5, destsize))
+                    (toarchive, dest, srcmd5, srcsize, destmd5, destsize))
 
     # Change permissions so the file can no longer be written to
     print_info("Changing permissions of archived file to 440", 2)
     os.chmod(dest, 0440) # "0440" is an integer in base 8. It works
                          # the same way 440 does for chmod on cmdline
+
+    epu.print_info("%s moved to %s (%s)" % (toarchive, dest, Give_UTC_now()), 1)
+
     return dest
 
 
@@ -775,15 +774,16 @@ def get_master_parfile(pulsar_id):
                 parfile exists.
     """
     db = database.Database()
-    query = "SELECT par.parfile_id, " \
-                "par.filepath, " \
-                "par.filename " \
-            "FROM pulsars AS psr " \
-            "LEFT JOIN parfiles AS par " \
-                "ON par.parfile_id=psr.master_parfile_id " \
-            "WHERE psr.pulsar_id=%d" % pulsar_id
-    db.execute(query)
+    db.connect()
+    select = db.select([db.master_parfiles.c.parfile_id, \
+                        db.parfiles.c.filepath, \
+                        db.parfiles.c.filename], \
+                (db.master_parfiles.c.parfile_id==db.parfiles.c.parfile_id) & \
+                (db.master_parfiles.c.pulsar_id==pulsar_id))
+    result = db.execute(select)
     rows = db.fetchall()
+    result.close()
+    db.close()
     if len(rows) > 1:
         raise errors.InconsistentDatabaseError("There are too many (%d) " \
                                             "master parfiles for pulsar #%d" % \
@@ -791,11 +791,12 @@ def get_master_parfile(pulsar_id):
     elif len(rows) == 0:
         return None, None
     else:
-        masterpar_id, path, fn = rows[0]
-        if path is None or fn is None:
+        row = rows[0]
+        if row['filepath'] is None or row['filename'] is None:
             return None, None
         else:
-            return masterpar_id, os.path.join(path, fn)
+            return row['parfile_id'], \
+                    os.path.join(row['filepath'], row['filename'])
 
 
 def get_master_template(pulsar_id, obssystem_id):
