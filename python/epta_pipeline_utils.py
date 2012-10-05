@@ -1073,7 +1073,7 @@ class DefaultArguments(argparse.ArgumentParser):
                             help="Be less verbose. (Default: " \
                                  "verbosity level = %d)." % config.verbosity)
         group.add_argument('--set-verbosity', nargs=1, dest='level', \
-                            action=self.SetVerbosity, \
+                            action=self.SetVerbosity, type=int, \
                             help="Set verbosity level. (Default: " \
                                  "verbosity level = %d)." % config.verbosity)
 
