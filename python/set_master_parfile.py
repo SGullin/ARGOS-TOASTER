@@ -1,10 +1,10 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python
 """
 Script to promote a previously uploaded parfile to be a master.
 """
 
-# Imported modules
 import os.path
+import warnings
 
 import config
 import database
@@ -12,12 +12,50 @@ import errors
 import epta_pipeline_utils as epu
 
 
-def set_as_mater_parfile(db, parfile_id):
-    query = "REPLACE INTO pulsars " \
-            "SET master_parfile_id=%d " % parfile_id
-    db.execute(query)
+def set_as_master_parfile(db, parfile_id):
+    db.begin()
+    # Check if this pulsar already has a master parfile in the DB
+    select = db.select([db.parfiles.c.pulsar_id, \
+                        db.parfiles.c.parfile_id]).\
+                where(db.master_parfiles.c.pulsar_id==db.parfiles.c.pulsar_id)
+    result = db.execute(select)
+    row = result.fetchone()
+    result.close()
+    if row:
+        if row['parfile_id']==parfile_id:
+            warnings.warn("Parfile (ID: %d) is already the master parfile " \
+                            "for this pulsar (ID: %d). Doing nothing..." % \
+                            (row['parfile_id'], row['pulsar_id']), \
+                            errors.EptaPipelineWarning)
+            db.commit()
+            return
+        else:
+            # Update the existing entry
+            query = db.master_parfiles.update().\
+                        where(db.master_parfiles.c.pulsar_id==row['pulsar_id'])
+            values = {'parfile_id':parfile_id}
+    else:
+        # Insert a new entry
+        query = db.master_parfiles.insert()
+        select = db.select([db.parfiles.c.pulsar_id]).\
+                    where(db.parfiles.c.parfile_id==parfile_id)
+        result = db.execute(select)
+        row = result.fetchone()
+        result.close()
+        
+        values = {'parfile_id':parfile_id, \
+                  'pulsar_id':row['pulsar_id']}
+    try:
+        result = db.execute(query, values)
+    except:
+        db.rollback()
+        raise
+    else:
+        db.commit()
+        result.close()
 
-def get_parfile_id(db. parfile):
+
+def get_parfile_id(db, parfile):
     """Given a parfile path find its parfile_id number.
         
         Inputs:
@@ -27,25 +65,39 @@ def get_parfile_id(db. parfile):
         Output:
             parfile_id: the corresponding parfile_id value.
     """
+    epu.print_info("Getting parfile ID for %s using "
+                    "filename and md5sum" % args.parfile, 2)
     path, fn = os.path.split(os.path.abspath(parfile))
     md5sum = epu.Get_md5sum(parfile)
-    query = "SELECT parfile_id, md5sum " \
-            "FROM parfiles " \
-            "WHERE filename=%s"
-    db.execute(query, (fn,))
-    rows = db.fetchall()
-    if rows == 1:
-        if rows[0].md5sum != md5sum:
-            raise errors.FileError("Parfile (%s) found in database but " \
-                                    "MD5sum in DB (%s) doesn't match MD5sum" \
-                                    "of the file provided (%s)!" % \
-                                    (filename, rows[0].md5sum, md5sum))
+    select = db.select([db.parfiles.c.md5sum, \
+                        db.parfiles.c.filename, \
+                        db.parfiles.c.parfile_id]).\
+                where((db.parfiles.c.md5sum==md5sum) | \
+                            (db.parfiles.c.filename==fn))
+    
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
+    if len(rows) == 1:
+        row = rows[0]
+        if row['md5sum']==md5sum and row['filename']==fn:
+            warnings.warn("A parfile with this filename and md5sum " \
+                            "already exists in the DB.", \
+                            errors.EptaPipelineWarning)
+            return row['parfile_id']
+        elif row['md5sum']==md5sum:
+            raise errors.FileError("A parfile (parfile_id=%d) with " \
+                            "this md5sum, but a different filename " \
+                            "exists in the DB." % row['parfile_id'])
         else:
-            return rows[0].parfile_id
-    elif rows == 0:
-        raise errors.EptaPipelineError("No matching parfile found! " \
-                                        "Use 'load_parfile.py' to add " \
-                                        "a new parfile to the DB.")
+            raise errors.FileError("A parfile (parfile_id=%d) with " \
+                            "this filename, but a different md5sum " \
+                            "exists in the DB." % row['parfile_id'])
+    elif len(rows) == 0:
+        raise errors.EptaPipelineError("Input parfile (%s) does not appear " \
+                                        "to be registered in the DB! " \
+                                        "Use 'load_parfile.py' to load " \
+                                        "it into the DB." % parfile)
     else:
         raise errors.InconsistentDatabaseError("Multiple parfiles have " \
                                                 "the same file name!")
@@ -54,11 +106,10 @@ def get_parfile_id(db. parfile):
 def main():
     # Connect to the database
     db = database.Database()
-    
+    db.connect()
+
     try:
         if args.parfile is not None:
-            epu.print_info("Getting parfile ID for %s using filename" % \
-                            args.parfile, 1)
             # parfile filename provided. Get parfile_id
             parfile_id = get_parfile_id(db, args.parfile)
         else:
@@ -81,7 +132,7 @@ if __name__=='__main__':
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--parfile-id', dest='parfile_id', type=int, \
                         help="parfile_id value of parfile to set as master.")
-    group.add_argument('--parfile', dest='parfile', type=int, \
+    group.add_argument('--parfile', dest='parfile', type=str, \
                         help="Parfile to set as master.")
     args = parser.parse_args()
     main()
