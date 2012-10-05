@@ -1,10 +1,9 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python
 
 """
-Script to upload par files to the EPTA timing database.
+Script to upload parfiles to the EPTA timing database.
 """
 
-# Import modules
 import os.path
 import warnings
 import types
@@ -13,7 +12,7 @@ import database
 import config
 import errors
 import epta_pipeline_utils as epu
-
+import set_master_parfile as smp
 
 def populate_parfiles_table(db, fn, params):
     # md5sum helper function in epu
@@ -63,34 +62,6 @@ def populate_parfiles_table(db, fn, params):
     return parfile_id 
 
 
-def set_as_master_parfile(db, parfile_id, pulsar_id):
-    db.begin()
-    # Check if this pulsar already has a master parfile in the DB
-    select = db.master_parfiles.select().\
-                    where(db.master_parfiles.c.pulsar_id==pulsar_id)
-    result = db.execute(select)
-    row = result.fetchone()
-    result.close()
-    if row:
-        # Update the existing entry
-        query = db.master_parfiles.update().\
-                    where(db.master_parfiles.c.pulsar_id==pulsar_id)
-        values = {'parfile_id':parfile_id}
-    else:
-        # Insert a new entry
-        query = db.master_parfiles.insert()
-        values = {'parfile_id':parfile_id, \
-                  'pulsar_id':pulsar_id}
-    try:
-        result = db.execute(query, values)
-    except:
-        db.rollback()
-        raise
-    else:
-        db.commit()
-        result.close()
-
-
 def main():
     fn = args.parfile
     parfile_id = load_parfile(fn)
@@ -127,7 +98,7 @@ def load_parfile(fn):
         if args.is_master:
             epu.print_info("Setting %s as master parfile (%s)" % \
                             (newfn, epu.Give_UTC_now()), 1)
-            set_as_master_parfile(db, parfile_id, params['pulsar_id'])
+            smp.set_as_master_parfile(db, parfile_id)
         epu.print_info("Finished with %s - parfile_id=%d (%s)" % \
                         (fn, parfile_id, epu.Give_UTC_now()), 1)
     finally:
