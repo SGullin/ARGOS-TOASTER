@@ -8,7 +8,6 @@ input is most appropriate.
 Patrick Lazarus, Dec. 9, 2011.
 """
 
-import argparse
 import os.path
 import datetime
 
@@ -30,10 +29,10 @@ def get_parfiles(psr, start=None, end=None, parid=None):
         Inputs:
             psr: A SQL-style regular expression to match with
                 pulsar J- and B-names.
-            start: string represenation of a datetime object in
+            start: string representation of a datetime object in
                 a format understood by sql. no parfiles added
                 before this date are returned.
-            end: string represenation of a datetime object in
+            end: string representation of a datetime object in
                 a format understood by sql. no parfiles added
                 after this date are returned.
             parid: get the parfile with this parfile_id number
@@ -45,48 +44,56 @@ def get_parfiles(psr, start=None, end=None, parid=None):
                     parfile_id, add_time, filename, filepath, 
                     PSRJ, and PSRB
     """
-    query = "SELECT par.parfile_id, " \
-                   "par.add_time, " \
-                   "par.filename, " \
-                   "par.filepath, " \
-                   "par.PSRJ, " \
-                   "par.PSRB, " \
-                   "IFNULL(p.master_parfile_id, 0) AS is_master " \
-            "FROM parfiles AS par " \
-            "LEFT JOIN pulsars AS p " \
-                "ON p.master_parfile_id=par.parfile_id " \
-            "WHERE (par.PSRJ LIKE %s OR par.PSRB LIKE %s) "
-    query_args = [psr, psr]
-
-    if parid is not None:
-        query += "AND parfile_id = %s "
-        query_args.append(parid)
-    if start is not None:
-        query += "AND add_time >= %s "
-        query_args.append(start)
-    if end is not None:
-        query += "AND add_time <= %s "
-        query_args.append(end)
-
     db = database.Database()
-    db.execute(query, query_args)
-    parfiles = db.fetchall()
+    db.connect()
+
+    whereclause = db.pulsar_aliases.c.alias_name.like(psr)
+    if parid is not None:
+        whereclause &= (db.parfiles.c.parfile_id==parid)
+    if start is not None:
+        whereclause &= (db.parfiles.c.add_time >= start)
+    if end is not None:
+        whereclause &= (db.parfiles.c.add_time <= end)
+
+    select = db.select([db.parfiles.c.parfile_id, \
+                        db.parfiles.c.add_time, \
+                        db.parfiles.c.filename, \
+                        db.parfiles.c.filepath, \
+                        db.parfiles.c.pulsar_id, \
+                        db.pulsars.c.pulsar_name, \
+                        db.master_parfiles.c.parfile_id.label('mparid')], \
+                from_obj=[db.parfiles.\
+                    join(db.pulsar_aliases, \
+                        onclause=db.parfiles.c.pulsar_id == \
+                                db.pulsar_aliases.c.pulsar_id).\
+                    outerjoin(db.pulsars, \
+                        onclause=db.parfiles.c.pulsar_id == \
+                                db.pulsars.c.pulsar_id).\
+                    outerjoin(db.master_parfiles, \
+                        onclause=db.master_parfiles.c.parfile_id == \
+                                    db.parfiles.c.parfile_id)], \
+                distinct=db.parfiles.c.parfile_id).\
+                where(whereclause)
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
     db.close()
-    return parfiles
+    return rows
 
 
 def show_parfiles(parfiles):
     if len(parfiles):
-        for pardict in parfiles:
+        for parfile in parfiles:
             print "- "*25
             print colour.cstring("Parfile ID:", underline=True, bold=True) + \
-                    colour.cstring(" %d" % pardict.parfile_id, bold=True)
-            fn = os.path.join(pardict.filepath, pardict.filename)
+                    colour.cstring(" %d" % parfile['parfile_id'], bold=True)
+            fn = os.path.join(parfile['filepath'], parfile['filename'])
             print "\nParfile: %s" % fn
-            print "Pulsar J-name: %s" % pardict.PSRJ
-            print "Pulsar B-name: %s" % pardict.PSRB
-            print "Master parfile? %s" % (pardict.is_master and "Yes" or "No")
-            print "Date and time parfile was added: %s" % pardict.add_time.isoformat(' ')
+            print "Pulsar name: %s" % parfile['pulsar_name']
+            print "Master parfile? %s" % \
+                        (((parfile['mparid'] is not None) and "Yes") or "No")
+            print "Date and time parfile was added: %s" % \
+                        parfile['add_time'].isoformat(' ')
             msg = "Parfile contents:\n\n"
             for line in open(fn, 'r'):
                 msg += "%s\n" % line.strip()
@@ -113,10 +120,10 @@ if __name__=='__main__':
     parser.add_argument('-s', '--start-date', dest='start_date', \
                         type=str, default=None, \
                         help="Do not return parfiles added to the DB " \
-                            "before this date.")
+                            "before this date. (Format: YYYY-MM-DD)")
     parser.add_argument('-e', '--end-date', dest='end_date', \
                         type=str, default=None, \
                         help="Do not return parfiles added to the DB " \
-                            "after this date.")
+                            "after this date. (Format: YYYY-MM-DD)")
     args = parser.parse_args()
     main()
