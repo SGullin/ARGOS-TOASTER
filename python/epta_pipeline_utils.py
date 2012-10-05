@@ -421,12 +421,12 @@ def prep_parfile(fn):
             continue
         key, valstr = line.split()[:2]
 
-        if float_re.match(valstr):
-            # Looks like a float. Change 'D' to 'E' and cast to float.
-            val = float(valstr.upper().replace('D','E'))
-        elif int_re.match(valstr):
+        if int_re.match(valstr):
             # Looks like an int. Cast to int.
             val = int(valstr)
+        elif float_re.match(valstr):
+            # Looks like a float. Change 'D' to 'E' and cast to float.
+            val = float(valstr.upper().replace('D','E'))
         else:
             # Doesn't seem like a number. Leave as string.
             val = valstr
@@ -653,7 +653,7 @@ def check_repos():
 def archive_file(toarchive, destdir):
     if not config.archive:
         # Configured to not archive files
-        warnings.warn("Configurations are to _not_ archive files. " \
+        warnings.warn("Configurations are set to _not_ archive files. " \
                         "Doing nothing...", errors.EptaPipelineWarning)
         return toarchive
     srcdir, fn = os.path.split(toarchive)
