@@ -1,10 +1,7 @@
-#!/usr/bin/python2.6
-################################
-# epta_pipeline_utils.py    
-# Useful, general functions 
-################################
-
-#Imported modules
+#!/usr/bin/env python
+ 
+"""Useful, general functions and data.
+"""
 
 import sys
 import os
@@ -1068,7 +1065,7 @@ class DefaultArguments(argparse.ArgumentParser):
                             action=self.TurnUpVerbosity, \
                             help="Be more verbose. (Default: " \
                                  "verbosity level = %d)." % config.verbosity)
-        group.add_argument('--less-verbose', nargs=0, \
+        group.add_argument('-q', '--less-verbose', nargs=0, \
                             action=self.TurnDownVerbosity, \
                             help="Be less verbose. (Default: " \
                                  "verbosity level = %d)." % config.verbosity)
