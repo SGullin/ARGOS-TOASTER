@@ -45,13 +45,13 @@ def validate_aliases(db, aliases):
         aliases_in_use.append(row['pulsar_alias'])
     result.close()
     if aliases_in_use:
-        raise errors.BadInputError("The following proposed aliases are " \
-                                    "already in use (each alias must be " \
+        raise errors.BadInputError("The following proposed pulsar aliases " \
+                                    "are already in use (each alias must be " \
                                     "unique): '%s'" % \
                                     "', '".join(aliases_in_use))
 
 
-def add_pulsar(db, pulsar_name, aliases):
+def add_pulsar(db, pulsar_name, aliases=[]):
     """Add a new pulsar and its aliases to the database.
 
         Inputs:
@@ -60,11 +60,13 @@ def add_pulsar(db, pulsar_name, aliases):
             aliases: A list of aliases for this pulsar.
 
         Output:
-            pulsar_id: The iD number of the newly inserted pulsar.
+            pulsar_id: The ID number of the newly inserted pulsar.
     """
     # Add the pulsar's name itself as an alias
     aliases.append(pulsar_name)
     # Make sure no aliases are duplicated in the list
+    # TODO: this is suceptible to strings that are different only
+    #       by upper/lower characters.
     aliases = list(set(aliases))
 
     trans = db.begin() # Open a transaction
@@ -97,11 +99,13 @@ def main():
     db = database.Database()
     db.connect()
 
-    pulsar_id = add_pulsar(db, args.pulsar_name, args.aliases)
+    try:
+        pulsar_id = add_pulsar(db, args.pulsar_name, args.aliases)
 
-    print "Successfully inserted new pulsar. " \
-                "Returned pulsar_id: %d" % pulsar_id
-
+        print "Successfully inserted new pulsar. " \
+                    "Returned pulsar_id: %d" % pulsar_id
+    finally:
+        db.close()
 
 if __name__=='__main__':
     parser = epu.DefaultArguments(description="Add a new pulsar to the DB")
