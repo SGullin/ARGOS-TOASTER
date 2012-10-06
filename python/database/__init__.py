@@ -7,6 +7,16 @@ import schema
 import epta_pipeline_utils as epu
 
 
+# The following will execute the PRAGMA every time a connection
+# is established. The PRAGMA is required to turn on foreign
+# key support for sqlite databases.
+@sa.event.listens_for(sa.engine.Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+
 class Database(object):
     def __init__(self, autocommit=True, url=config.dburl, *args, **kwargs):
         """Set up a Toaster Database object using SQLAlchemy.
