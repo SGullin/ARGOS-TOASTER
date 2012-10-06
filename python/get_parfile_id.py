@@ -47,7 +47,7 @@ def get_parfiles(psr, start=None, end=None, parid=None):
     db = database.Database()
     db.connect()
 
-    whereclause = db.pulsar_aliases.c.alias_name.like(psr)
+    whereclause = db.pulsar_aliases.c.pulsar_alias.like(psr)
     if parid is not None:
         whereclause &= (db.parfiles.c.parfile_id==parid)
     if start is not None:

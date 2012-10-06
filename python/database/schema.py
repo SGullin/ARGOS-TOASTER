@@ -255,12 +255,12 @@ sa.Table('pulsars', metadata, \
 
 # Define pulsar_aliases table
 sa.Table('pulsar_aliases', metadata, \
-        sa.Column('alias_id', sa.Integer, primary_key=True, \
+        sa.Column('pulsar_alias_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('pulsar_id', sa.Integer, \
                     sa.ForeignKey('pulsars.pulsar_id'), \
                     nullable=False), \
-        sa.Column('alias_name', sa.String(20), nullable=False, \
+        sa.Column('pulsar_alias', sa.String(20), nullable=False, \
                     unique=True), \
         mysql_engine='InnoDB')
 

@@ -160,7 +160,7 @@ def get_pulsarids():
     db.connect()
 
     try:
-        select = db.select([db.pulsar_aliases.c.alias_name, \
+        select = db.select([db.pulsar_aliases.c.pulsar_alias, \
                             db.pulsar_aliases.c.pulsar_id])
         result = db.execute(select)
         rows = result.fetchall()
@@ -171,7 +171,7 @@ def get_pulsarids():
     # Create the mapping
     pulsarids = {}
     for row in rows:
-        pulsarids[row['alias_name']] = row['pulsar_id']
+        pulsarids[row['pulsar_alias']] = row['pulsar_id']
     return pulsarids
 
 
@@ -333,7 +333,7 @@ def get_pulsar_names():
     for row in rows:
         name = row['pulsar_name']
         pulsar_names[row['pulsar_id']] = name
-        pulsar_names[row['alias_name']] = name
+        pulsar_names[row['pulsar_alias']] = name
     return pulsar_names
 
 

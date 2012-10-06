@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import epta_pipeline_utils as epu
 import database
 import errors
@@ -37,11 +38,11 @@ def validate_aliases(db, aliases):
             None
     """
     select = db.select([db.pulsar_aliases], \
-                        db.pulsar_aliases.c.alias_name.in_(aliases))
+                        db.pulsar_aliases.c.pulsar_alias.in_(aliases))
     result = db.execute(select)
     aliases_in_use = []
     for row in result:
-        aliases_in_use.append(row['alias_name'])
+        aliases_in_use.append(row['pulsar_alias'])
     result.close()
     if aliases_in_use:
         raise errors.BadInputError("The following proposed aliases are " \
@@ -84,7 +85,7 @@ def add_pulsar(db, pulsar_name, aliases):
     values = []
     for alias in aliases:
         values.append({'pulsar_id':pulsar_id, \
-                        'alias_name':alias})
+                        'pulsar_alias':alias})
     result = db.execute(ins, values)
     result.close()
 
