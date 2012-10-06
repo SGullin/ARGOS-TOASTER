@@ -162,7 +162,7 @@ sa.Table('templates', metadata, \
 sa.Table('telescopes', metadata, \
         sa.Column('telescope_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
-        sa.Column('name', sa.String(64), nullable=False, \
+        sa.Column('telescope_name', sa.String(64), nullable=False, \
                     unique=True), \
         sa.Column('latitude', sa.Float(53), nullable=True), \
         sa.Column('longitude', sa.Float(53), nullable=True), \
@@ -172,6 +172,17 @@ sa.Table('telescopes', metadata, \
         sa.Column('itrf_z', sa.Float(53), nullable=False), \
         sa.Column('telescope_abbrev', sa.String(16), nullable=False), \
         sa.Column('telescope_code', sa.String(2), nullable=False), \
+        mysql_engine='InnoDB')
+
+# Define telescope_aliases table
+sa.Table('telescope_aliases', metadata, \
+        sa.Column('telescope_alias_id', sa.Integer, primary_key=True, \
+                    autoincrement=True, nullable=False), \
+        sa.Column('telescope_id', sa.Integer, \
+                    sa.ForeignKey('telescopes.telescope_id'), \
+                    nullable=False), \
+        sa.Column('telescope_alias', sa.String(64), nullable=False, \
+                    unique=True), \
         mysql_engine='InnoDB')
 
 # Define rawfiles table
