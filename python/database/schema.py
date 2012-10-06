@@ -170,8 +170,10 @@ sa.Table('telescopes', metadata, \
         sa.Column('itrf_x', sa.Float(53), nullable=False), \
         sa.Column('itrf_y', sa.Float(53), nullable=False), \
         sa.Column('itrf_z', sa.Float(53), nullable=False), \
-        sa.Column('telescope_abbrev', sa.String(16), nullable=False), \
-        sa.Column('telescope_code', sa.String(2), nullable=False), \
+        sa.Column('telescope_abbrev', sa.String(16), nullable=False, \
+                    unique=True), \
+        sa.Column('telescope_code', sa.String(2), nullable=False, \
+                    unique=True), \
         mysql_engine='InnoDB')
 
 # Define telescope_aliases table
