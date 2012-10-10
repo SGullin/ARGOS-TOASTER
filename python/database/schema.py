@@ -369,7 +369,6 @@ sa.Table('obssystems', metadata, \
         sa.Column('frontend', sa.String(64), nullable=False), \
         sa.Column('backend', sa.String(64), nullable=False), \
         sa.Column('clock', sa.String(64), nullable=False), \
-        sa.Column('code', sa.String(5), nullable=False), \
         sa.UniqueConstraint('telescope_id', 'frontend', 'backend', \
                             'clock'), \
         mysql_engine='InnoDB')
