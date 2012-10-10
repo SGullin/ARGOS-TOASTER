@@ -81,13 +81,15 @@ def add_telescope(db, name, itrf_x, itrf_y, itrf_z, abbrev, code, aliases=[]):
                 (Default: no additional names).
 
         Output:
-            telescope_id: The ID number of the newly interted telescope.
+            telescope_id: The ID number of the newly inserted telescope.
     """
     # Add the telescope's name, abbrev, and code to the list of aliases
     aliases.extend([name, abbrev, code])
-    # TODO: this is suceptible to strings that are different only
-    #       by upper/lower characters.
-    aliases = list(set(aliases))
+    # Convert aliases to lower case
+    tmp = {}
+    for a in aliases:
+        tmp[a.lower()] = a
+    aliases = tmp.values()
 
     db.begin() # Open a transaction
     try:
