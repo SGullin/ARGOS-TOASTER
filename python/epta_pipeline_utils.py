@@ -525,7 +525,7 @@ def prep_file(fn):
     hdritems = ["nbin", "nchan", "npol", "nsub", "type", "telescop", \
          	"name", "dec", "ra", "freq", "bw", "dm", "rm", \
       	        "dmc", "rm_c", "pol_c", "scale", "state", "length", \
-    	        "rcvr", "basis", "backend"]
+    	        "rcvr", "basis", "backend", "mjd"]
     params = get_header_vals(fn, hdritems)
 
     # Normalise telescope name

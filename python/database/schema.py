@@ -224,7 +224,8 @@ sa.Table('rawfiles', metadata, \
         sa.Column('pol_c', sa.Float(24), nullable=True), \
         sa.Column('scale', sa.String(16), nullable=True), \
         sa.Column('state', sa.String(16), nullable=True), \
-        sa.Column('length', sa.Float(23), nullable=True), \
+        sa.Column('length', sa.Float(24), nullable=True), \
+        sa.Column('mjd', sa.Float(53), nullable=True), \
         sa.Column('rcvr', sa.String(16), nullable=True), \
         sa.Column('basis', sa.String(16), nullable=True), \
         sa.Column('backend', sa.String(16), nullable=True), \

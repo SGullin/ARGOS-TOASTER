@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python
 
 """
 This EPTA Pipeline utility script provides the user with a listing
@@ -8,16 +8,13 @@ input is most appropriate.
 Patrick Lazarus, Jan. 8, 2012.
 """
 
-import argparse
 import os.path
-import datetime
 import warnings
 
 import epta_pipeline_utils as epu
 import database
 import errors
 import colour
-import config
 
 def main():
     rawfiles = get_rawfiles(args)
@@ -33,85 +30,82 @@ def get_rawfiles(args):
 
         Output:
             rows: A list of dicts for each matching row. 
-        """
-
-    query = "SELECT r.rawfile_id, " \
-                   "r.add_time, " \
-                   "r.filename, " \
-                   "r.filepath, " \
-                   "r.nbin, " \
-                   "r.nchan, " \
-                   "r.npol, " \
-                   "r.nsub, " \
-                   "r.freq, " \
-                   "r.bw, " \
-                   "r.dm, " \
-                   "r.length, " \
-                   "u.real_name, " \
-                   "u.email_address, " \
-                   "psr.pulsar_jname, " \
-                   "psr.pulsar_bname, " \
-                   "t.name AS telescope_name, " \
-                   "obs.obssystem_id, " \
-                   "obs.name AS obssys_name, " \
-                   "obs.frontend, " \
-                   "obs.backend, " \
-                   "obs.clock " \
-            "FROM rawfiles AS r " \
-            "LEFT JOIN pulsars AS psr " \
-                "ON psr.pulsar_id=r.pulsar_id " \
-            "LEFT JOIN obssystems AS obs " \
-                "ON obs.obssystem_id=r.obssystem_id " \
-            "LEFT JOIN telescopes AS t " \
-                "ON t.telescope_id=obs.telescope_id " \
-            "LEFT JOIN users AS u " \
-                "ON u.user_id=r.user_id " \
-            "WHERE (psr.pulsar_bname LIKE %s OR psr.pulsar_jname LIKE %s) "
-    query_args = [args.pulsar_name, args.pulsar_name]
-    
-    if args.rawfile_id is not None:
-        query += "AND r.rawfile_id = %s "
-        query_args.append(args.rawfile_id)
-    if args.start_date is not None:
-        query += "AND r.add_time >= %s "
-        query_args.append(args.start_date)
-    if args.end_date is not None:
-        query += "AND r.add_time <= %s "
-        query_args.append(args.end_date)
-
-    # TODO: Implement MJD selection criteria 
-    # when MJDs are added to rawfiles table
-    warnings.warn("MJD selection criteria are _not_ implemented.", \
-                    errors.EptaPipelineWarning)
-
-    if args.obssys_id:
-        query += "AND (obs.obssystem_id = %s) "
-        query_args.append(args.obssys_id)
-    if args.obssystem_name:
-        query += "AND (obs.name LIKE %s) "
-        query_args.append(args.obssystem_name)
-    if args.telescope:
-        telname = args.telescope.lower()
-        if telname not in epu.site_to_telescope.keys():
-            raise errors.UnrecognizedValueError("Telescope identifier '%s' " \
-                        "is not recognized!" % args.telescope)
-        query += "AND (t.name LIKE %s) "
-        query_args.append(epu.site_to_telescope[telname])
-    if args.frontend:
-        query += "AND (obs.frontend LIKE %s) "
-        query_args.append(args.frontend)
-    if args.backend:
-        query += "AND (obs.backend LIKE %s) "
-        query_args.append(args.backend)
-    if args.clock:
-        query += "AND (obs.clock LIKE %s) "
-        query_args.append(args.clock)
-
+    """
     db = database.Database()
-    db.execute(query, query_args)
-    rawfiles = db.fetchall()
+    db.connect()
+
+    whereclause = db.pulsar_aliases.c.pulsar_alias.like(args.pulsar_name)
+    if args.rawfile_id is not None:
+        whereclause &= (db.rawfiles.c.rawfile_id==args.rawfile_id)
+    if args.start_date is not None:
+        whereclause &= (db.rawfiles.c.add_time >= args.start_date)
+    if args.end_date is not None:
+        whereclause &= (db.rawfiles.c.add_time <= args.end_date)
+    if args.start_mjd is not None:
+        whereclause &= (db.rawfiles.c.start_mjd >= args.start_mjd)
+    if args.end_mjd is not None:
+        whereclause &= (db.rawfiles.c.end_mjd <= args.end_mjd)
+    if args.obssys_id:
+        whereclause &= (db.obssystems.c.obssystem_id==args.obssys_id)
+    if args.obssystem_name:
+        whereclause &= (db.obssystems.c.name.like(args.obssystem_name))
+    if args.telescope:
+        whereclause &= (db.telescope_aliases.c.telescope_name.like(args.telescope))
+    if args.frontend:
+        whereclause &= (db.obssystems.c.frontend.like(args.frontend))
+    if args.backend:
+        whereclause &= (db.obssystems.c.backend.like(args.backend))
+    if args.clock:
+        whereclause &= (db.obssystems.c.clock.like(args.clock))
+    
+    select = db.select([db.rawfiles.c.rawfile_id, \
+                        db.rawfiles.c.add_time, \
+                        db.rawfiles.c.filename, \
+                        db.rawfiles.c.filepath, \
+                        db.rawfiles.c.nbin, \
+                        db.rawfiles.c.nchan, \
+                        db.rawfiles.c.npol, \
+                        db.rawfiles.c.nsub, \
+                        db.rawfiles.c.freq, \
+                        db.rawfiles.c.bw, \
+                        db.rawfiles.c.dm, \
+                        db.rawfiles.c.length, \
+                        db.rawfiles.c.mjd, \
+                        db.users.c.real_name, \
+                        db.users.c.email_address, \
+                        db.pulsars.c.pulsar_name, \
+                        db.telescopes.c.telescope_name, \
+                        db.obssystems.c.obssystem_id, \
+                        db.obssystems.c.name.label('obssys_name'), \
+                        db.obssystems.c.frontend, \
+                        db.obssystems.c.backend, \
+                        db.obssystems.c.clock], \
+                from_obj=[db.rawfiles.\
+                   join(db.pulsar_aliases, \
+                        onclause=db.rawfiles.c.pulsar_id == \
+                                db.pulsar_aliases.c.pulsar_id).\
+                    outerjoin(db.pulsars, \
+                        onclause=db.pulsar_aliases.c.pulsar_id == \
+                                db.pulsars.c.pulsar_id).\
+                    outerjoin(db.obssystems, \
+                        onclause=db.rawfiles.c.obssystem_id == \
+                                db.obssystems.c.obssystem_id).\
+                    outerjoin(db.telescopes, \
+                        onclause=db.telescopes.c.telescope_id == \
+                                db.obssystems.c.telescope_id).\
+                    outerjoin(db.users, \
+                        onclause=db.users.c.user_id == \
+                                db.rawfiles.c.user_id).\
+                    join(db.telescope_aliases, \
+                        onclause=db.telescopes.c.telescope_id == \
+                                db.telescope_aliases.c.telescope_id)],
+                distinct=db.rawfiles.c.rawfile_id).\
+                where(whereclause)
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
     db.close()
-    return rawfiles
+    return rows 
 
 
 def show_rawfiles(rawfiles):
@@ -122,8 +116,7 @@ def show_rawfiles(rawfiles):
                     colour.cstring(" %d" % rawdict.rawfile_id, bold=True)
             fn = os.path.join(rawdict.filepath, rawdict.filename)
             print "\nRawfile: %s" % fn
-            print "Pulsar J-name: %s" % rawdict.pulsar_jname
-            print "Pulsar B-name: %s" % rawdict.pulsar_bname
+            print "Pulsar name: %s" % rawdict.pulsar_name
             print "Uploaded by: %s (%s)" % \
                         (rawdict.real_name, rawdict.email_address)
             print "Date and time rawfile was added: %s" % rawdict.add_time.isoformat(' ')
@@ -134,7 +127,8 @@ def show_rawfiles(rawfiles):
                      "Backend: %s" % rawdict.backend, \
                      "Clock: %s" % rawdict.clock]
             epu.print_info("\n".join(lines), 1)
-            lines = ["Number of phase bins: %d" % rawdict.nbin, \
+            lines = ["MJD: %.6f" % rawdict.mjd, \
+                     "Number of phase bins: %d" % rawdict.nbin, \
                      "Number of channels: %d" % rawdict.nchan, \
                      "Number of polarisations: %d" % rawdict.npol, \
                      "Number of sub-integrations: %d" % rawdict.nsub, \
