@@ -35,83 +35,78 @@ def get_templates(args):
         Output:
             rows: A list of dicts for each matching row. 
     """
-    query = "SELECT t.template_id, " \
-                   "t.add_time, " \
-                   "t.filename, " \
-                   "t.filepath, " \
-                   "t.nbin, " \
-                   "t.comments, " \
-                   "t.is_analytic, " \
-                   "IFNULL(mt.template_id, 0) AS is_master, " \
-                   "u.real_name, " \
-                   "u.email_address, " \
-                   "psr.pulsar_name, " \
-                   "tel.name AS telescope_name, " \
-                   "obs.obssystem_id, " \
-                   "obs.name AS obssys_name, " \
-                   "obs.frontend, " \
-                   "obs.backend, " \
-                   "obs.clock " \
-            "FROM templates AS t " \
-            "LEFT JOIN pulsars AS psr " \
-                "ON psr.pulsar_id=t.pulsar_id " \
-            "LEFT JOIN obssystems AS obs " \
-                "ON obs.obssystem_id=t.obssystem_id " \
-            "LEFT JOIN master_templates AS mt " \
-                "ON mt.template_id=t.template_id " \
-            "LEFT JOIN telescopes AS tel " \
-                "ON tel.telescope_id=obs.telescope_id " \
-            "LEFT JOIN users AS u " \
-                "ON u.user_id=t.user_id " \
-            "WHERE (psr.pulsar_name LIKE %s) "
-    query_args = [args.pulsar_name]
-    if args.template_id is not None:
-        query += "AND t.template_id = %s "
-        query_args.append(args.template_id)
-    if args.start_date is not None:
-        query += "AND t.add_time >= %s "
-        query_args.append(args.start_date)
-    if args.end_date is not None:
-        query += "AND t.add_time <= %s "
-        query_args.append(args.end_date)
-    if args.ids:
-        query += "AND t.template_id IN %s "
-        query_args.append(args.ids)
-    if args.obssys_id:
-        query += "AND (obs.obssystem_id = %s) "
-        query_args.append(args.obssys_id)
-    if args.obssystem_name:
-        query += "AND (obs.name LIKE %s) "
-        query_args.append(args.obssystem_name)
-    if args.telescope:
-        telname = args.telescope.lower()
-        if telname not in epu.site_to_telescope.keys():
-            raise errors.UnrecognizedValueError("Telescope identifier '%s' " \
-                        "is not recognized!" % args.telescope)
-        query += "AND (tel.name LIKE %s) "
-        query_args.append(epu.site_to_telescope[telname])
-    if args.frontend:
-        query += "AND (obs.frontend LIKE %s) "
-        query_args.append(args.frontend)
-    if args.backend:
-        query += "AND (obs.backend LIKE %s) "
-        query_args.append(args.backend)
-    if args.clock:
-        query += "AND (obs.clock LIKE %s) "
-        query_args.append(args.clock)
-    if args.nbin:
-        query += "AND (t.nbin=%s) "
-        query_args.append(args.nbin)
-    if args.only_analytic:
-        query += "AND (t.is_analytic) "
-    if args.no_analytic:
-        query += "AND (NOT t.is_analytic) "
-
     db = database.Database()
-    db.execute(query, query_args)
-    templates = db.fetchall()
+    db.connect()
+
+    whereclause = db.pulsar_aliases.c.pulsar_alias.like(args.pulsar_name)
+    if args.template_id is not None:
+        whereclause &= (db.templates.c.template_id==args.template_id)
+    if args.start_date is not None:
+        whereclause &= (db.templates.c.add_time >= args.start_date)
+    if args.end_date is not None:
+        whereclause &= (db.templates.c.add_time <= args.end_date)
+    if args.ids:
+        whereclause &= (db.templates.c.template_id.in_(args.ids))
+    if args.obssys_id:
+        whereclause &= (db.obssystems.c.obssystem_id==args.obssys_id)
+    if args.obssystem_name:
+        whereclause &= (db.obssystems.c.name.like(args.obssystem_name))
+    if args.telescope:
+        whereclause &= (db.telescope_aliases.c.telescope_name.like(args.telescope))
+    if args.frontend:
+        whereclause &= (db.obssystems.c.frontend.like(args.frontend))
+    if args.backend:
+        whereclause &= (db.obssystems.c.backend.like(args.backend))
+    if args.clock:
+        whereclause &= (db.obssystems.c.clock.like(args.clock))
+    if args.nbin:
+        whereclause &= (db.templates.c.nbin==args.nbin)
+
+    select = db.select([db.templates.c.template_id, \
+                        db.templates.c.add_time, \
+                        db.templates.c.filename, \
+                        db.templates.c.filepath, \
+                        db.templates.c.nbin, \
+                        db.templates.c.comments, \
+                        db.master_templates.c.template_id.label('mtempid'), \
+                        db.users.c.real_name, \
+                        db.users.c.email_address, \
+                        db.pulsars.c.pulsar_name, \
+                        db.telescopes.c.telescope_name, \
+                        db.obssystems.c.obssystem_id, \
+                        db.obssystems.c.name.label('obssys_name'), \
+                        db.obssystems.c.frontend, \
+                        db.obssystems.c.backend, \
+                        db.obssystems.c.clock], \
+                from_obj=[db.templates.\
+                    join(db.pulsar_aliases, \
+                        onclause=db.templates.c.pulsar_id == \
+                                db.pulsar_aliases.c.pulsar_id).\
+                    outerjoin(db.pulsars, \
+                        onclause=db.pulsar_aliases.c.pulsar_id == \
+                                db.pulsars.c.pulsar_id).\
+                    outerjoin(db.obssystems, \
+                        onclause=db.templates.c.obssystem_id == \
+                                db.obssystems.c.obssystem_id).\
+                    outerjoin(db.master_templates, \
+                        onclause=db.master_templates.c.template_id == \
+                                db.templates.c.template_id).\
+                    outerjoin(db.telescopes, \
+                        onclause=db.telescopes.c.telescope_id == \
+                                db.obssystems.c.telescope_id).\
+                    outerjoin(db.users, \
+                        onclause=db.users.c.user_id == \
+                                db.templates.c.user_id).\
+                    join(db.telescope_aliases, \
+                        onclause=db.telescopes.c.telescope_id == \
+                                db.telescope_aliases.c.telescope_id)],
+                distinct=db.templates.c.template_id).\
+                where(whereclause)
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
     db.close()
-    return templates
+    return rows
 
 
 def show_templates(templates):
@@ -119,54 +114,46 @@ def show_templates(templates):
         for tdict in templates:
             print "- "*25
             print colour.cstring("Template ID:", underline=True, bold=True) + \
-                    colour.cstring(" %d" % tdict.template_id, bold=True)
-            fn = os.path.join(tdict.filepath, tdict.filename)
+                    colour.cstring(" %d" % tdict['template_id'], bold=True)
+            fn = os.path.join(tdict['filepath'], tdict['filename'])
             print "\nTemplate: %s" % fn
-            print "Pulsar name: %s" % tdict.pulsar_name
-            print "Master template? %s" % (tdict.is_master and "Yes" or "No")
-            print "Template type: %s" % (tdict.is_analytic and "Analytic" or "Non-analytic")
-            if not tdict.is_analytic:
-                print "Number of phase bins: %d" % tdict.nbin
-            print "Uploaded by: %s (%s)" % (tdict.real_name, tdict.email_address)
-            print "Uploader's comments: %s" % tdict.comments
-            print "Date and time template was added: %s" % tdict.add_time.isoformat(' ')
+            print "Pulsar name: %s" % tdict['pulsar_name']
+            print "Master template? %s" % \
+                    (((tdict['mtempid'] is not None) and "Yes") or "No")
+            print "Number of phase bins: %d" % tdict['nbin']
+            print "Uploaded by: %s (%s)" % (tdict['real_name'], \
+                                            tdict['email_address'])
+            print "Uploader's comments: %s" % tdict['comments']
+            print "Date and time template was added: %s" % \
+                                tdict['add_time'].isoformat(' ')
 
             # Show extra information if verbosity is >= 1
-            lines = ["Observing System ID: %d" % tdict.obssystem_id, \
-                     "Observing System Name: %s" % tdict.obssys_name, \
-                     "Telescope: %s" % tdict.telescope_name, \
-                     "Frontend: %s" % tdict.frontend, \
-                     "Backend: %s" % tdict.backend, \
-                     "Clock: %s" % tdict.clock]
+            lines = ["Observing System ID: %d" % tdict['obssystem_id'], \
+                     "Observing System Name: %s" % tdict['obssys_name'], \
+                     "Telescope: %s" % tdict['telescope_name'], \
+                     "Frontend: %s" % tdict['frontend'], \
+                     "Backend: %s" % tdict['backend'], \
+                     "Clock: %s" % tdict['clock']]
             epu.print_info("\n".join(lines), 1)
             
             # Show the template if verbosity is >= 2
-            if tdict.is_analytic:
-                f = open(fn, 'r')
-                comps = [[float(c) for c in line.split()] for line in f.readlines()]
-                f.close()
-                lines = ["Number of components: %d" % len(comps)]
-                for ii, (phs, con, hgt) in enumerate(comps):
-                    lines.append("Component #%d: Phase=%g, Concentration=%g, " \
-                                    "Height=%g" % (ii+1, phs, con, hgt))
-            else:
-                cmd = "psrtxt %s" % fn
-                psrtxtout, stderr = epu.execute(cmd)
+            cmd = "psrtxt %s" % fn
+            psrtxtout, stderr = epu.execute(cmd)
 
-                gnuplotcode = """set term dumb
-                                 set format y ""
-                                 set nokey
-                                 set border 1
-                                 set tics out
-                                 set xtics nomirror
-                                 set ytics 0,1,0
-                                 set xlabel "Phase Bin"
-                                 set xrange [0:%d]
-                                 plot "-" using 3:4 w l
-                                 %s
-                                 end
-                             """ % (tdict.nbin-1, psrtxtout)
-                plot, stderr = epu.execute("gnuplot", stdinstr=gnuplotcode)
+            gnuplotcode = """set term dumb
+                             set format y ""
+                             set nokey
+                             set border 1
+                             set tics out
+                             set xtics nomirror
+                             set ytics 0,1,0
+                             set xlabel "Phase Bin"
+                             set xrange [0:%d]
+                             plot "-" using 3:4 w l
+                             %s
+                             end
+                         """ % (tdict.nbin-1, psrtxtout)
+            plot, stderr = epu.execute("gnuplot", stdinstr=gnuplotcode)
             epu.print_info(plot, 2)
             print " -"*25
     else:
@@ -203,12 +190,6 @@ if __name__=='__main__':
                         help="Only show templates with a specific number " \
                             "of bins. NOTE: this will exclude analytic " \
                             "templates.")
-    parser.add_argument('--only-analytic', dest='only_analytic', \
-                        action='store_true', \
-                        help="Only show analytic templates.")
-    parser.add_argument('--no-analytic', dest='no_analytic', \
-                        action='store_true', \
-                        help="Do not show analytic templates.")
     parser.add_argument('--obssystem-id', dest='obssys_id', \
                         type=int, default=None, \
                         help="Grab templates from a specific observing system. " \

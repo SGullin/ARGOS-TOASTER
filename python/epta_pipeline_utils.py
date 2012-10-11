@@ -869,16 +869,18 @@ def get_master_template(pulsar_id, obssystem_id):
                 combination.
     """
     db = database.Database()
-    query = "SELECT tmp.tempate_id, " \
-                "tmp.filename, " \
-                "tmp.filepath " \
-            "FROM templates AS tmp " \
-            "LEFT JOIN master_templates AS mtmp " \
-                "ON mtmp.template_id=tmp.template_id " \
-            "WHERE mtmp.pulsar_id=%d " \
-                "AND mtmp.obssystem_id=%d" % \
-            (pulsar_id, obssystem_id)
-    db.execute(query)
+    db.connect()
+
+    select = db.select([db.templates.c.template_id, \
+                        db.templates.c.filename, \
+                        db.templates.c.filepath]).\
+                where((db.master_templates.c.template_id == \
+                            db.templates.c.template_id) & \
+                      (db.master_templates.c.pulsar_id == pulsar_id) & \
+                      (db.master_templates.c.obssystem_id == obssystem_id))
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
     if len(rows) > 1:
         raise errors.InconsistentDatabaseError("There are too many (%d) " \
                                             "master templates for pulsar #%d" % \
@@ -886,7 +888,9 @@ def get_master_template(pulsar_id, obssystem_id):
     elif len(rows) == 0:
         return None, None
     else:
-        mastertmp_id, path, fn = rows[0]
+        mastertmp_id = rows[0]['template_id']
+        path = rows[0]['filepath']
+        fn = rows[0]['filename']
         if path is None or fn is None:
             return None, None
         else:

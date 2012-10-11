@@ -13,14 +13,58 @@ import epta_pipeline_utils as epu
 
 
 def set_as_master_template(db, template_id):
-    query = "REPLACE INTO master_templates " \
-                "(template_id, pulsar_id, obssystem_id) " \
-            "SELECT template_id, " \
-                "pulsar_id, " \
-                "obssystem_id " \
-            "FROM templates " \
-            "WHERE template_id=%d" % template_id
-    db.execute(query)
+    db.begin()
+    # Check if this pulsar/obssystem combiation already has a
+    # Master template in the DB
+    select = db.select([db.templates.c.template_id, \
+                        db.templates.c.pulsar_id, \
+                        db.templates.c.obssystem_id]).\
+                where((db.master_templates.c.obssystem_id == \
+                                db.templates.c.obssystem_id) & \
+                        (db.master_templates.c.pulsar_id == \
+                                db.templates.c.pulsar_id))
+    result = db.execute(select)
+    row = result.fetchone()
+    result.close()
+    if row:
+        if row['template_id'] == template_id:
+            warnings.warn("Template (ID: %d) is already the master " \
+                            "template for this pulsar (ID: %d), " \
+                            "observing system (ID: %d) combination. " \
+                            "Doing nothing..." % (row['template_id'], \
+                            row['pulsar_id'], row['obssystem_id']), \
+                            errors.EptaPipelineWarning)
+            db.commit()
+            return
+        else:
+            # Update the existing entry
+            query = db.master_template.update().\
+                        where((db.master_templates.c.pulsar_id == \
+                                    row['pulsar_id']) & \
+                              (db.master_templates.c.obssystem_id == \
+                                    row['obssystem_id']))
+            values = {'template_id':template_id}
+    else:
+        # Insert a new entry
+        query = db.master_templates.insert()
+        select = db.select([db.templates.c.pulsar_id, \
+                            db.templates.c.obssystem_id]).\
+                    where(db.templates.c.template_id==template_id)
+        result = db.execute(select)
+        row = result.fetchone()
+        result.close()
+
+        values = {'template_id':template_id, \
+                  'pulsar_id':row['pulsar_id'], \
+                  'obssystem_id':row['obssystem_id']}
+    try:
+        result = db.execute(query, values)
+    except:
+        db.rollback()
+        raise
+    else:
+        db.commit()
+        result.close()
 
 
 def get_template_id(db, template):
@@ -62,7 +106,8 @@ def get_template_id(db, template):
 def main():
     # Connect to the database
     db = database.Database()
-    
+    db.connect()
+
     try:
         if args.template is not None:
             epu.print_info("Getting template ID for %s using filename and md5" % \

@@ -107,6 +107,14 @@ def load_template(fn):
         # Register the template into the database
         template_id = populate_templates_table(db, newfn, params, \
                         comments=args.comments)
+
+        mastertemp_id, tempfn = epu.get_master_template(params['pulsar_id'], \
+                                                        params['obssystem_id'])
+        if mastertemp_id is None:
+            # If this is the only template for this pulsar
+            # make sure it will be set as the master
+            args.is_master = True
+
         if args.is_master:
             epu.print_info("Setting %s as master template (%s)" % \
                             (newfn, epu.Give_UTC_now()), 1)
