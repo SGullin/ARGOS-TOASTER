@@ -1,20 +1,11 @@
-#!/usr/bin/python2.6
-####################
-# load_rawfile.py #
-VERSION = 0.1
-####################
+#!/usr/bin/env python
+"""A script to load information about data archives into the database.
+"""
 
-#Imported modules
-import sys
-import os
 import os.path
-import glob
-import shutil
 import warnings
 
-# import pipeline utilities
 import epta_pipeline_utils as epu
-import config
 import errors
 import database
 
@@ -23,25 +14,32 @@ def populate_rawfiles_table(db, archivefn, params):
     # md5sum helper function in epu
     md5 = epu.Get_md5sum(archivefn)
     path, fn = os.path.split(os.path.abspath(archivefn))
-    
+   
+    trans = db.begin()
     # Does this file exist already?
-    query = "SELECT rawfile_id, pulsar_id " \
-            "FROM rawfiles " \
-            "WHERE md5sum = '%s'" % md5
-    db.execute(query)
-    rows = db.fetchall()
+    select = db.select([db.rawfiles.c.rawfile_id, \
+                        db.rawfiles.c.pulsar_id]).\
+                where(db.rawfiles.c.md5sum==md5)
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
     if len(rows) > 1:
+        db.rollback()
         raise errors.InconsistentDatabaseError("There are %d rawfiles " \
                     "with MD5 (%s) in the database already" % (len(rows), md5))
     elif len(rows) == 1:
-        rawfile_id, psr_id = rows[0]
+        rawfile_id = rows[0]['rawfile_id']
+        psr_id = rows[0]['pulsar_id']
         if psr_id == params['pulsar_id']:
             warnings.warn("A rawfile with this MD5 (%s) already exists " \
                             "in the DB for this pulsar (ID: %d). " \
                             "The file will not be re-registed into the DB. " \
                             "Doing nothing..." % (md5, psr_id), \
                             errors.EptaPipelineWarning)
+            db.commit()
+            return rawfile_id
         else:
+            db.rollback()
             raise errors.InconsistentDatabaseError("A rawfile with this " \
                             "MD5 (%s) already exists in the DB, but for " \
                             "a different pulsar (ID: %d)!" % (md5, psr_id))
@@ -50,69 +48,46 @@ def populate_rawfiles_table(db, archivefn, params):
         # exist in the DB. Insert it.
 
         # Insert the file
-        query = "INSERT INTO rawfiles " + \
-                "SET md5sum = '%s', " % md5 + \
-                    "filename = '%s', " % fn + \
-                    "filepath = '%s', " % path + \
-                    "user_id = '%s', " % params['user_id'] + \
-                    "add_time = NOW(), " + \
-                    "pulsar_id = '%s', " % params['pulsar_id'] + \
-                    "obssystem_id = '%s', " % params['obssystem_id'] + \
-                    "nbin = %d, " % int(params['nbin']) + \
-                    "nchan = %d, " % int(params['nchan']) + \
-                    "npol = %d, " % int(params['npol']) + \
-                    "nsub = %d, " % int(params['nsub']) + \
-                    "type = '%s', " % params['type'] + \
-                    "site = '%s', " % params['telescop'] + \
-                    "name = '%s', " % params['name'] + \
-                    "coord = '%s,%s', " % (params['ra'],params['dec']) + \
-                    "freq = %.15g, " % float(params['freq']) + \
-                    "bw = %.15g, " % float(params['bw']) + \
-                    "dm = %.15g, " % float(params['dm']) + \
-                    "rm = %.15g, " % float(params['rm']) + \
-                    "dmc = %.15g, " % float(params['dmc']) + \
-                    "rmc = %.15g, " % float(params['rm_c']) + \
-                    "polc = %.15g, " % float(params['pol_c']) + \
-                    "scale = '%s', " % params['scale'] + \
-                    "state = '%s', " % params['state'] + \
-                    "length = %.15g, " % float(params['length']) + \
-                    "rcvr_name = '%s', " % params['rcvr'] + \
-                    "rcvr_basis = '%s', " % params['basis'] + \
-                    "be_name = '%s'" % params['backend'] 
-        db.execute(query)
-        
-        # Get the rawfile_id of the file that was just entered
-        query = "SELECT LAST_INSERT_ID()"
-        db.execute(query)
-        rawfile_id = db.fetchone()[0]
+        ins = db.rawfiles.insert()
+        values = {'md5sum':md5, \
+                  'filename':fn, \
+                  'filepath':path, \
+                  'coord':'%s,%s' % (params['ra'],params['dec'])}
+        values.update(params)
+        result = db.execute(ins, values)
+        rawfile_id = result.inserted_primary_key[0]
+        result.close()
 
         # Create rawfile diagnostics
         diagfns = epu.create_datafile_diagnostic_plots(archivefn, path)
         # Load processing diagnostics
         for diagtype, diagpath in diagfns.iteritems():
             diagdir, diagfn = os.path.split(diagpath)
-            query = "INSERT INTO raw_diagnostic_plots " + \
-                    "SET rawfile_id=%d, " % rawfile_id + \
-                        "filename='%s', " % diagfn + \
-                        "filepath='%s', " % diagdir + \
-                        "plot_type='%s'" % diagtype
-            db.execute(query)
+            ins = db.raw_diagnostic_plots.insert()
+            values = {'rawfile_id':rawfile_id, \
+                      'filename':diagfn, \
+                      'filepath':diagdir, \
+                      'plot_type':diagtype}
+            result = db.execute(ins, values)
+            result.close()
             epu.print_info("Inserted rawfile diagnostic plot (type: %s)." % \
                         diagtype, 2)
-
+    db.commit()
     return rawfile_id
 
 
 def main():
     fn = args.infile
     rawfile_id = load_rawfile(fn)
-    print "%s has been archived and loaded to the DB. rawfile_id: %d" % \
+    print "%s has been loaded to the DB. rawfile_id: %d" % \
             (fn, rawfile_id)
 
 
 def load_rawfile(fn):
     # Connect to the database
     db = database.Database()
+    db.connect()
+
     try:
         # Enter information in rawfiles table
         epu.print_info("Working on %s (%s)" % (fn, epu.Give_UTC_now()), 1)
@@ -133,9 +108,6 @@ def load_rawfile(fn):
         
         epu.print_info("Finished with %s - rawfile_id=%d (%s)" % \
                 (fn, rawfile_id, epu.Give_UTC_now()), 1)
-
-        # TODO: Create diagnostic plots and load them into the DB
-
     finally:
         # Close DB connection
         db.close()
