@@ -211,7 +211,7 @@ sa.Table('rawfiles', metadata, \
         sa.Column('npol', sa.Integer, nullable=True), \
         sa.Column('nsub', sa.Integer, nullable=True), \
         sa.Column('type', sa.String(32), nullable=True), \
-        sa.Column('site', sa.String(16), nullable=True), \
+        sa.Column('telescop', sa.String(16), nullable=True), \
         sa.Column('name', sa.String(16), nullable=True), \
         sa.Column('datatype', sa.String(32), nullable=True), \
         sa.Column('coord', sa.String(32), nullable=True), \
@@ -220,14 +220,14 @@ sa.Table('rawfiles', metadata, \
         sa.Column('dm', sa.Float(24), nullable=True), \
         sa.Column('rm', sa.Float(24), nullable=True), \
         sa.Column('dmc', sa.Float(24), nullable=True), \
-        sa.Column('rmc', sa.Float(24), nullable=True), \
-        sa.Column('polc', sa.Float(24), nullable=True), \
+        sa.Column('rm_c', sa.Float(24), nullable=True), \
+        sa.Column('pol_c', sa.Float(24), nullable=True), \
         sa.Column('scale', sa.String(16), nullable=True), \
         sa.Column('state', sa.String(16), nullable=True), \
         sa.Column('length', sa.Float(23), nullable=True), \
-        sa.Column('rcvr_name', sa.String(16), nullable=True), \
-        sa.Column('rcvr_basis', sa.String(16), nullable=True), \
-        sa.Column('be_name', sa.String(16), nullable=True), \
+        sa.Column('rcvr', sa.String(16), nullable=True), \
+        sa.Column('basis', sa.String(16), nullable=True), \
+        sa.Column('backend', sa.String(16), nullable=True), \
         mysql_engine='InnoDB')
 
 # Define raw_diagnostics table
