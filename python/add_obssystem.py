@@ -48,33 +48,6 @@ def validate_obssystem(db, name, telescope_id, frontend, backend, clock):
         raise errors.BadInputError(errormsg)
 
 
-def get_telescope_info(db, alias):
-    """Given a telescope alias return the info from the 
-        matching telescope columns.
-
-        Inputs:
-            db: A connected Database object.
-            alias: The telescope's alias.
-
-        Output:
-            rows: The matching rows (RowProxy objects).
-    """
-    select = db.select([db.telescopes.c.telescope_id, \
-                        db.telescopes.c.telescope_name, \
-                        db.telescopes.c.telescope_abbrev, \
-                        db.telescopes.c.telescope_code], \
-                from_obj=[db.telescopes.\
-                    join(db.telescope_aliases, \
-                    onclause=db.telescopes.c.telescope_id == \
-                            db.telescope_aliases.c.telescope_id)], \
-                distinct=db.telescopes.c.telescope_id).\
-                where(db.telescope_aliases.c.telescope_alias.like(alias))
-    result = db.execute(select)
-    rows = result.fetchall()
-    result.close()
-    return rows
-
-
 def add_obssystem(db, name, telescope_id, frontend, backend, clock):
     """Add a new observing system to the database.
         
@@ -115,16 +88,11 @@ def main():
     db = database.Database()
     db.connect()
 
-    rows = get_telescope_info(db, args.telescope)
-    if len(rows) > 1:
-        raise errors.BadInputError("Multiple matches (%d) for this " \
-                                    "telescope alias (%s)! Be more " \
-                                    "specific." % (len(rows), args.telescope))
-    row = rows[0]
-    telescope_id = row['telescope_id']
+    tinfo = epu.get_telescope_info(args.telescope, db)
+    telescope_id = tinfo['telescope_id']
 
     if args.name is None:
-        args.name = "%s_%s_%s" % (row['telescope_abbrev'].upper(), \
+        args.name = "%s_%s_%s" % (tinfo['telescope_abbrev'].upper(), \
                                     args.backend.upper(), \
                                     args.frontend.upper())
     try:

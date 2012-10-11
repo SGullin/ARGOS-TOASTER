@@ -189,24 +189,29 @@ def get_obssystemids(existdb=None):
     """
     # Use the exisitng DB connection, or open a new one if None was provided
     db = existdb or database.Database()
-    query = "SELECT t.name, " \
-                "o.frontend, " \
-                "o.backend, " \
-                "o.obssystem_id " \
-            "FROM obssystems AS o " \
-            "LEFT JOIN telescopes AS t " \
-                "ON t.telescope_id = o.telescope_id"
-    db.execute(query)
+    db.connect()
 
-    rows = db.fetchall()
+    select = db.select([db.telescopes.c.telescope_name, \
+                        db.obssystems.c.frontend, \
+                        db.obssystems.c.backend, \
+                        db.obssystems.c.obssystem_id], \
+                from_obj=[db.obssystems.\
+                    outerjoin(db.telescopes, \
+                        onclause=db.telescopes.c.telescope_id == \
+                                db.obssystems.c.telescope_id)])
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
     if not existdb:
         # Close the DB connection we opened
         db.close()
 
     # Create the mapping
     obssystemids = {}
-    for telescope, frontend, backend, id in rows:
-        obssystemids[(telescope.lower(), frontend.lower(), backend.lower())] = id
+    for row in rows:
+        obssystemids[(row['telescope_name'].lower(), \
+                      row['frontend'].lower(), \
+                      row['backend'].lower())] = row['obssystem_id']
     return obssystemids
 
 
@@ -230,6 +235,54 @@ def get_telescope(site):
         raise errors.UnrecognizedValueError("Site identifier (%s) " \
                                             "is not recognized" % site)
     return site_to_telescope[site]
+
+
+def get_telescope_info(alias, existdb=None):
+    """Given a telescope alias return the info from the 
+        matching telescope columns.
+
+        Inputs:
+            alias: The telescope's alias.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Output:
+            row: The matching database row.
+                NOTE: the columns in the return RowProxy object can
+                be referenced like a dictionary, using column names.
+    """
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existdb or database.Database()
+    db.connect()
+    
+    select = db.select([db.telescopes.c.telescope_id, \
+                        db.telescopes.c.telescope_name, \
+                        db.telescopes.c.telescope_abbrev, \
+                        db.telescopes.c.telescope_code], \
+                from_obj=[db.telescopes.\
+                    join(db.telescope_aliases, \
+                    onclause=db.telescopes.c.telescope_id == \
+                            db.telescope_aliases.c.telescope_id)], \
+                distinct=db.telescopes.c.telescope_id).\
+                where(db.telescope_aliases.c.telescope_alias.like(alias))
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
+    if not existdb:
+        # Close the DB connection we opened
+        db.close()
+    
+    if len(rows) > 1:
+        raise errors.BadInputError("Multiple matches (%d) for this " \
+                                    "telescope alias (%s)! Be more " \
+                                    "specific." % (len(rows), alias))
+    elif len(rows) == 0:
+        raise errors.BadInputError("Telescope alias provided (%s) doesn't " \
+                                    "match any telescope entries in the " \
+                                    "database." % alias)
+    else:
+        row = rows[0]
+    return row
 
 
 def get_header_vals(fn, hdritems):
@@ -475,8 +528,9 @@ def prep_file(fn):
     	        "rcvr", "basis", "backend"]
     params = get_header_vals(fn, hdritems)
 
-    # Get telescope name
-    params['telescop'] = get_telescope(params['telescop'])
+    # Normalise telescope name
+    tinfo = get_telescope_info(params['telescop'])
+    params['telescop'] = tinfo['telescope_name']
 
     # Check if obssystem_id, pulsar_id, user_id can be found
     obssys_key = (params['telescop'].lower(), params['rcvr'].lower(), \
