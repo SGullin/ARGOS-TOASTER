@@ -146,7 +146,6 @@ sa.Table('templates', metadata, \
                     sa.ForeignKey("users.user_id"), \
                     nullable=False), \
         sa.Column('nbin', sa.Integer, nullable=True), \
-        sa.Column('is_analytic', sa.Boolean, nullable=False), \
         sa.Column('filepath', sa.String(512), nullable=False), \
         sa.Column('filename', sa.String(512), nullable=False, \
                     unique=True), \
@@ -155,7 +154,6 @@ sa.Table('templates', metadata, \
         sa.Column('add_time', sa.DateTime, nullable=False, \
                     default=sa.func.now()), \
         sa.Column('comments', sa.Text, nullable=False), \
-        sa.UniqueConstraint('pulsar_id', 'obssystem_id'), \
         mysql_engine='InnoDB')
 
 # Define telescopes table

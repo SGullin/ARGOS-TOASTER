@@ -1,9 +1,8 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python
 """
 Script to upload template profiles to the EPTA timing database
 """
 
-#Imported modules
 import os.path
 
 import config
@@ -12,67 +11,86 @@ import errors
 import epta_pipeline_utils as epu
 import set_master_template as smt
     
-def populate_templates_table(db, fn, params, comments, is_analytic):
+def populate_templates_table(db, fn, params, comments):
     # md5sum helper function in epu
     md5 = epu.Get_md5sum(fn);
     path, fn = os.path.split(os.path.abspath(fn))
     
+    trans = db.begin()
     # Does this file exist already?
-    query = "SELECT template_id, pulsar_id " \
-            "FROM templates " \
-            "WHERE md5sum = '%s'" % md5
-    db.execute(query)
-    rows = db.fetchall()
+    select = db.select([db.templates.c.template_id, \
+                        db.templates.c.pulsar_id]).\
+                where(db.templates.c.md5sum==md5)
+    results = db.execute(select)
+    rows = results.fetchall()
+    results.close()
     if len(rows) > 1:
+        db.rollback()
         raise errors.InconsistentDatabaseError("There are %d templates " \
                     "with MD5 (%s) in the database already" % (len(rows), md5))
     elif len(rows) == 1:
-        template_id, psr_id = rows[0]
+        psr_id = rows[0]['pulsar_id']
+        template_id = rows[0]['template_id']
         if psr_id == params['pulsar_id']:
             warnings.warn("A template with this MD5 (%s) already exists " \
                             "in the DB for this pulsar (ID: %d). " \
                             "The file will not be re-registed into the DB. " \
                             "Doing nothing..." % (md5, psr_id), \
                             errors.EptaPipelineWarning)
+            db.commit()
+            return template_id
         else:
+            db.rollback()
             raise errors.InconsistentDatabaseError("A template with this " \
                             "MD5 (%s) already exists in the DB, but for " \
                             "a different pulsar (ID: %d)!" % (md5, psr_id))
     else:
         # Based on its MD5, this template doesn't already 
-        # exist in the DB. Insert it.
+        # exist in the DB.
 
-        # Insert the file
-        query = "INSERT INTO templates " + \
-                "SET md5sum = '%s', " % md5 + \
-                    "filename = '%s', " % fn + \
-                    "filepath = '%s', " % path + \
-                    "user_id = '%s', " % params['user_id'] + \
-                    "add_time = NOW(), " + \
-                    "pulsar_id = '%s', " % params['pulsar_id'] + \
-                    "obssystem_id = '%s', " % params['obssystem_id'] + \
-                    "nbin = %d, " % params['nbin'] + \
-                    "is_analytic = %d, " % is_analytic + \
-                    "comments = '%s' " % comments
-        db.execute(query)
- 
-        # Get the template_id of the file that was just entered
-        query = "SELECT LAST_INSERT_ID()"
-        template_id = db.execute_and_fetchone(query)[0]
-        return template_id 
+        # Check to see if this pulsar/observing system combination
+        # Already has a template
+        select = db.select([db.templates.c.template_id]).\
+                    where((db.templates.c.pulsar_id==params['pulsar_id']) & \
+                          (db.templates.c.obssystem_id==params['obssystem_id']))
+        results = db.execute(select)
+        rows = results.fetchall()
+        results.close()
+        if len(rows):
+            warnings.warn("This pulsar_id (%d), obssystem_id (%d) " \
+                        "combination already has %d templates in the DB. " \
+                        "Be sure to correctly set the master template." % \
+                        (params['pulsar_id'], params['obssystem_id'], len(rows)))
+
+        # Insert the template
+        ins = db.templates.insert()
+        values = {'md5sum':md5, \
+                  'filename':fn, \
+                  'filepath': path, \
+                  'user_id':params['user_id'], \
+                  'pulsar_id':params['pulsar_id'], \
+                  'obssystem_id':params['obssystem_id'], \
+                  'nbin':params['nbin'], \
+                  'comments':comments}
+        result = db.execute(ins, values)
+        template_id = result.inserted_primary_key[0]
+        result.close()
+    db.commit()
+    return template_id 
 
 
 def main():
     fn = args.template
     template_id = load_template(fn)
-    print "%s has been archived and loaded to the DB. template_id: %d" % \
+    print "%s has been loaded to the DB. template_id: %d" % \
             (fn, template_id)
 
 
 def load_template(fn):
     # Connect to the database
     db = database.Database()
-    
+    db.connect()
+
     try:
         # Now load the template file into database
         epu.print_info("Working on %s (%s)" % (fn, epu.Give_UTC_now()), 1)
@@ -86,11 +104,9 @@ def load_template(fn):
                     psrname=params['name'])
         newfn = epu.archive_file(fn, destdir)
  
-        epu.print_info("%s move to %s (%s)" % (fn, newfn, epu.Give_UTC_now()), 1)
- 
         # Register the template into the database
         template_id = populate_templates_table(db, newfn, params, \
-                        comments=args.comments, is_analytic=False)
+                        comments=args.comments)
         if args.is_master:
             epu.print_info("Setting %s as master template (%s)" % \
                             (newfn, epu.Give_UTC_now()), 1)
