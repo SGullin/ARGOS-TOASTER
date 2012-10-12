@@ -74,11 +74,11 @@ sa.Table('process', metadata, \
         sa.Column('user_id', sa.Integer, \
                     sa.ForeignKey("users.user_id"), \
                     nullable=False), \
-        sa.Column('add_time', sa.DateTime, nullable=False), \
+        sa.Column('add_time', sa.DateTime, nullable=False, \
+                    default=sa.func.now()), \
         sa.Column('input_args', sa.Text, nullable=False), \
         sa.Column('nchan', sa.Integer, nullable=False), \
         sa.Column('nsub', sa.Integer, nullable=False), \
-        sa.Column('dm', sa.Float(53), nullable=False), \
         sa.Column('toa_fitting_method', sa.String(12), nullable=False), \
         mysql_engine='InnoDB')
 
