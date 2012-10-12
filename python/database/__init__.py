@@ -33,6 +33,9 @@ class Database(object):
         self.metadata = schema.metadata
         self.tables = self.metadata.tables
 
+    def __del__(self):
+        self.close()
+
     def get_table(self, tablename):
         return self.tables[tablename]
 
