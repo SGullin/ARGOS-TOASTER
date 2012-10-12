@@ -1,15 +1,11 @@
-#!/usr/bin/python
-##################################
-# epta_timing_pipeline.py 
-PIPE_NAME = "epta_timing_pipeline"
-VERSION = 0.2
-##################################
-
-#Imported modules
+#!/usr/bin/env python
+""" The data reduction pipeline. This script will archive files, 
+    register file-info into the database, reduce data, and store
+    TOAs and processing information into the DB.
+"""
 import sys
 import os
 import os.path
-import datetime
 import argparse
 import warnings
 import tempfile
@@ -29,95 +25,50 @@ import config
 # DO NOT EDIT BELOW HERE
 ###############################################################################
 
-#Functions
-def Help():
-    #Print basic description and usage
-    print "\nThe EPTA Timing Pipeline"
-    print "Version: %.2f"%(VERSION)+"\n"
+def get_master_parfile_id(rawfile_id, existdb=None):
+    """Given a rawfile_id, get the corresponding
+        master_parfile_id from the database.
 
-    print "To run a test on J1713+0747 use rawfile_id=80 parfile_id=15 and template_id=3"
-    print "i.e. run './epta_timing_pipeline.py --rawfile_id 80 --parfile_id 15 --template_id 3 --debug'"
-        
-    print "Please use 'epta_timing_pipeline.py -h' for a full list of command line options. \n"
+        Inputs:
+            rawfile_id: The raw file's ID number.
+            existdb: An existing database connection object.
+                (Default: establish a new DB connection)
 
-    print "\n"
-    sys.exit(0)
+        Outputs:
+            master_parfile_id: The corresponding ID of the 
+                rawfile's master parfile. (None if there is
+                no appropriate master parfile).
+    """
+    db = existdb or database.Database()
+    db.connect()
 
-def Parse_command_line():
-    parentparser = argparse.ArgumentParser(add_help=False)
-    # Raw data
-    rawgroup = parentparser.add_mutually_exclusive_group(required=True)
-    # By file name
-    rawgroup.add_argument("rawfile",
-                        nargs='?',
-                        type=str,
-                        default=None,
-                        help="A raw file to archive/load to DB and generate TOAs for.")
-    # Or by rawfile ID
-    rawgroup.add_argument('-r', '--rawfile-id',
-                        dest='rawfile_id',
-                        type=int,
-                        default=None,
-                        help="ID of an already archived/loaded raw data file to use for " \
-                                "running the full pipeline.")
-    #Ephemeris
-    pargroup = parentparser.add_mutually_exclusive_group(required=False)
-    pargroup.add_argument('-p', '--parfile-id',
-                        dest='parfile_id', 
-                        type=int,
-                        default=None,
-                        help="ID of ephemeris to use for running the full pipeline.")
-    pargroup.add_argument('--parfile', 
-                        dest='parfile',
-                        type=str,
-                        default=None,
-                        help="A parfile to archive/load to DB and use when generating TOAs.")
-    #Template profile
-    tmpgroup = parentparser.add_mutually_exclusive_group(required=False)
-    tmpgroup.add_argument('-t', '--template-id',
-                        dest='template_id',
-                        type=int,
-                        default=None,
-                        help="ID of template profile to use for running the full pipeline.")
-    tmpgroup.add_argument('--template',
-                        dest='template',
-                        type=str,
-                        default=None,
-                        help="A template to archive/load to DB and use when generating TOAs.")
-    
-    mainparser = epu.DefaultArguments(
-        prog='epta_pipeline',
-        description='Reduce an already-uploaded archive. ' \
-                    'Both a pre-loaded parfile, and a pre-loaded template ' \
-                    'must be provided as well. TOAs generated are loaded ' \
-                    'into the database, as is information about the ' \
-                    'processing run.')
-
-    subparsers = mainparser.add_subparsers(dest='manipulator', \
-                            title="Manipulators", \
-                            description="The function used to manipulate " \
-                                "rawfiles before generating TOAs. Note: the " \
-                                "number of TOAs is (#subbands * #subints) in " \
-                                "the manipulated file.")
-    for name in manipulators.registered_manipulators:
-        m = manipulators.__dict__[name]
-        m_parser = subparsers.add_parser(m.plugin_name, help=m.__doc__, \
-                description="%s (The options listed below are '%s'-specific.)" % \
-                            (m.__doc__, name), \
-                parents=[parentparser])
-        m.add_arguments(m_parser)
-        m_parser.set_defaults(manipfunc=m.manipulate)
-        m_parser.add_standard_group()
-        m_parser.add_debug_group()
-
-    args=mainparser.parse_args()
-    return args
+    # Get ID numbers for master parfile and master template
+    select = db.select([db.master_parfiles.c.parfile_id, \
+                        db.master_parfiles.c.pulsar_id]).\
+                where((db.rawfiles.c.pulsar_id == \
+                            db.master_parfiles.c.pulsar_id) & \
+                      (db.rawfiles.c.rawfile_id==rawfile_id))
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
+    if not existdb:
+        db.close()
+    if len(rows) > 1:
+        raise errors.InconsistentDatabaseError("There are multiple (%d) " \
+                            "master parfiles for the given pulsar_id (%d)." % \
+                            (len(rows), rows[0]['pulsar_id']))
+    elif len(rows) == 0:
+        warnings.warn("There is no master parfile for the given " \
+                        "raw file (ID: %d). Returning nothing..." % \
+                        rawfile_id, errors.EptaPipelineError)
+        return None
+    else:
+        return rows[0]['parfile_id']
 
 
-def get_master_ids(rawfile_id, existdb=None):
-    """Given a rawfile_id, fetch the corresponding
-        master_template_id and master_parfile_id from
-        the database and return them.
+def get_master_template_id(rawfile_id, existdb=None):
+    """Given a rawfile_id, get the corresponding
+        master_template_id from the database.
 
         Inputs:
             rawfile_id: The raw file's ID number.
@@ -128,74 +79,62 @@ def get_master_ids(rawfile_id, existdb=None):
             master_template_id: The corresponding ID of the 
                 rawfile's master template. (None if there is
                 no appropriate master template).
-            master_parfile_id: The corresponding ID of the 
-                rawfile's master parfile. (None if there is
-                no appropriate master parfile).
     """
-    if existdb:
-        db = existdb
-    else:
-        db = database.Database()
+    db = existdb or database.Database()
+    db.connect()
 
-    #Get ID numbers for master parfile and master template
-    query = "SELECT mtmp.template_id, " \
-                "psr.master_parfile_id " \
-            "FROM rawfiles AS r " \
-            "LEFT JOIN master_templates AS mtmp " \
-                "ON mtmp.obssystem_id=r.obssystem_id " \
-                    "AND mtmp.pulsar_id=r.pulsar_id " \
-            "LEFT JOIN pulsars AS psr " \
-                "ON psr.pulsar_id=r.pulsar_id " \
-            "WHERE rawfile_id=%d" % (rawfile_id)
-    db.execute(query)
-    master_template_id, master_parfile_id = db.fetchone()
-    
-    if master_template_id is None:
-        raise errors.NoMasterError("No master template found for " \
-                                    "rawfile (ID: %d)" % rawfile_id)
-    if master_parfile_id is None:
-        raise errors.NoMasterError("No master parfile found for " \
-                                    "rawfile (ID: %d)" % rawfile_id)
-
+    # Get ID numbers for master template and master template
+    select = db.select([db.master_templates.c.template_id, \
+                        db.master_templates.c.pulsar_id, \
+                        db.master_templates.c.obssystem_id]).\
+                where((db.rawfiles.c.pulsar_id == \
+                            db.master_templates.c.pulsar_id) & \
+                      (db.rawfiles.c.obssystem_id == \
+                            db.master_templates.c.obssystem_id) & \
+                      (db.rawfiles.c.rawfile_id==rawfile_id))
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
     if not existdb:
         db.close()
-
-    return master_template_id, master_parfile_id
+    if len(rows) > 1:
+        raise errors.InconsistentDatabaseError("There are multiple (%d) " \
+                            "master templates for the given pulsar_id (%d), " \
+                            "obssystem_id (%d) combination." % \
+                            (len(rows), rows[0]['pulsar_id'], 
+                                rows[0]['obssystem_id']))
+    elif len(rows) == 0:
+        warnings.warn("There is no master template for the given " \
+                        "raw file (ID: %d). Returning nothing..." % \
+                        rawfile_id, errors.EptaPipelineError)
+        return None
+    else:
+        return rows[0]['template_id']
 
 
 def fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
-                            cmdline, nchan, nsub, db):
-    query = "INSERT INTO process " \
-                "(version_id, " \
-                "rawfile_id, " \
-                "add_time, " \
-                "input_args, " \
-                "parfile_id, " \
-                "template_id, " \
-                "nchan, " \
-                "nsub, " \
-                "toa_fitting_method, " \
-                "dm, " \
-                "user_id) " \
-            "SELECT %d, " % version_id + \
-                "%d, " % rawfile_id + \
-                "NOW(), " + \
-                "'%s', " % cmdline + \
-                "par.parfile_id, " + \
-                "%d, " % template_id + \
-                "%d, " % nchan + \
-                "%d, " % nsub + \
-                "'%s', " % config.toa_fitting_method + \
-                "par.dm, " \
-                "%d " % epu.get_current_users_id(db) + \
-            "FROM parfiles AS par " \
-            "WHERE par.parfile_id = %d" % parfile_id
-    db.execute(query)
-    query = "SELECT LAST_INSERT_ID()"
-    db.execute(query)
-    process_id = db.fetchone()[0]
+                            cmdline, nchan, nsub, existdb=None):
+    db = existdb or database.Database()
+    db.connect()
+
+    ins = db.process.insert()
+    values = {'version_id':version_id, \
+              'rawfile_id':rawfile_id, \
+              'input_args':cmdline, \
+              'parfile_id':parfile_id, \
+              'template_id':template_id, \
+              'nchan':nchan, \
+              'nsub':nsub, \
+              'toa_fitting_method':config.toa_fitting_method, \
+              'user_id':epu.get_current_users_id(db)}
+    result = db.execute(ins, values)
+    process_id = result.inserted_primary_key[0]
+    result.close()
     epu.print_info("Added processing run to DB. Processing ID: %d" % \
                         process_id, 1)
+    # Close DB connection
+    if not existdb:
+        db.close()
     return process_id
     
 
@@ -224,30 +163,27 @@ def pipeline_core(manip_name, prepped_manipfunc, \
     print "Start time: %s"%epu.Give_UTC_now()
     print "###################################################"
     
-    if existdb:
-        db = existdb
-    else:
-        db = database.Database()
+    db = existdb or database.Database()
+    db.connect()
 
     try:
+        trans = db.begin() # Open a transaction
+
         # Get version ID
         version_id = epu.get_version_id(db)
- 
-        #Get raw data from rawfile_id and verify MD5SUM
-        rawfile = epu.get_file_from_id('rawfile', rawfile_id, db)
-            
-        #Get ephemeris from parfile_id and verify MD5SUM
-        parfile = epu.get_file_from_id('parfile', parfile_id, db)
+        # Get raw data from rawfile_id and verify MD5SUM
+        rawfile = epu.get_rawfile_from_id(rawfile_id, db, verify_md5=True)
+        # Get ephemeris from parfile_id and verify MD5SUM
+        parfile = epu.get_parfile_from_id(parfile_id, db, verify_md5=True)
  
         # Manipulate the raw file
         epu.print_info("Manipulating file", 0)
-        
         # Create a temporary file for the adjusted results
         tmpfile, adjustfn = tempfile.mkstemp()
         os.close(tmpfile)
         # Re-install ephemeris
         shutil.copy(rawfile, adjustfn)
-        cmd = "pam -m -E %s --update-dm %s" % (parfile, adjustfn)
+        cmd = "pam -m -E %s --update_dm %s" % (parfile, adjustfn)
         epu.execute(cmd)
         
         # Create a temporary file for the manipulated results
@@ -256,8 +192,8 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         # Run the manipulator
         prepped_manipfunc([adjustfn], manipfn)
  
-        #Get template from template_id and verify MD5SUM
-        template = epu.get_file_from_id('template', template_id, db)
+        # Get template from template_id and verify MD5SUM
+        template = epu.get_template_from_id(template_id, db, verify_md5=True)
         
         # Create a temporary file for the toa diagnostic plots
         tmpfile, toadiagfn = tempfile.mkstemp()
@@ -275,10 +211,15 @@ def pipeline_core(manip_name, prepped_manipfunc, \
                                             "of processing (%s) is different " \
                                             "from at the end (%d)!" % \
                                             (version_id, new_version_id))
+        
+        # Read some header values from the manipulated archive
+        hdr = epu.get_header_vals(manipfn, ['nchan', 'nsub', 'name', \
+                                            'intmjd', 'fracmjd'])
+        hdr['secs'] = int(hdr['fracmjd']*24*3600+0.5) # Add 0.5 so result is 
+                                                      # rounded to nearest int
  
         # Fill pipeline table
         cmdline = " ".join(sys.argv)
-        hdr = epu.get_header_vals(manipfn, ['nchan', 'nsub'])
         process_id = fill_process_table(version_id, rawfile_id, parfile_id, \
                             template_id, cmdline, hdr['nchan'], hdr['nsub'], db)
         
@@ -300,11 +241,9 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         diagfns = epu.create_datafile_diagnostic_plots(manipfn, diagdir, suffix)
        
         # Copy TOA diagnostic plots and register them into DB
-        hdr = epu.get_header_vals(manipfn, ['name', 'intmjd', 'fracmjd'])
-        hdr['secs'] = int(hdr['fracmjd']*24*3600+0.5) # Add 0.5 so result is 
-                                                      # rounded to nearest int
         basefn = "%(name)s_%(intmjd)05d_%(secs)05d" % hdr
 
+        values = [] 
         for ii, toa_id in enumerate(toa_ids):
             outfn = basefn+"_procid%d.TOA%d.png" % (process_id, ii+1)
             if ii == 0:
@@ -312,25 +251,28 @@ def pipeline_core(manip_name, prepped_manipfunc, \
             else:
                 fn = "%s_%d" % (toadiagfn, ii+1)
             shutil.move(fn, os.path.join(diagdir, outfn))
-            query = "INSERT INTO toa_diagnostic_plots " + \
-                    "SET toa_id=%d, " % toa_id + \
-                        "filename='%s', " % outfn + \
-                        "filepath='%s', " % diagdir + \
-                        "plot_type='Prof-Temp Resids'"
-            db.execute(query)
+            ins = db.toa_diagnostic_plots.insert()
+            values.append({'toa_id':toa_id, \
+                            'filename':outfn, \
+                            'filepath':diagdir, \
+                            'plot_type':'Prof-Temp Resids'})
+        result = db.execute(ins, values)
+        result.close()
         epu.print_info("Inserted %d TOA diagnostic plots." % len(toa_ids), 2)
 
         # Load processing diagnostics
+        values = []
         for diagtype, diagpath in diagfns.iteritems():
             dir, fn = os.path.split(diagpath)
-            query = "INSERT INTO proc_diagnostic_plots " + \
-                    "SET process_id=%d, " % process_id + \
-                        "filename='%s', " % fn + \
-                        "filepath='%s', " % dir + \
-                        "plot_type='%s'" % diagtype
-            db.execute(query)
-            epu.print_info("Inserted processing diagnostic plot (type: %s)." % \
+            ins = db.proc_diagnostic_plots.insert()
+            values.append({'process_id':process_id, \
+                      'filename': fn, \
+                      'filepath': dir, \
+                      'plot_type':diagtype})
+            epu.print_info("Inserting processing diagnostic plot (type: %s)." % \
                         diagtype, 2)
+        result = db.execute(ins, values)
+        result.close()
     except:
         db.rollback()
         sys.stdout.write(colour.cstring("Error encountered. " \
@@ -339,7 +281,8 @@ def pipeline_core(manip_name, prepped_manipfunc, \
     else:
         # No exceptions encountered
         # Commit database transaction
-        db.commit()
+        if not existdb:
+            db.commit()
     finally:
         #End pipeline
         print "###################################################"
@@ -353,12 +296,6 @@ def pipeline_core(manip_name, prepped_manipfunc, \
 
 
 def main():
-    #Exit if there are no or insufficient arguments
-    if not len(sys.argv):
-        Help()
-
-    args = Parse_command_line()
-
     if args.rawfile is not None:
         epu.print_info("Loading rawfile %s" % args.rawfile, 1)
         args.rawfile_id = load_rawfile.load_rawfile(args.rawfile)
@@ -371,14 +308,19 @@ def main():
         epu.print_info("Loading template %s" % args.template, 1)
         args.template_id = load_template.load_template(args.template)
 
-    if (args.parfile_id is None) or (args.template_id is None):
-        # Get master parfile and template IDs together to reduce number of
-        # DB queries required.
-        master_template_id, master_parfile_id = get_master_ids(args.rawfile_id)
+    if args.parfile_id is None:
+        args.parfile_id = get_master_parfile_id(args.rawfile_id)
         if args.parfile_id is None:
-            args.parfile_id = master_parfile_id
+            raise errors.NoMasterError("A master parfile is required " \
+                                    "in the database if no parfile is " \
+                                    "provided on the command line.")
+
+    if args.template_id is None:
+        args.template_id = get_master_template_id(args.rawfile_id)
         if args.template_id is None:
-            args.template_id = master_template_id
+            raise errors.NoMasterError("A master template is required " \
+                                    "in the database if no template is " \
+                                    "provided on the command line.")
 
     epu.print_info("Using the following IDs:\n" \
                      "    rawfile_id: %d\n" \
@@ -386,8 +328,10 @@ def main():
                      "    template_id: %d" % \
                      (args.rawfile_id, args.parfile_id, args.template_id), 1)
     
-    manip_kwargs = manipulators.extract_manipulator_arguments(args.manipfunc, args)
-    prepped_manipfunc = manipulators.prepare_manipulator(args.manipfunc, manip_kwargs)
+    manip_kwargs = manipulators.extract_manipulator_arguments(args.manipfunc, \
+                                                            args)
+    prepped_manipfunc = manipulators.prepare_manipulator(args.manipfunc, \
+                                                            manip_kwargs)
     
     if len(manip_kwargs):
         manip_arglist = []
@@ -400,7 +344,6 @@ def main():
     epu.print_info("Manipuator being used: %s\n" \
                     "Arguments provided:\n" \
                     "    %s" % (args.manipulator, manip_argstr), 1) 
-              
     
     # Run pipeline core
     pipeline_core(args.manipulator, prepped_manipfunc, \
@@ -408,4 +351,59 @@ def main():
 
 
 if __name__ == "__main__":
+    parentparser = argparse.ArgumentParser(add_help=False)
+    # Raw data
+    rawgroup = parentparser.add_mutually_exclusive_group(required=True)
+    rawgroup.add_argument("rawfile", nargs='?', type=str, default=None, \
+                        help="A raw file to archive/load to DB and " \
+                            "generate TOAs for.")
+    rawgroup.add_argument('-r', '--rawfile-id', dest='rawfile_id', \
+                        type=int, default=None, \
+                        help="ID of an already archived/loaded raw data " \
+                            "file to use for running the full pipeline.")
+    # Ephemeris
+    pargroup = parentparser.add_mutually_exclusive_group(required=False)
+    pargroup.add_argument('-p', '--parfile-id', dest='parfile_id', \
+                        type=int, default=None, \
+                        help="ID of ephemeris to use for running the " \
+                            "full pipeline.")
+    pargroup.add_argument('--parfile', dest='parfile', type=str, \
+                        default=None,
+                        help="A parfile to archive/load to DB and " \
+                            "use when generating TOAs.")
+    # Template profile
+    tmpgroup = parentparser.add_mutually_exclusive_group(required=False)
+    tmpgroup.add_argument('-t', '--template-id', dest='template_id',
+                        type=int, default=None, \
+                        help="ID of template profile to use for running " \
+                            "the full pipeline.")
+    tmpgroup.add_argument('--template', dest='template', type=str, \
+                        default=None,
+                        help="A template to archive/load to DB and use " \
+                            "when generating TOAs.")
+    mainparser = epu.DefaultArguments(prog='epta_pipeline', \
+                            description='Reduce an already-uploaded ' \
+                                'archive. Both a pre-loaded parfile, and a ' \
+                                'pre-loaded template must be provided as well. ' \
+                                'TOAs generated are loaded into the database, ' \
+                                'as is information about the processing run.')
+
+    subparsers = mainparser.add_subparsers(dest='manipulator', \
+                            title="Manipulators", \
+                            description="The function used to manipulate " \
+                                "rawfiles before generating TOAs. Note: the " \
+                                "number of TOAs is (#subbands * #subints) in " \
+                                "the manipulated file.")
+    for name in manipulators.registered_manipulators:
+        m = manipulators.__dict__[name]
+        m_parser = subparsers.add_parser(m.plugin_name, help=m.__doc__, \
+                description="%s (The options listed below are " \
+                            "'%s'-specific.)" % (m.__doc__, name), \
+                parents=[parentparser])
+        m.add_arguments(m_parser)
+        m_parser.set_defaults(manipfunc=m.manipulate)
+        m_parser.add_standard_group()
+        m_parser.add_debug_group()
+
+    args=mainparser.parse_args()
     main()

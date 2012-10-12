@@ -26,35 +26,6 @@ import database
 ##############################################################################
 # GLOBAL DEFENITIONS
 ##############################################################################
-site_to_telescope = {'i': 'WSRT',
-                     'wb': 'WSRT',
-                     'wt': 'WSRT',
-                     'wsrt': 'WSRT',
-                     'westerbork': 'WSRT',
-                     'g': 'Effelsberg', 
-                     'ef': 'Effelsberg',
-                     'eff': 'Effelsberg',
-                     'effelsberg': 'Effelsberg',
-                     '8': 'Jodrell',
-                     'jb': 'Jodrell',
-                     'jbo': 'Jodrell',
-                     'jodrell': 'Jodrell',
-                     'jodrell bank': 'Jodrell',
-                     'jodrell bank observatory': 'Jodrell',
-                     'lovell': 'Jodrell',
-                     'f': 'Nancay',
-                     'nc': 'Nancay',
-                     'ncy': 'Nancay',
-                     'nancay': 'Nancay',
-                     'sardinia': 'SRT',
-                     'srt': 'SRT'}
-
-telescope_to_dir = {'Jodrell': 'jb', \
-                    'WSRT': 'wsrt', \
-                    'SRT': 'srt', \
-                    'Effelsberg': 'eff', \
-                    'Nancay': 'ncy'}
-
 header_param_types = {'freq': float, \
                       'length': float, \
                       'bw': float, \
@@ -131,10 +102,11 @@ def get_userids(existdb=None):
     # Use the exisitng DB connection, or open a new one if None was provided
     db = existdb or database.Database()
     db.connect()
-    query = "SELECT user_name, user_id FROM users"
-    db.execute(query)
-
-    rows = db.fetchall()
+    select = db.select([db.users.c.user_name, \
+                        db.users.c.user_id])
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
     if not existdb:
         # Close the DB connection we opened
         db.close()
@@ -213,28 +185,6 @@ def get_obssystemids(existdb=None):
                       row['frontend'].lower(), \
                       row['backend'].lower())] = row['obssystem_id']
     return obssystemids
-
-
-def get_telescope(site):
-    """Given a site identifier return the telescope's name. 
-        Possible identifiers are:
-        - telescope name
-        - 1-char site code
-        - 2-char site code -
-        - telescope abbreviation
-        
-        Input:
-            site: String to identify site.
-                    (Idenfier is not case sensitive)
-
-        Output:
-            telescope: Name of the telescope.
-    """
-    site = site.lower()
-    if site not in site_to_telescope:
-        raise errors.UnrecognizedValueError("Site identifier (%s) " \
-                                            "is not recognized" % site)
-    return site_to_telescope[site]
 
 
 def get_telescope_info(alias, existdb=None):
@@ -431,7 +381,8 @@ def get_archive_dir(fn, data_archive_location=config.data_archive_location, \
             receiver = params['rcvr']
         if psrname is None:
             psrname = get_pulsar_names()[params['name']]
-    sitedir = telescope_to_dir[get_telescope(site)]
+    tinfo = get_telescope_info(site)
+    sitedir = tinfo['telescope_abbrev']
     
     dir = os.path.join(data_archive_location, psrname, sitedir.lower(), \
                         backend.lower(), receiver.lower())
@@ -644,37 +595,42 @@ def get_version_id(existdb=None):
     
     # Use the exisitng DB connection, or open a new one if None was provided
     db = existdb or database.Database()
+    db.connect()
+    db.begin() # open a transaction
 
     # Check to see if this combination of versions is in the database
-    query = "SELECT version_id FROM versions " \
-            "WHERE pipeline_githash='%s' AND " \
-                "psrchive_githash='%s' AND " \
-                "tempo2_cvsrevno='Not available'" % \
-            (pipeline_githash, psrchive_githash)
-    db.execute(query)
-    rows = db.fetchall()
+    select = db.select([db.versions.c.version_id]).\
+                where((db.versions.c.pipeline_githash==pipeline_githash) & \
+                      (db.versions.c.psrchive_githash==psrchive_githash) & \
+                      (db.versions.c.tempo2_cvsrevno=='Not available'))
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
     if len(rows) > 1:
+        db.rollback()
+        if not existdb:
+            # Close the DB connection we opened
+            db.close()
         raise errors.DatabaseError("There are too many (%d) matching " \
                                     "version IDs" % len(rows))
     elif len(rows) == 1:
         version_id = rows[0].version_id
     else:
         # Insert the current versions
-        query = "INSERT INTO versions " \
-                "SET pipeline_githash='%s', " % pipeline_githash + \
-                    "psrchive_githash='%s', " % psrchive_githash + \
-                    "tempo2_cvsrevno='Not available'"
-        db.execute(query)
-        
+        ins = db.versions.insert()
+        values = {'pipeline_githash':pipeline_githash, \
+                  'psrchive_githash':psrchive_githash, \
+                  'tempo2_cvsrevno':'Not available'}
+        result = db.execute(ins, values)
         # Get the newly add version ID
-        query = "SELECT LAST_INSERT_ID()"
-        db.execute(query)
-        version_id = db.fetchone()[0]
+        version_id = result.inserted_primary_key[0]
+        result.close()
+    
+    db.commit()
     
     if not existdb:
         # Close the DB connection we opened
         db.close()
-
     return version_id
 
 
@@ -694,7 +650,8 @@ def check_repos():
                             "pipeline debugging is on.", \
                             errors.EptaPipelineWarning)
         else:
-            raise errors.EptaPipelineError("Pipeline's git repository is dirty. Aborting!")
+            raise errors.EptaPipelineError("Pipeline's git repository is dirty. " \
+                                            "Aborting!")
 
     if is_gitrepo_dirty(config.psrchive_dir):
         raise errors.EptaPipelineError("PSRCHIVE's git repository is dirty. " \
@@ -1181,59 +1138,172 @@ class DefaultArguments(argparse.ArgumentParser):
                 print "    %s: %s" % (name, desc)
             sys.exit(1)
 
-def get_file_from_id(ftype,type_id, existdb):
-    """Return a file path for a particular file ID and 
-        cross-check the md5sum with the database.
-        
+
+def get_parfile_from_id(parfile_id, existdb=None, verify_md5=True):
+    """Return the path to the raw file that has the given ID number.
+        Optionally double check the file's MD5 sum, to make sure
+        nothing strange has happened.
+
         Inputs:
-            ftype: File type. Can be 'rawfile', 'parfile', or 'template'.
-            type_id: The ID number from the database.
+            parfile_id: The ID number of the raw file to get
+                a path for.
             existdb: A (optional) existing database connection object.
                 (Default: Establish a db connection)
+            verify_md5: If True, double check the file's MD5 sum.
+                (Default: Perform MD5 check.)
 
         Output:
             fn: The full file path.
     """
-    if ftype.lower() not in ("rawfile", "parfile", "template"):
-        raise errors.UnrecognizedValueError("File type (%s) is not recognized." % \
-                                                ftype)
-
-    column_name = "%s_id" % ftype
-    table_name = "%ss" % ftype
-
-    print_info("Looking-up file of type %s with %s == %d" % \
-                (ftype, column_name, type_id), 1)
+    print_info("Looking-up raw file with ID=%d" % parfile_id, 2)
 
     # Use the exisitng DB connection, or open a new one if None was provided
     db = existdb or database.Database()
+    db.connect()
     
-    query = "SELECT filename, " \
-                "filepath, " \
-                "md5sum " \
-            "FROM %s " \
-            "WHERE %s = %d" % \
-                (table_name, column_name, type_id)
-    db.execute(query)
-
-    rows = db.fetchall()
-    if len(rows) == 1:
-        filename, filepath, md5sum_DB = rows[0]
-    else:
-        raise errors.DatabaseError("Bad number (%d) of matching " \
-                                    "%s IDs" % (ftype, len(rows)))
-        
-    fullpath = os.path.join(filepath,filename)
-    Verify_file_path(fullpath)
-    md5sum_file = Get_md5sum(fullpath)
-    if md5sum_DB != md5sum_file:
-        raise errors.FileError("md5sum check failed! MD5 from DB (%s) " \
-                                "!= MD5 from archived file (%s)" % \
-                                (md5sum_DB, md5sum_file))
-    
+    select = db.select([db.parfiles.c.filename, \
+                        db.parfiles.c.filepath, \
+                        db.parfiles.c.md5sum]).\
+                where(db.parfiles.c.parfile_id==parfile_id)
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
     if not existdb:
         # Close the DB connection we opened
         db.close()
+
+    if len(rows) == 1:
+        filename = rows[0]['filename']
+        filepath = rows[0]['filepath']
+        md5sum_DB = rows[0]['md5sum']
+    else:
+        raise errors.IncosistentDatabaseError("Bad number of files (%d) " \
+                            "with parfile_id=%d" % (len(rows), parfile_id))
+        
+    fullpath = os.path.join(filepath,filename)
+    # Make sure the file exists
+    Verify_file_path(fullpath)
+    if verify_md5:
+        print_info("Confirming MD5 sum of %s matches what is " \
+                    "stored in DB (%s)" % (fullpath, md5sum_DB), 2)
+                    
+        md5sum_file = Get_md5sum(fullpath)
+        if md5sum_DB != md5sum_file:
+            raise errors.FileError("md5sum check of %s failed! MD5 from " \
+                                "DB (%s) != MD5 from file (%s)" % \
+                                (fullpath, md5sum_DB, md5sum_file))
+    return fullpath
+
+
+def get_template_from_id(template_id, existdb=None, verify_md5=True):
+    """Return the path to the raw file that has the given ID number.
+        Optionally double check the file's MD5 sum, to make sure
+        nothing strange has happened.
+
+        Inputs:
+            template_id: The ID number of the raw file to get
+                a path for.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+            verify_md5: If True, double check the file's MD5 sum.
+                (Default: Perform MD5 check.)
+
+        Output:
+            fn: The full file path.
+    """
+    print_info("Looking-up raw file with ID=%d" % template_id, 2)
+
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existdb or database.Database()
+    db.connect()
     
+    select = db.select([db.templates.c.filename, \
+                        db.templates.c.filepath, \
+                        db.templates.c.md5sum]).\
+                where(db.templates.c.template_id==template_id)
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
+    if not existdb:
+        # Close the DB connection we opened
+        db.close()
+
+    if len(rows) == 1:
+        filename = rows[0]['filename']
+        filepath = rows[0]['filepath']
+        md5sum_DB = rows[0]['md5sum']
+    else:
+        raise errors.IncosistentDatabaseError("Bad number of files (%d) " \
+                            "with template_id=%d" % (len(rows), template_id))
+        
+    fullpath = os.path.join(filepath,filename)
+    # Make sure the file exists
+    Verify_file_path(fullpath)
+    if verify_md5:
+        print_info("Confirming MD5 sum of %s matches what is " \
+                    "stored in DB (%s)" % (fullpath, md5sum_DB), 2)
+                    
+        md5sum_file = Get_md5sum(fullpath)
+        if md5sum_DB != md5sum_file:
+            raise errors.FileError("md5sum check of %s failed! MD5 from " \
+                                "DB (%s) != MD5 from file (%s)" % \
+                                (fullpath, md5sum_DB, md5sum_file))
+    return fullpath
+
+
+def get_rawfile_from_id(rawfile_id, existdb=None, verify_md5=True):
+    """Return the path to the raw file that has the given ID number.
+        Optionally double check the file's MD5 sum, to make sure
+        nothing strange has happened.
+
+        Inputs:
+            rawfile_id: The ID number of the raw file to get
+                a path for.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+            verify_md5: If True, double check the file's MD5 sum.
+                (Default: Perform MD5 check.)
+
+        Output:
+            fn: The full file path.
+    """
+    print_info("Looking-up raw file with ID=%d" % rawfile_id, 2)
+
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existdb or database.Database()
+    db.connect()
+    
+    select = db.select([db.rawfiles.c.filename, \
+                        db.rawfiles.c.filepath, \
+                        db.rawfiles.c.md5sum]).\
+                where(db.rawfiles.c.rawfile_id==rawfile_id)
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
+    if not existdb:
+        # Close the DB connection we opened
+        db.close()
+
+    if len(rows) == 1:
+        filename = rows[0]['filename']
+        filepath = rows[0]['filepath']
+        md5sum_DB = rows[0]['md5sum']
+    else:
+        raise errors.IncosistentDatabaseError("Bad number of files (%d) " \
+                            "with rawfile_id=%d" % (len(rows), rawfile_id))
+        
+    fullpath = os.path.join(filepath,filename)
+    # Make sure the file exists
+    Verify_file_path(fullpath)
+    if verify_md5:
+        print_info("Confirming MD5 sum of %s matches what is " \
+                    "stored in DB (%s)" % (fullpath, md5sum_DB), 2)
+                    
+        md5sum_file = Get_md5sum(fullpath)
+        if md5sum_DB != md5sum_file:
+            raise errors.FileError("md5sum check of %s failed! MD5 from " \
+                                "DB (%s) != MD5 from file (%s)" % \
+                                (fullpath, md5sum_DB, md5sum_file))
     return fullpath
 
 
@@ -1253,6 +1323,7 @@ def DB_load_TOA(tempo2_toa_string, process_id, template_id, rawfile_id, existdb=
     """
     # Use the exisitng DB connection, or open a new one if None was provided
     db = existdb or database.Database()
+    db.connect()
     
     toastr = tempo2_toa_string
     freq = float(toastr.split()[1])
@@ -1260,33 +1331,43 @@ def DB_load_TOA(tempo2_toa_string, process_id, template_id, rawfile_id, existdb=
     fmjd = float("0." + toastr.split()[2].split(".")[1])
     err = float(toastr.split()[3])
 
-    # Writes values to the toa table
-    query = "INSERT INTO toa " \
-                "(process_id, " \
-                "template_id, " \
-                "rawfile_id, " \
-                "pulsar_id, " \
-                "obssystem_id, " \
-                "imjd, " \
-                "fmjd, " \
-                "freq, " \
-                "toa_unc_us) " \
-            "SELECT %d, " % process_id + \
-                "%d, " % template_id + \
-                "r.rawfile_id, " + \
-                "r.pulsar_id, " + \
-                "r.obssystem_id, " + \
-                "%.20g, " % imjd + \
-                "%.20g, " % fmjd + \
-                "%.20g, " % freq + \
-                "%.20g " % err + \
-            "FROM rawfiles AS r " \
-            "WHERE r.rawfile_id=%d" % rawfile_id
-    db.execute(query)
-    query = "SELECT LAST_INSERT_ID()"
-    db.execute(query)
-    toa_id = db.fetchone()[0]
-    print_info("Added TOA to DB. TOA ID: %d" % toa_id, 2)
+    db.begin() # Open a transaction
+    select = db.select([db.rawfiles.c.pulsar_id, \
+                        db.rawfiles.c.obssystem_id]).\
+                where(db.rawfiles.c.rawfile_id==rawfile_id)
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
+    
+    if len(rows) > 1:
+        db.rollback()
+        raise errors.InconsistentDatabaseError("Too many (%d) matches " \
+                                "for rawfile_id=%d." % (len(rows), rawfile_id))
+    elif len(rows) == 0:
+        db.rollback()
+        raise errors.BadInputError("Weird! rawfile_id=%d has no matches " \
+                                "in DB. How is it being used to generate " \
+                                "TOAs? Wrong value passed to function?" % \
+                                rawfile_id)
+    else:
+        pulsar_id = rows[0]['pulsar_id']
+        obssystem_id = rows[0]['obssystem_id']
+        # Writes values to the toa table
+        ins = db.toas.insert()
+        values = {'process_id':process_id, \
+                  'template_id':template_id, \
+                  'rawfile_id':rawfile_id, \
+                  'pulsar_id':pulsar_id, \
+                  'obssystem_id':obssystem_id, \
+                  'imjd':imjd, \
+                  'fmjd':fmjd, \
+                  'freq':freq, \
+                  'toa_unc_us':err}
+        result = db.execute(ins, values)
+        toa_id = result.inserted_primary_key[0]
+        result.close()
+        db.commit()
+        print_info("Added TOA to DB. TOA ID: %d" % toa_id, 2)
     
     if not existdb:
         # Close the DB connection we opened
