@@ -44,11 +44,12 @@ def validate_obssystem(db, name, telescope_id, frontend, backend, clock):
                         "        Telescope ID: %(telescope_id)d,\n" \
                         "        Frontend: %(frontend)s,\n" \
                         "        Backend: %(backend)s,\n" \
+                        "        Observing band: %(band_descriptor)s,\n" \
                         "        Clock file: %(clock)s" % row
         raise errors.BadInputError(errormsg)
 
 
-def add_obssystem(db, name, telescope_id, frontend, backend, clock):
+def add_obssystem(db, name, telescope_id, frontend, backend, band, clock):
     """Add a new observing system to the database.
         
         Inputs:
@@ -57,6 +58,7 @@ def add_obssystem(db, name, telescope_id, frontend, backend, clock):
             telescope_id: The DB's ID number for the telescope.
             frontend: The name of the frontend.
             backend: The name of the backend.
+            band: The name of the observing band.
             clock: The clock file.
 
         Outputs:
@@ -76,6 +78,7 @@ def add_obssystem(db, name, telescope_id, frontend, backend, clock):
               'telescope_id':telescope_id, \
               'frontend':frontend, \
               'backend':backend, \
+              'band_descriptor':band, \
               'clock':clock}
     result = db.execute(ins, values)
     obssystem_id = result.inserted_primary_key[0]
@@ -97,7 +100,7 @@ def main():
                                     args.frontend.upper())
     try:
         obssystem_id = add_obssystem(db, args.name, telescope_id, \
-                            args.frontend, args.backend, args.clock)
+                        args.frontend, args.backend, args.band, args.clock)
         print "Successfully inserted new observing system. " \
                     "Returned obssystem_id: %d" % obssystem_id
     finally:
@@ -122,6 +125,10 @@ if __name__ =='__main__':
     parser.add_argument('-b', '--backend', dest='backend', \
                         type=str, required=True, \
                         help="The name of the backend. " \
+                            "NOTE: This is required.")
+    parser.add_argument('-B', '--band-descriptor', dest='band', \
+                        type=str, required=True, \
+                        help="The name of the observing band. " \
                             "NOTE: This is required.")
     parser.add_argument('-c', '--clock', dest='clock', \
                         type=str, required=True, \
