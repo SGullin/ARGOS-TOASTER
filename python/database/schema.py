@@ -53,6 +53,10 @@ sa.Table('toas', metadata, \
         sa.Column('fmjd', sa.Float(53), nullable=False), \
         sa.Column('freq', sa.Float(24), nullable=False), \
         sa.Column('toa_unc_us', sa.Float(24), nullable=False), \
+        sa.Column('bw', sa.Float(24), nullable=False), \
+        sa.Column('length', sa.Float(24), nullable=False), \
+        sa.Column('nbin', sa.Integer, nullable=False), \
+        sa.Column('goodness_of_fit', sa.Float(24), nullable=True), \
         mysql_engine='InnoDB')
 
 # Define process table
@@ -367,6 +371,7 @@ sa.Table('obssystems', metadata, \
                     nullable=False), \
         sa.Column('frontend', sa.String(64), nullable=False), \
         sa.Column('backend', sa.String(64), nullable=False), \
+        sa.Column('band_descriptor', sa.String(16), nullable=True), \
         sa.Column('clock', sa.String(64), nullable=False), \
         sa.UniqueConstraint('telescope_id', 'frontend', 'backend', \
                             'clock'), \
