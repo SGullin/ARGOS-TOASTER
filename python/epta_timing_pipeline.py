@@ -60,7 +60,7 @@ def get_master_parfile_id(rawfile_id, existdb=None):
     elif len(rows) == 0:
         warnings.warn("There is no master parfile for the given " \
                         "raw file (ID: %d). Returning nothing..." % \
-                        rawfile_id, errors.EptaPipelineError)
+                        rawfile_id, errors.EptaPipelineWarning)
         return None
     else:
         return rows[0]['parfile_id']
