@@ -961,7 +961,7 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, \
         unless subprocess.PIPE is provided.
     """
     # Log command to stdout
-    print_debug(cmd, "syscalls")
+    print_debug(cmd, "syscalls", stepsback=2)
 
     stdoutfile = False
     stderrfile = False
@@ -1307,11 +1307,65 @@ def get_rawfile_from_id(rawfile_id, existdb=None, verify_md5=True):
     return fullpath
 
 
-def DB_load_TOA(tempo2_toa_string, process_id, template_id, rawfile_id, existdb=None):
+def parse_pat_output(patout):
+    """Parse the output from 'pat'.
+        
+        Input:
+            patout: The stdout output of running 'pat'.
+
+        Output:
+            toainfo: A list of dictionaries, each with
+                information for a TOA.
+    """
+    toainfo = []
+    for toastr in patout.split("\n"):
+        toastr = toastr.strip()
+        if toastr and (toastr != "FORMAT 1") and \
+                    (not toastr.startswith("Plotting")):
+            toasplit = toastr.split()
+            freq = float(toasplit[1])
+            imjd = float(toasplit[2].split(".")[0])
+            fmjd = float("0." + toasplit[2].split(".")[1])
+            err = float(toasplit[3])
+            if '-gof' in toasplit:
+                # The goodness-of-fit is only calculated for the 'FDM'
+                # fitting method. The GoF value returned for other 
+                # methods is innaccurate.
+                if config.toa_fitting_method=='FDM':
+                    gof = float(toasplit[toasplit.index('-gof')+1])
+                else:
+                    gof = None
+            if ('-bw' in toasplit) and ('-nchan' in toasplit):
+                nchan = int(toasplit[toasplit.index('-nchan')+1])
+                bw = float(toasplit[toasplit.index('-bw')+1])
+                bw_per_toa = bw/nchan
+            else:
+                bw_per_toa = None
+            if ('-length' in toasplit) and ('-nsubint' in toasplit):
+                nsubint = int(toasplit[toasplit.index('-nsubint')+1])
+                length = float(toasplit[toasplit.index('-length')+1])
+                length_per_toa = length/nsubint
+            else:
+                length_per_toa = None
+            if ('-nbin' in toasplit):
+                nbin = int(toasplit[toasplit.index('-nbin')+1])
+            toainfo.append({'freq':freq, \
+                            'imjd':imjd, \
+                            'fmjd':fmjd, \
+                            'toa_unc_us':err, \
+                            'goodness_of_fit':gof, \
+                            'bw':bw_per_toa, \
+                            'length':length_per_toa, \
+                            'nbin':nbin})
+    return toainfo
+
+
+def load_toas(toainfo, process_id, template_id, rawfile_id, existdb=None):
     """Upload a TOA to the database.
 
         Inputs:
-            tempo2_toa_string: A TEMPO2 format toa line.
+            toainfo: A list of dictionaries, each with
+                information for a TOA.
             process_id: The ID of the processing run that generated the TOA.
             template_id: The ID of the template used for generating the TOA.
             rawfile_id: The ID of the raw data file the TOA is derived from.
@@ -1319,18 +1373,15 @@ def DB_load_TOA(tempo2_toa_string, process_id, template_id, rawfile_id, existdb=
                 (Default: Establish a db connection)
 
         Outputs:
-            toa_id: The ID number of the TOA in the DB.
+            None
     """
+    if not toainfo:
+        raise errors.BadInputError("No TOA info was provided!")
+
     # Use the exisitng DB connection, or open a new one if None was provided
     db = existdb or database.Database()
     db.connect()
     
-    toastr = tempo2_toa_string
-    freq = float(toastr.split()[1])
-    imjd = float(toastr.split()[2].split(".")[0])
-    fmjd = float("0." + toastr.split()[2].split(".")[1])
-    err = float(toastr.split()[3])
-
     db.begin() # Open a transaction
     select = db.select([db.rawfiles.c.pulsar_id, \
                         db.rawfiles.c.obssystem_id]).\
@@ -1354,23 +1405,25 @@ def DB_load_TOA(tempo2_toa_string, process_id, template_id, rawfile_id, existdb=
         obssystem_id = rows[0]['obssystem_id']
         # Writes values to the toa table
         ins = db.toas.insert()
-        values = {'process_id':process_id, \
+        idinfo = {'process_id':process_id, \
                   'template_id':template_id, \
                   'rawfile_id':rawfile_id, \
                   'pulsar_id':pulsar_id, \
-                  'obssystem_id':obssystem_id, \
-                  'imjd':imjd, \
-                  'fmjd':fmjd, \
-                  'freq':freq, \
-                  'toa_unc_us':err}
-        result = db.execute(ins, values)
-        toa_id = result.inserted_primary_key[0]
-        result.close()
+                  'obssystem_id':obssystem_id}
+        toa_ids = []
+        for values in toainfo:
+            values.update(idinfo)
+            result = db.execute(ins, values)
+            toa_ids.append(result.inserted_primary_key[0])
+            result.close()
         db.commit()
-        print_info("Added TOA to DB. TOA ID: %d" % toa_id, 2)
+        if len(toa_ids) > 1:
+            print_info("Added (%d) TOAs to DB." % len(toa_ids), 2)
+        else:
+            print_info("Added TOA to DB.", 2)
     
     if not existdb:
         # Close the DB connection we opened
         db.close()
     
-    return toa_id
+    return toa_ids

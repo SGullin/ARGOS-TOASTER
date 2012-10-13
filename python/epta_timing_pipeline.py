@@ -200,8 +200,9 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         os.close(tmpfile)
         # Generate TOAs with pat
         epu.print_info("Computing TOAs", 0)
-        stdout, stderr = epu.execute("pat -f tempo2 -A %s -s %s " \
-                                        "-t -K %s/PNG %s" % \
+        patout, paterr = epu.execute("pat -f tempo2 -A %s -s %s " \
+                                "-C 'gof length bw nbin nchan nsubint' " \
+                                "-t -K %s/PNG  %s" % \
                     (config.toa_fitting_method, template, toadiagfn, manipfn))
  
         # Check version ID is still the same. Just in case.
@@ -223,16 +224,11 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         process_id = fill_process_table(version_id, rawfile_id, parfile_id, \
                             template_id, cmdline, hdr['nchan'], hdr['nsub'], db)
         
+        # Parse pat output
+        toainfo = epu.parse_pat_output(patout)
+
         # Insert TOAs into DB
-        toa_ids = []
-        for toastr in stdout.split("\n"):
-            toastr = toastr.strip()
-            if toastr and (toastr != "FORMAT 1") and \
-                        (toastr != "Plotting %s" % manipfn):
-                print toastr
-                toa_id = epu.DB_load_TOA(toastr, process_id, \
-                                            template_id, rawfile_id, db)
-                toa_ids.append(toa_id)
+        toa_ids = epu.load_toas(toainfo, process_id, template_id, rawfile_id, db)
                  
         # Create processing diagnostics
         epu.print_info("Generating proessing diagnostics", 0)
