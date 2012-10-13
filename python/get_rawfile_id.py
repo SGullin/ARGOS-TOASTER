@@ -42,9 +42,9 @@ def get_rawfiles(args):
     if args.end_date is not None:
         whereclause &= (db.rawfiles.c.add_time <= args.end_date)
     if args.start_mjd is not None:
-        whereclause &= (db.rawfiles.c.start_mjd >= args.start_mjd)
+        whereclause &= (db.rawfiles.c.mjd >= args.start_mjd)
     if args.end_mjd is not None:
-        whereclause &= (db.rawfiles.c.end_mjd <= args.end_mjd)
+        whereclause &= (db.rawfiles.c.mjd <= args.end_mjd)
     if args.obssys_id:
         whereclause &= (db.obssystems.c.obssystem_id==args.obssys_id)
     if args.obssystem_name:
