@@ -43,6 +43,10 @@ class BadInputError(EptaPipelineError):
     pass
 
 
+class BadDebugMode(EptaPipelineError):
+    pass
+
+
 # Custom Warnings
 class EptaPipelineWarning(Warning):
     def __str__(self):

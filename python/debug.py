@@ -7,10 +7,12 @@ modules of a single process.
 Patrick Lazarus, Feb. 9, 2012
 """
 
+import errors
+
 modes = [('syscalls', 'Print commands being executed as system calls.'), \
          ('queries', 'Print database queries being executed.'), \
          ('archiving', "Don't remove file after it has been archived."), \
-         ('manipulator', "Print debugging info for manioulators."), \
+         ('manipulator', "Print debugging info for manipulators."), \
          ('gittest', "Raise warnings instead of errors when checking " \
                         "git repos. This is useful for testing " \
                         "un-committed changes."), \
@@ -18,13 +20,17 @@ modes = [('syscalls', 'Print commands being executed as system calls.'), \
 
 modes.sort()
 
+mode_names = []
 # By default set all debug modes to False
 for ii, (m, desc) in enumerate(modes):
+    mode_names.append(m)
     exec("%s = False" % m.upper())
 
 
-def set_mode_on(*modes):
-    for m in modes:
+def set_mode_on(*modes_toset):
+    for m in modes_toset:
+        if m not in mode_names:
+            raise errors.BadDebugMode("The debug mode '%s' doesn't exist!" % m)
         exec "%s = True" % m.upper() in globals()
 
 
