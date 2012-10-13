@@ -85,7 +85,11 @@ def run_manipulator(prepped_manipfunc, infns, outname=None, \
     try:
         prepped_manipfunc(newfns, outname)
     finally:
-        shutil.rmtree(workdir)
+        if debug.MANIPULATOR:
+            epu.print_debug("Manipulator worked in %s. Not removing it.", \
+                                'manipulator')
+        else:
+            shutil.rmtree(workdir)
 
 
 def extract_manipulator_arguments(manipulator_func, cmdopts):
