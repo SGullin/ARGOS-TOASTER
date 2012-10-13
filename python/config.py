@@ -17,8 +17,11 @@ dbpass = "psr1937"
 python = "/usr/bin/python"
 
 # TOA generation configurations
-toa_fitting_method = "PGS" # see PSRCHIVE program 'pat' for 
+toa_fitting_method = "FDM" # see PSRCHIVE program 'pat' for 
                            # a list of valid fitting methods
+                           # NOTE: The Goodness-of-Fit is only 
+                           #        available with 'FDM' method. 
+
 
 data_archive_location = '/media/Data/toaster/archive/'
 diagnostics_location = os.path.join(data_archive_location, "diagnostics")
