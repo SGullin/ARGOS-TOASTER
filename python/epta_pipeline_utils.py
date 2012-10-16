@@ -1337,8 +1337,9 @@ def parse_pat_output(patout):
                 # The goodness-of-fit is only calculated for the 'FDM'
                 # fitting method. The GoF value returned for other 
                 # methods is innaccurate.
-                if config.toa_fitting_method=='FDM':
-                    gof = float(toasplit[toasplit.index('-gof')+1])
+                gofvalstr = toasplit[toasplit.index('-gof')+1]
+                if config.toa_fitting_method=='FDM' and gofvalstr!='*error*':
+                    gof = float(gofvalstr)
                 else:
                     gof = None
             if ('-bw' in toasplit) and ('-nchan' in toasplit):
