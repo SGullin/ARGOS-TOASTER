@@ -120,9 +120,12 @@ sa.Table('timfiles', metadata, \
                     sa.ForeignKey("users.user_id"), \
                     nullable=False), \
         sa.Column('comments', sa.Text, nullable=False), \
-        sa.Column('create_time', sa.DateTime, nullable=False, \
+        sa.Column('add_time', sa.DateTime, nullable=False, \
                     default=sa.func.now()), \
-        sa.Column('db_query', sa.Text, nullable=False), \
+        sa.Column('version_id', sa.Integer, \
+                    sa.ForeignKey("versions.version_id"), \
+                    nullable=False), \
+        sa.Column('input_args', sa.Text, nullable=False), \
         mysql_engine='InnoDB')
 
 # Define toa_tim table (mapping which TOAs are included in which .tim files)
