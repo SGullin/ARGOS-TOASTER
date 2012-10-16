@@ -442,7 +442,13 @@ def prep_parfile(fn):
     else:
         params['pulsar_id'] = get_pulsarids()[params['psr']]
         params['name'] = params['psr']
-        
+    
+    # Translate a few parameters
+    if params.has_key('binary'):
+        params['binary_model'] = params['binary']
+    if params.has_key('e'):
+        params['ecc'] = params['e']
+
     # normalise pulsar name
     params['name'] = get_pulsar_names()[params['name']]
     params['user_id'] = get_current_users_id()
