@@ -22,7 +22,8 @@ def set_as_master_template(db, template_id):
                 where((db.master_templates.c.obssystem_id == \
                                 db.templates.c.obssystem_id) & \
                         (db.master_templates.c.pulsar_id == \
-                                db.templates.c.pulsar_id))
+                                db.templates.c.pulsar_id) & \
+                        (db.templates.c.template_id==template_id))
     result = db.execute(select)
     row = result.fetchone()
     result.close()
@@ -38,7 +39,7 @@ def set_as_master_template(db, template_id):
             return
         else:
             # Update the existing entry
-            query = db.master_template.update().\
+            query = db.master_templates.update().\
                         where((db.master_templates.c.pulsar_id == \
                                     row['pulsar_id']) & \
                               (db.master_templates.c.obssystem_id == \

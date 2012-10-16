@@ -17,7 +17,9 @@ def set_as_master_parfile(db, parfile_id):
     # Check if this pulsar already has a master parfile in the DB
     select = db.select([db.parfiles.c.pulsar_id, \
                         db.parfiles.c.parfile_id]).\
-                where(db.master_parfiles.c.pulsar_id==db.parfiles.c.pulsar_id)
+                where((db.master_parfiles.c.pulsar_id == \
+                            db.parfiles.c.pulsar_id) & \
+                      (db.parfiles.c.parfile_id == parfile_id))
     result = db.execute(select)
     row = result.fetchone()
     result.close()
