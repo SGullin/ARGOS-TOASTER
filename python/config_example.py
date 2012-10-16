@@ -23,12 +23,12 @@ toa_fitting_method = "FDM" # see PSRCHIVE program 'pat' for
                            #        available with 'FDM' method. 
 
 
-data_archive_location = '/media/Data/toaster/archive/'
+data_archive_location = '/aux/pc20237a/plazar/timing/toaster/archive/'
 diagnostics_location = os.path.join(data_archive_location, "diagnostics")
 
 # Location of software packages
 epta_pipeline_dir = os.path.split(os.path.abspath(__file__))[0]
-psrchive_dir = "/home/plazar/packages/psrchive-git/"
+psrchive_dir = "/aux/pc20237a/soft/psrchive/"
 tempo2_dir = "/home/plazar/research/pulsar-code/linux/src/tempo2/"
 
 # Should we do archiving?

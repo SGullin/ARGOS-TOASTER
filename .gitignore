@@ -1,3 +1,4 @@
 *~
 *.sw?
 *.pyc
+python/config.py
