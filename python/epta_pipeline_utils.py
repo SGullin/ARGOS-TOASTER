@@ -499,7 +499,7 @@ def prep_file(fn):
     # Check if pulsar_id is found
     psr_ids = get_pulsarids()
     if params['name'] not in psr_ids:
-        raise error.FileError("The pulsar name %s (from file %s) is not " \
+        raise errors.FileError("The pulsar name %s (from file %s) is not " \
                             "recognized." % (params['name'], fn))
     else:
         # Normalise pulsar name
