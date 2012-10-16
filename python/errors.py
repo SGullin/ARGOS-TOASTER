@@ -47,6 +47,9 @@ class BadDebugMode(EptaPipelineError):
     pass
 
 
+class ConflictingToasError(EptaPipelineError):
+    pass
+
 # Custom Warnings
 class EptaPipelineWarning(Warning):
     def __str__(self):
