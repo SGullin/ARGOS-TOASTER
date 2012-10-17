@@ -199,6 +199,7 @@ sa.Table('rawfiles', metadata, \
         sa.Column('filename', sa.String(512), nullable=False, \
                     unique=True), \
         sa.Column('filepath', sa.String(512), nullable=False), \
+        sa.Column('filesize', sa.Integer, nullable=False), \
         sa.Column('md5sum', sa.String(512), nullable=False, \
                     unique=True), \
         sa.Column('add_time', sa.DateTime, nullable=False, \

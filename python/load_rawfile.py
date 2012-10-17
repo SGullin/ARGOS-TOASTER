@@ -14,7 +14,8 @@ def populate_rawfiles_table(db, archivefn, params):
     # md5sum helper function in epu
     md5 = epu.Get_md5sum(archivefn)
     path, fn = os.path.split(os.path.abspath(archivefn))
-   
+    size = os.path.getsize(archivefn) # File size in bytes
+
     trans = db.begin()
     # Does this file exist already?
     select = db.select([db.rawfiles.c.rawfile_id, \
@@ -52,6 +53,7 @@ def populate_rawfiles_table(db, archivefn, params):
         values = {'md5sum':md5, \
                   'filename':fn, \
                   'filepath':path, \
+                  'filesize':size, \
                   'coord':'%s,%s' % (params['ra'],params['dec'])}
         values.update(params)
         result = db.execute(ins, values)
