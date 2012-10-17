@@ -861,7 +861,7 @@ def get_master_template(pulsar_id, obssystem_id):
             return mastertmp_id, os.path.join(path, fn)
 
 
-def create_datafile_diagnostic_plots(archivefn, dir, suffix=""):
+def create_rawfile_diagnostic_plots(archivefn, dir, suffix=""):
     """Given an archive create diagnostic plots to be uploaded
         to the DB.
 
@@ -879,7 +879,7 @@ def create_datafile_diagnostic_plots(archivefn, dir, suffix=""):
                 The keys are the plot type descriptions, and 
                 the values are the full path to the plots.
     """
-    hdr = get_header_vals(archivefn, ['name', 'intmjd', 'fracmjd'])
+    hdr = get_header_vals(archivefn, ['name', 'intmjd', 'fracmjd', 'npol'])
     hdr['secs'] = int(hdr['fracmjd']*24*3600+0.5) # Add 0.5 so result is 
                                                   # rounded to nearest int
     basefn = "%(name)s_%(intmjd)05d_%(secs)05d" % hdr
@@ -894,22 +894,29 @@ def create_datafile_diagnostic_plots(archivefn, dir, suffix=""):
     os.close(tmpfile)
 
     # Create Time vs. Phase plot (pav -dYFp).
-    outfn = os.path.join(dir, "%s.dYFp.png" % basefn)
-    execute("pav -dYFp -g %s/PNG %s" % (tmpfn, archivefn))
+    outfn = os.path.join(dir, "%s.time.png" % basefn)
+    execute("psrplot -p time -j DFp -D %s/PNG %s" % (tmpfn, archivefn))
     shutil.move(tmpfn, outfn)
     diagfns['Time vs. Phase'] = outfn
 
     # Create Freq vs. Phase plot (pav -dGTp).
-    outfn = os.path.join(dir, "%s.dGTp.png" % basefn)
-    execute("pav -dGTp -g %s/PNG %s" % (tmpfn, archivefn))
+    outfn = os.path.join(dir, "%s.freq.png" % basefn)
+    execute("psrplot -p freq -j DTp -D %s/PNG %s" % (tmpfn, archivefn))
     shutil.move(tmpfn, outfn)
     diagfns['Freq vs. Phase'] = outfn
 
-    # Create summed profile, with polarisation information (pav -dSFT).
-    outfn = os.path.join(dir, "%s.dSFT.png" % basefn)
-    execute("pav -dSFT -g %s/PNG %s" % (tmpfn, archivefn))
-    shutil.move(tmpfn, outfn)
-    diagfns['Profile'] = outfn
+    if hdr['npol'] > 1:
+        # Create summed profile, with polarisation information.
+        outfn = os.path.join(dir, "%s.polprof.png" % basefn)
+        execute("psrplot -p stokes -j DFT -D %s/PNG %s" % (tmpfn, archivefn))
+        shutil.move(tmpfn, outfn)
+        diagfns['Pol. Profile'] = outfn
+    else:
+        # Create plain summed profile.
+        outfn = os.path.join(dir, "%s.prof.png" % basefn)
+        execute("psrplot -p flux -j DFTp -D %s/PNG %s" % (tmpfn, archivefn))
+        shutil.move(tmpfn, outfn)
+        diagfns['Profile'] = outfn
     
     return diagfns
 
