@@ -17,6 +17,7 @@ import string
 import warnings
 import re
 import tempfile
+import pwd
 
 import errors
 import colour
@@ -531,7 +532,7 @@ def get_current_users_id(existdb=None):
 
     # Check if user_id is found
     user_ids = get_userids(db)
-    username = os.getlogin()
+    username = pwd.getpwuid(os.getuid())[0]
     if username not in user_ids:
         raise errors.FileError("The current user's username (%s) is not " \
                             "registered in the database." % username)
