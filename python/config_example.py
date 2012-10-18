@@ -31,8 +31,14 @@ epta_pipeline_dir = os.path.split(os.path.abspath(__file__))[0]
 psrchive_dir = "/aux/pc20237a/soft/psrchive/"
 tempo2_dir = "/home/plazar/research/pulsar-code/linux/src/tempo2/"
 
+############
+# Archiving
+############
 # Should we do archiving?
 archive = False
+# Should we move the files when archive
+# (if False, copy files - leave originals in place)
+move_on_archive = False
 
 # Debugging flags
 colour = True # Colourise terminal output

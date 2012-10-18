@@ -690,10 +690,13 @@ def archive_file(toarchive, destdir):
         destmd5 = Get_md5sum(dest)
         destsize = os.path.getsize(dest)
         if (srcmd5==destmd5) and (srcsize==destsize):
-            print_info("File copied successfully to %s. Removing %s." % \
-                        (dest, toarchive), 2)
-            if not config.debug.ARCHIVING:
+            if config.move_on_archive:
                 os.remove(toarchive)
+                print_info("File (%s) successfully moved to %s." % \
+                            (toarchive, dest), 2)
+            else:
+                print_info("File (%s) successfully copied to %s." % \
+                            (toarchive, dest), 2)
         else:
             raise errors.ArchivingError("File copy failed! (Source MD5: %s, " \
                         "Dest MD5: %s; Source size: %d, Dest size: %d)" % \
@@ -718,11 +721,9 @@ def archive_file(toarchive, destdir):
             warnings.warn("Another version of this file (%s), with " \
                             "the same size (%d bytes) and the same " \
                             "MD5 (%s) is already in the archive. " \
-                            "Removing input file..." % \
+                            "Doing nothing..." % \
                             (toarchive, destsize, destmd5), \
                             errors.EptaPipelineWarning)
-            if not config.debug.ARCHIVING:
-                os.remove(toarchive)
         else:
             # The files are not the same! This is not good.
             # Raise an exception.
@@ -739,7 +740,7 @@ def archive_file(toarchive, destdir):
     os.chmod(dest, 0440) # "0440" is an integer in base 8. It works
                          # the same way 440 does for chmod on cmdline
 
-    epu.print_info("%s moved to %s (%s)" % (toarchive, dest, Give_UTC_now()), 1)
+    epu.print_info("%s archived to %s (%s)" % (toarchive, dest, Give_UTC_now()), 1)
 
     return dest
 
