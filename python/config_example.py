@@ -9,9 +9,6 @@ version = 0.1
 # Database parameters
 dburl = "sqlite:///test.db"
 
-#Python version to use
-python = "/usr/bin/python"
-
 # TOA generation configurations
 toa_fitting_method = "FDM" # see PSRCHIVE program 'pat' for 
                            # a list of valid fitting methods

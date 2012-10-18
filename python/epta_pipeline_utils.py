@@ -1,5 +1,3 @@
-#!/usr/bin/env python
- 
 """Useful, general functions and data.
 """
 
@@ -50,13 +48,6 @@ int_re = re.compile(r"^[-+]?\d+$")
 # Functions
 ##############################################################################
 
-def Run_python_script(script, args_list, verbose=0, test=0):
-    #Use to run an external python script in the shell
-    COMMAND = config.python+" "+script+" "+" ".join("%s" % arg for arg in args_list)
-    if verbose:
-        print "Running command: "+COMMAND
-    if not test:
-        os.system(COMMAND)
 
 def Run_shell_command(command, verbose=0, test=0):
     #Use to run an external program in the shell
