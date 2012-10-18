@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.6
+#!/usr/bin/env python
 
 """
 This EPTA Pipeline utility script provides the user with a listing
