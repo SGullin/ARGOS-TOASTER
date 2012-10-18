@@ -61,7 +61,7 @@ def populate_rawfiles_table(db, archivefn, params):
         result.close()
 
         # Create rawfile diagnostics
-        diagfns = epu.create_datafile_diagnostic_plots(archivefn, path)
+        diagfns = epu.create_rawfile_diagnostic_plots(archivefn, path)
         # Load processing diagnostics
         for diagtype, diagpath in diagfns.iteritems():
             diagdir, diagfn = os.path.split(diagpath)
