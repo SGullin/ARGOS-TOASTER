@@ -11,7 +11,6 @@ import errors
 
 modes = [('syscalls', 'Print commands being executed as system calls.'), \
          ('queries', 'Print database queries being executed.'), \
-         ('archiving', "Don't remove file after it has been archived."), \
          ('manipulator', "Print debugging info for manipulators."), \
          ('gittest', "Raise warnings instead of errors when checking " \
                         "git repos. This is useful for testing " \
