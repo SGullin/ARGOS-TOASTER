@@ -47,16 +47,6 @@ int_re = re.compile(r"^[-+]?\d+$")
 ##############################################################################
 # Functions
 ##############################################################################
-
-
-def Run_shell_command(command, verbose=0, test=0):
-    #Use to run an external program in the shell
-    COMMAND = command
-    if verbose:
-        print "Running command: "+COMMAND
-    if not test:
-        os.system(COMMAND)        
-
 def Verify_file_path(file):
     #Verify that file exists
     print_info("Verifying file: %s" % file, 2)
