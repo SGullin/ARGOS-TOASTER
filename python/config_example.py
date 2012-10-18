@@ -35,7 +35,7 @@ tempo2_dir = "/home/plazar/research/pulsar-code/linux/src/tempo2/"
 # Archiving
 ############
 # Should we do archiving?
-archive = False
+archive = True
 # Should we move the files when archive
 # (if False, copy files - leave originals in place)
 move_on_archive = False
