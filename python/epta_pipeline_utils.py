@@ -13,10 +13,8 @@ import hashlib
 import subprocess
 import types
 import inspect
-import string
 import warnings
 import re
-import tempfile
 import pwd
 
 import errors
@@ -885,12 +883,7 @@ def create_rawfile_diagnostic_plots(archivefn, dir, suffix=""):
     # To keep track of all diagnostics created, keyed by their description
     diagfns = {}
  
-    # Create a temporary file for the plots 
-    # (PSRCHIVE truncates long filenames)
-    tmpfile, tmpfn = tempfile.mkstemp()
-    os.close(tmpfile)
-
-    # Create Time vs. Phase plot (pav -dYFp).
+    # Create Time vs. Phase plot (psrplot -p time).
     outfn = os.path.join(dir, "%s.time.png" % basefn)
     execute("psrplot -p time -j DFp -D %s/PNG %s" % (tmpfn, archivefn))
     shutil.move(tmpfn, outfn)
