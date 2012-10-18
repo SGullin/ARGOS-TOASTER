@@ -179,7 +179,8 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         # Manipulate the raw file
         epu.print_info("Manipulating file", 0)
         # Create a temporary file for the adjusted results
-        tmpfile, adjustfn = tempfile.mkstemp()
+        tmpfile, adjustfn = tempfile.mkstemp(prefix='toaster_tmp', \
+                            suffix='_newephem.ar', dir=config.base_tmp_dir)
         os.close(tmpfile)
         # Re-install ephemeris
         shutil.copy(rawfile, adjustfn)
@@ -187,7 +188,8 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         epu.execute(cmd)
         
         # Create a temporary file for the manipulated results
-        tmpfile, manipfn = tempfile.mkstemp()
+        tmpfile, manipfn = tempfile.mkstemp(prefix='toaster_tmp', \
+                            suffix='_manip.ar', dir=config.base_tmp_dir)
         os.close(tmpfile)
         # Run the manipulator
         prepped_manipfunc([adjustfn], manipfn)
@@ -196,7 +198,8 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         template = epu.get_template_from_id(template_id, db, verify_md5=True)
         
         # Create a temporary file for the toa diagnostic plots
-        tmpfile, toadiagfn = tempfile.mkstemp()
+        tmpfile, toadiagfn = tempfile.mkstemp(prefix='toaster_tmp', \
+                            suffix='_TOAdiag.png', dir=config.base_tmp_dir)
         os.close(tmpfile)
         # Generate TOAs with pat
         epu.print_info("Computing TOAs", 0)

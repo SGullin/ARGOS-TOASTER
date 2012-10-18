@@ -8,10 +8,6 @@ version = 0.1
 
 # Database parameters
 dburl = "sqlite:///test.db"
-dbhost = "eptadata.jb.man.ac.uk"
-dbname = "epta"
-dbuser = "epta"
-dbpass = "psr1937"
 
 #Python version to use
 python = "/usr/bin/python"
@@ -39,6 +35,10 @@ archive = True
 # Should we move the files when archive
 # (if False, copy files - leave originals in place)
 move_on_archive = False
+
+# Base dir for creating temporary files
+# Set to None to use a system-default location
+base_tmp_dir = "/dev/shm/"
 
 # Debugging flags
 colour = True # Colourise terminal output

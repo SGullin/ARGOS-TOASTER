@@ -76,7 +76,8 @@ def run_manipulator(prepped_manipfunc, infns, outname=None, \
         Outputs:
             None
     """
-    workdir = tempfile.mkdtemp(dir=tmpdir, suffix='epta_toa_db')
+    workdir = tempfile.mkdtemp(dir=tmpdir, prefix='toaster_tmp', \
+                                            suffix='_workdir')
     newfns = []
     for fn in infns:
         newfn = os.path.join(workdir, os.path.split(fn)[-1])
