@@ -80,13 +80,9 @@ def Verify_file_path(file):
     return file_path, file_name
 
 
-def Make_Tstamp():
-        utcnow = datetime.datetime.utcnow()
-        return "%04d-%02d-%02d %02d:%02d:%02d"%(utcnow.year,utcnow.month,utcnow.day,utcnow.hour,utcnow.minute,utcnow.second)
-
 def Give_UTC_now():
     utcnow = datetime.datetime.utcnow()
-    return "UTC %d:%02d:%02d on %d%02d%02d"%(utcnow.hour,utcnow.minute,utcnow.second,utcnow.year,utcnow.month,utcnow.day)
+    return utcnow.strftime("%b %d, %Y - %H:%M:%S (UTC)")
 
 
 def get_userids(existdb=None):
