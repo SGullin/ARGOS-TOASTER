@@ -49,6 +49,7 @@ int_re = re.compile(r"^[-+]?\d+$")
 # CACHES
 ##############################################################################
 pulsarid_cache = {}
+pulsarname_cache = {}
 
 
 ##############################################################################
@@ -132,6 +133,64 @@ def get_pulsarid_cache(existdb=None, update=False):
     return pulsarid_cache
 
 
+def get_pulsarname_cache(existdb=None, update=False):
+    """Return a dictionary mapping pulsar ids to pulsar info.
+
+        Input:
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+            update: If True, update the cache even if it already
+                exists. (Default: Don't update)
+
+        Output:
+            pulsarinfo_cache: A dictionary with pulsar ids as keys
+                    and pulsar names as values.
+    """
+    global pulsarname_cache
+    if update or not pulsarname_cache:
+        db = existdb or database.Database()
+        db.connect()
+
+        select = db.select([db.pulsars.c.pulsar_name, \
+                            db.pulsars.c.pulsar_id])
+        result = db.execute(select)
+        rows = result.fetchall()
+        result.close()
+        if not existdb:
+            db.close()
+        # Create the mapping
+        for row in rows:
+            pulsarname_cache[row['pulsar_id']] = row['pulsar_name']
+    return pulsarname_cache
+
+
+def get_pulsarname(pulsar_id):
+    """Return the preferred names for a pulsar given an ID.
+        
+        Inputs:
+            pulsar_id: The ID number of the pulsar in the DB.
+
+        Output:
+            pulsar_name: The preferred name of the pulsar.
+    """
+    cache = get_pulsarname_cache()
+    if pulsar_id not in cache:
+        raise errors.UnrecognizedValueError("The pulsar ID (%d) does not " \
+                                "appear in the pulsarname_cache!" % pulsar_id)
+    return cache[pulsar_id]
+
+
+def get_prefname(alias):
+    """Given a pulsar alias return that pulsar's preferred name.
+
+        Input:
+            alias: The name/alias of the pulsar.
+            
+        Output:
+            pulsar_name: The preferred name of the pulsar.
+    """
+    return get_pulsarname(get_pulsarid(alias))
+
 def get_pulsarid(alias):
     """Given a pulsar name/alias return its pulsar_id number,
         or raise an error.
@@ -147,6 +206,7 @@ def get_pulsarid(alias):
         raise errors.UnrecognizedValueError("The pulsar name/alias '%s' does " \
                                     "not appear in the pulsarid_cache!" % alias)
     return cache[alias]
+
 
 def get_obssystemids(existdb=None):
     """Return a dictionary mapping fronend/backend combinations
@@ -311,36 +371,6 @@ def parse_psrfits_header(fn, hdritems):
     return params
    
 
-def get_pulsar_names():
-    """Return a dictionary mapping pulsar names and ids 
-        to preferred pulsar names.
-        
-        Inputs:
-            None
-
-        Output:
-            pulsars: A dictionary with pulsar names/ids as keys
-                    and pulsar names as values.
-    """
-    db = database.Database()
-    db.connect()
-
-    select = db.select([db.pulsar_aliases, db.pulsars.c.pulsar_name], \
-                        db.pulsar_aliases.c.pulsar_id==db.pulsars.c.pulsar_id)
-    result = db.execute(select)
-    rows = result.fetchall()
-    result.close()
-    db.close()
-
-    # Create the mapping
-    pulsar_names = {}
-    for row in rows:
-        name = row['pulsar_name']
-        pulsar_names[row['pulsar_id']] = name
-        pulsar_names[row['pulsar_alias']] = name
-    return pulsar_names
-
-
 def get_archive_dir(fn, data_archive_location=config.data_archive_location, \
                         site=None, backend=None, receiver=None, psrname=None):
     """Given a file name return where it should be archived.
@@ -381,7 +411,7 @@ def get_archive_dir(fn, data_archive_location=config.data_archive_location, \
         if receiver is None:
             receiver = params['rcvr']
         if psrname is None:
-            psrname = get_pulsar_names()[params['name']]
+            psrname = get_prefname(params['name'])
     tinfo = get_telescope_info(site)
     sitedir = tinfo['telescope_abbrev']
     
@@ -451,7 +481,7 @@ def prep_parfile(fn):
         params['ecc'] = params['e']
 
     # normalise pulsar name
-    params['name'] = get_pulsar_names()[params['name']]
+    params['name'] = get_prefname(params['name'])
     params['user_id'] = get_current_users_id()
     return params
 
@@ -511,7 +541,7 @@ def prep_file(fn):
                             "recognized." % (params['name'], fn))
     else:
         # Normalise pulsar name
-        params['name'] = get_pulsar_names()[params['name']]
+        params['name'] = get_prefname(params['name'])
         params['pulsar_id'] = psr_id
 
         params['user_id'] = get_current_users_id()
