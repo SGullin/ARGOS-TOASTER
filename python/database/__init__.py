@@ -137,7 +137,10 @@ class Database(object):
             Outputs:
                 None
         """
-        trans = self.open_transactions.pop()
+        if self.open_transactions:
+            trans = self.open_transactions.pop()
+        else:
+            raise errors.DatabaseError("Cannot commit. No open database transactions.")
         trans.commit()
 
     def rollback(self):
