@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 """A script to load information about data archives into the database.
 """
-
+import sys
 import os.path
 import warnings
+import traceback
 
 import epta_pipeline_utils as epu
 import errors
@@ -78,16 +79,9 @@ def populate_rawfiles_table(db, archivefn, params):
     return rawfile_id
 
 
-def main():
-    fn = args.infile
-    rawfile_id = load_rawfile(fn)
-    print "%s has been loaded to the DB. rawfile_id: %d" % \
-            (fn, rawfile_id)
-
-
-def load_rawfile(fn):
+def load_rawfile(fn, existdb=None):
     # Connect to the database
-    db = database.Database()
+    db = existdb or database.Database()
     db.connect()
 
     try:
@@ -108,18 +102,37 @@ def load_rawfile(fn):
         # Register the file into the database
         rawfile_id = populate_rawfiles_table(db, newfn, params)
         
-        epu.print_info("Finished with %s - rawfile_id=%d (%s)" % \
+        epu.print_info("Successfully loaded %s - rawfile_id=%d (%s)" % \
                 (fn, rawfile_id, epu.Give_UTC_now()), 1)
+    finally:
+        if not existdb:
+            # Close DB connection
+            db.close()
+    return rawfile_id
+    
+
+def main():
+    # Connect to the database
+    db = database.Database()
+    db.connect()
+   
+    try:
+        for fn in args.infiles:
+            try:
+                rawfile_id = load_rawfile(fn, db)
+                print "%s has been loaded to the DB. rawfile_id: %d" % \
+                            (fn, rawfile_id)
+            except errors.EptaPipelineError:
+                traceback.print_exc()
     finally:
         # Close DB connection
         db.close()
-    return rawfile_id
-    
+
 
 if __name__=='__main__':
     parser = epu.DefaultArguments(description="Archive a single raw file, " \
                                         "and load its info into the database.")
-    parser.add_argument("infile", type=str, \
+    parser.add_argument("infiles", nargs='+', type=str, \
                         help="File name of the raw file to upload.")
     args = parser.parse_args()
     main()
