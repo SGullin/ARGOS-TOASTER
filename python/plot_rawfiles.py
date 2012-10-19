@@ -27,8 +27,10 @@ def main():
     finally:
         db.close()
 
-    plt.show()
-    #plt.savefig('archived_rawfile_status.png')
+    if args.interactive:
+        plt.show()
+    if args.outfile:
+        plt.savefig(args.outfile, orientation='landscape')
 
 
 def make_plot(existdb=None):
@@ -256,5 +258,13 @@ def make_plot(existdb=None):
 if __name__=='__main__':
     parser = epu.DefaultArguments(description="Make a plot summarising " \
                                         "data in the archive.")
+    parser.add_argument('-o', "--outfile", \
+                dest='outfile', default=None, \
+        help="Filename to save the plot as. " \
+            "(Default: do not save plot).")
+    parser.add_argument('-n', '--non-interactive', dest='interactive', \
+        help="Do not show the plot interactively. " \
+            "(Default: Show interactively.)", \
+        default=True, action='store_false')
     args = parser.parse_args()
     main()
