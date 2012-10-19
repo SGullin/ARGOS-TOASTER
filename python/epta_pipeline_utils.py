@@ -10,6 +10,7 @@ import argparse
 import hashlib
 import subprocess
 import types
+import tempfile
 import inspect
 import warnings
 import re
@@ -42,6 +43,12 @@ header_param_types = {'freq': float, \
 # The following regular expressions are used when parse parfiles
 float_re = re.compile(r"^[-+]?(\d+(\.\d*)?|\.\d+)([eEdD][-+]?\d+)?$")
 int_re = re.compile(r"^[-+]?\d+$")
+
+
+##############################################################################
+# CACHES
+##############################################################################
+pulsarid_cache = {}
 
 
 ##############################################################################
@@ -94,34 +101,52 @@ def get_userids(existdb=None):
     return userids
 
 
-def get_pulsarids():
+def get_pulsarid_cache(existdb=None, update=False):
     """Return a dictionary mapping pulsar names to pulsar ids.
 
         Input:
-            db: A connected Database object.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+            update: If True, update the cache even if it already
+                exists. (Default: Don't update)
 
         Output:
-            pulsarids: A dictionary with pulsar names as keys
+            pulsarid_cache: A dictionary with pulsar names as keys
                     and pulsar ids as values.
     """
-    db = database.Database()
-    db.connect()
+    global pulsarid_cache
+    if update or not pulsarid_cache:
+        db = existdb or database.Database()
+        db.connect()
 
-    try:
         select = db.select([db.pulsar_aliases.c.pulsar_alias, \
                             db.pulsar_aliases.c.pulsar_id])
         result = db.execute(select)
         rows = result.fetchall()
         result.close()
-    finally:
-        db.close()
+        if not existdb:
+            db.close()
+        # Create the mapping
+        for row in rows:
+            pulsarid_cache[row['pulsar_alias']] = row['pulsar_id']
+    return pulsarid_cache
 
-    # Create the mapping
-    pulsarids = {}
-    for row in rows:
-        pulsarids[row['pulsar_alias']] = row['pulsar_id']
-    return pulsarids
 
+def get_pulsarid(alias):
+    """Given a pulsar name/alias return its pulsar_id number,
+        or raise an error.
+
+        Input:
+            alias: The name/alias of the pulsar.
+
+        Output:
+            pulsar_id: The corresponding pulsar_id value.
+    """
+    cache = get_pulsarid_cache()
+    if alias not in cache:
+        raise errors.UnrecognizedValueError("The pulsar name/alias '%s' does " \
+                                    "not appear in the pulsarid_cache!" % alias)
+    return cache[alias]
 
 def get_obssystemids(existdb=None):
     """Return a dictionary mapping fronend/backend combinations
@@ -410,13 +435,13 @@ def prep_parfile(fn):
 
         params[key.lower()] = val
     if "psrj" in params:
-        params['pulsar_id'] = get_pulsarids()[params['psrj']]
+        params['pulsar_id'] = get_pulsarid(params['psrj'])
         params['name'] = params['psrj']
     elif "psrb" in params:
-        params['pulsar_id'] = get_pulsarids()[params['psrb']]
+        params['pulsar_id'] = get_pulsarid(params['psrb'])
         params['name'] = params['psrb']
     else:
-        params['pulsar_id'] = get_pulsarids()[params['psr']]
+        params['pulsar_id'] = get_pulsarids(params['psr'])
         params['name'] = params['psr']
     
     # Translate a few parameters
@@ -479,14 +504,15 @@ def prep_file(fn):
         params['obssystem_id'] = obssys_ids[obssys_key]
     
     # Check if pulsar_id is found
-    psr_ids = get_pulsarids()
-    if params['name'] not in psr_ids:
+    try:
+        psr_id = get_pulsarid(params['name'])
+    except errors.UnrecognizedValueError:
         raise errors.FileError("The pulsar name %s (from file %s) is not " \
                             "recognized." % (params['name'], fn))
     else:
         # Normalise pulsar name
         params['name'] = get_pulsar_names()[params['name']]
-        params['pulsar_id'] = psr_ids[params['name']]
+        params['pulsar_id'] = psr_id
 
         params['user_id'] = get_current_users_id()
     return params
@@ -719,7 +745,7 @@ def archive_file(toarchive, destdir):
     os.chmod(dest, 0440) # "0440" is an integer in base 8. It works
                          # the same way 440 does for chmod on cmdline
 
-    epu.print_info("%s archived to %s (%s)" % (toarchive, dest, Give_UTC_now()), 1)
+    print_info("%s archived to %s (%s)" % (toarchive, dest, Give_UTC_now()), 1)
 
     return dest
 
@@ -863,29 +889,38 @@ def create_rawfile_diagnostic_plots(archivefn, dir, suffix=""):
     basefn += suffix
     # To keep track of all diagnostics created, keyed by their description
     diagfns = {}
- 
+
+    # Create a temporary file
+    tmpfile, tmpfn = tempfile.mkstemp(prefix='toaster_tmp', \
+                        suffix='_diag.png', dir=config.base_tmp_dir)
+    os.close(tmpfile)
+
     # Create Time vs. Phase plot (psrplot -p time).
     outfn = os.path.join(dir, "%s.time.png" % basefn)
-    execute("psrplot -p time -j DFp -D %s/PNG %s" % (tmpfn, archivefn))
+    execute("psrplot -p time -j DFp -c 'above:c=%s' -D %s/PNG %s" % \
+                    (os.path.split(archivefn)[-1], tmpfn, archivefn))
     shutil.move(tmpfn, outfn)
     diagfns['Time vs. Phase'] = outfn
 
     # Create Freq vs. Phase plot (pav -dGTp).
     outfn = os.path.join(dir, "%s.freq.png" % basefn)
-    execute("psrplot -p freq -j DTp -D %s/PNG %s" % (tmpfn, archivefn))
+    execute("psrplot -p freq -j DTp -c 'above:c=%s' -D %s/PNG %s" % \
+                    (os.path.split(archivefn)[-1], tmpfn, archivefn))
     shutil.move(tmpfn, outfn)
     diagfns['Freq vs. Phase'] = outfn
 
     if hdr['npol'] > 1:
         # Create summed profile, with polarisation information.
         outfn = os.path.join(dir, "%s.polprof.png" % basefn)
-        execute("psrplot -p stokes -j DFT -D %s/PNG %s" % (tmpfn, archivefn))
+        execute("psrplot -p stokes -j DFT -c 'above:c=%s' -D %s/PNG %s" % \
+                    (os.path.split(archivefn)[-1], tmpfn, archivefn))
         shutil.move(tmpfn, outfn)
         diagfns['Pol. Profile'] = outfn
     else:
         # Create plain summed profile.
         outfn = os.path.join(dir, "%s.prof.png" % basefn)
-        execute("psrplot -p flux -j DFTp -D %s/PNG %s" % (tmpfn, archivefn))
+        execute("psrplot -p flux -j DFTp -c 'above:c=%s' -D %s/PNG %s" % \
+                    (os.path.split(archivefn)[-1], tmpfn, archivefn))
         shutil.move(tmpfn, outfn)
         diagfns['Profile'] = outfn
     
