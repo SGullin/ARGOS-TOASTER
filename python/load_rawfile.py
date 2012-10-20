@@ -5,6 +5,7 @@ import sys
 import os.path
 import warnings
 import traceback
+import copy
 
 import epta_pipeline_utils as epu
 import errors
@@ -117,13 +118,55 @@ def main():
     db.connect()
    
     try:
-        for fn in args.infiles:
-            try:
-                rawfile_id = load_rawfile(fn, db)
-                print "%s has been loaded to the DB. rawfile_id: %d" % \
-                            (fn, rawfile_id)
-            except errors.EptaPipelineError:
-                traceback.print_exc()
+        if args.from_file is not None:
+            if args.rawfile is not None:
+                raise errors.BadInputError("When loading rawfiles from " \
+                                "a file, a rawfile value should _not_ be " \
+                                "provided on the command line. (The value " \
+                                "%s was given on the command line)." % \
+                                args.rawfile)
+            if args.from_file == '-':
+                rawlist = sys.stdin
+            else:
+                if not os.path.exists(args.from_file):
+                    raise errors.FileError("The rawfile list (%s) does " \
+                                "not appear to exist." % args.from_file)
+                rawlist = open(args.from_file, 'r')
+            numfails = 0
+            for line in rawlist:
+                # Strip comments
+                line = line.partition('#')[0].strip()
+                if not line:
+                    # Skip empty line
+                    continue
+                try:
+                    # parsing arguments is overkill at the moment 
+                    # since 'load_rawfile.py' doesn't take any 
+                    # arguments, but this makes the code more future-proof
+                    customargs = copy.deepcopy(args)
+                    arglist = line.strip().split()
+                    parser.parse_args(arglist, namespace=customargs)
+                 
+                    fn = customargs.rawfile
+                    rawfile_id = load_rawfile(fn, db)
+                    print "%s has been loaded to the DB. rawfile_id: %d" % \
+                                (fn, rawfile_id)
+                except errors.EptaPipelineError:
+                    numfails += 1
+                    traceback.print_exc()
+            if args.from_file != '-':
+                rawlist.close()
+            if numfails:
+                raise errors.EptaPipelineError(\
+                    "\n\n===================================\n" \
+                        "The loading of %d rawfiles failed!\n" \
+                        "Please review error output.\n" \
+                        "===================================\n" % numfails)
+        else:
+            fn = customargs.rawfile
+            rawfile_id = load_rawfile(fn, db)
+            print "%s has been loaded to the DB. rawfile_id: %d" % \
+                (fn, rawfile_id)
     finally:
         # Close DB connection
         db.close()
@@ -132,8 +175,20 @@ def main():
 if __name__=='__main__':
     parser = epu.DefaultArguments(description="Archive a single raw file, " \
                                         "and load its info into the database.")
-    parser.add_argument("infiles", nargs='+', type=str, \
+    parser.add_argument('--from-file', dest='from_file', \
+                        type=str, default=None, \
+                        help="A list of rawfiles (one per line) to " \
+                            "load. (Default: load a raw file provided " \
+                            "on the cmd line.)")
+    parser.add_argument("rawfile", nargs='?', type=str, \
                         help="File name of the raw file to upload.")
     args = parser.parse_args()
+    if ((args.rawfile is None) or (args.rawfile == '-')) and \
+                (args.from_file is None):
+        warnings.warn("No input file or --from-file argument given " \
+                        "will read from stdin.", \
+                        errors.EptaPipelineWarning)
+        args.rawfile = None # In case it was set to '-'
+        args.from_file = '-'
     main()
 
