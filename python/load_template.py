@@ -2,8 +2,11 @@
 """
 Script to upload template profiles to the EPTA timing database
 """
-
+import copy
 import os.path
+import warnings
+import traceback
+import sys
 
 import config
 import database
@@ -12,6 +15,9 @@ import epta_pipeline_utils as epu
 import set_master_template as smt
     
 def populate_templates_table(db, fn, params, comments):
+    if comments is None:
+        raise errors.BadInputError("A comment is required for every " \
+                                        "template!")
     # md5sum helper function in epu
     md5 = epu.Get_md5sum(fn);
     path, fn = os.path.split(os.path.abspath(fn))
@@ -79,16 +85,9 @@ def populate_templates_table(db, fn, params, comments):
     return template_id 
 
 
-def main():
-    fn = args.template
-    template_id = load_template(fn)
-    print "%s has been loaded to the DB. template_id: %d" % \
-            (fn, template_id)
-
-
-def load_template(fn):
+def load_template(fn, is_master=False, existdb=None):
     # Connect to the database
-    db = database.Database()
+    db = existdb or database.Database()
     db.connect()
 
     try:
@@ -113,30 +112,104 @@ def load_template(fn):
         if mastertemp_id is None:
             # If this is the only template for this pulsar
             # make sure it will be set as the master
-            args.is_master = True
+            is_master = True
 
-        if args.is_master:
+        if is_master:
             epu.print_info("Setting %s as master template (%s)" % \
                             (newfn, epu.Give_UTC_now()), 1)
             smt.set_as_master_template(db, template_id)
         epu.print_info("Finished with %s - template_id=%d (%s)" % \
                         (fn, template_id, epu.Give_UTC_now()), 1)
     finally:
+        if not existdb:
+            # Close DB connection
+            db.close()
+    return template_id
+
+
+def main():
+    # Connect to the database
+    db = database.Database()
+    db.connect()
+   
+    try:
+        if args.from_file is not None:
+            if args.template is not None:
+                raise errors.BadInputError("When loading templates from " \
+                                "a file, a template value should _not_ be " \
+                                "provided on the command line. (The value " \
+                                "%s was given on the command line)." % \
+                                args.template)
+            if args.from_file == '-':
+                templatelist = sys.stdin
+            else:
+                if not os.path.exists(args.from_file):
+                    raise errors.FileError("The template list (%s) does " \
+                                "not appear to exist." % args.from_file)
+                templatelist = open(args.from_file, 'r')
+            numfails = 0
+            for line in templatelist:
+                # Strip comments
+                line = line.partition('#')[0].strip()
+                if not line:
+                    # Skip empty line
+                    continue
+                try:
+                    customargs = copy.deepcopy(args)
+                    arglist = line.strip().split()
+                    parser.parse_args(arglist, namespace=customargs)
+                 
+                    fn = customargs.template
+                    template_id = load_template(fn, \
+                                            customargs.is_master, db)
+                    print "%s has been loaded to the DB. template_id: %d" % \
+                        (fn, template_id)
+                except errors.EptaPipelineError:
+                    numfails += 1
+                    traceback.print_exc()
+            if args.from_file != '-':
+                templatelist.close()
+            if numfails:
+                raise errors.EptaPipelineError(\
+                    "\n\n===================================\n" \
+                        "The loading of %d templates failed!\n" \
+                        "Please review error output.\n" \
+                        "===================================\n" % numfails)
+        else:
+            fn = args.template
+            template_id = load_template(fn, args.is_master, db)
+            print "%s has been loaded to the DB. template_id: %d" % \
+                    (fn, template_id)
+    finally:
         # Close DB connection
         db.close()
-    return template_id
 
 
 if __name__=='__main__':
     parser = epu.DefaultArguments(description="Upload a standard template " \
                                               "into the database.")
     parser.add_argument('--master', dest='is_master', \
-                         action = 'store_true', default = False, \
+                         action = 'store_true', default=False, \
                          help = "Whether or not the provided file is to be " \
                                 "set as the master template.")
-    parser.add_argument('--comments', dest='comments', required=True, type=str, \
+    parser.add_argument('--comments', dest='comments', type=str, \
                         help="Provide comments describing the template.")
-    parser.add_argument('template', type=str, \
+    parser.add_argument('--from-file', dest='from_file', \
+                        type=str, default=None, \
+                        help="A list of templates (one per line) to " \
+                            "load. Note: each line can also include " \
+                            "flags to override what was provided on " \
+                            "the cmd line for that template. (Default: " \
+                            "load a single template provided on the " \
+                            "cmd line.)")
+    parser.add_argument('template', nargs='?', type=str, \
                         help="File name of the template to upload.")
     args = parser.parse_args()
+    if ((args.template is None) or (args.template == '-')) and \
+                (args.from_file is None):
+        warnings.warn("No input file or --from-file argument given " \
+                        "will read from stdin.", \
+                        errors.EptaPipelineWarning)
+        args.template = None # In case it was set to '-'
+        args.from_file = '-'
     main()
