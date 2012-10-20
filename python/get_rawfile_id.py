@@ -7,18 +7,31 @@ input is most appropriate.
 
 Patrick Lazarus, Jan. 8, 2012.
 """
-
+import datetime
 import os.path
 import warnings
+
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib
 
 import epta_pipeline_utils as epu
 import database
 import errors
 import colour
 
+
 def main():
     rawfiles = get_rawfiles(args)
-    show_rawfiles(rawfiles)
+    if not len(rawfiles):
+        raise errors.EptaPipelineError("No rawfiles match parameters provided!")
+    if args.output_style=='text':
+        show_rawfiles(rawfiles)
+    elif args.output_style=='plot':
+        plot_rawfiles(rawfiles)
+        plt.show()
+    else:
+        custom_show_rawfiles(rawfiles, fmt=args.output_style)
 
 
 def get_rawfiles(args):
@@ -62,6 +75,7 @@ def get_rawfiles(args):
                         db.rawfiles.c.add_time, \
                         db.rawfiles.c.filename, \
                         db.rawfiles.c.filepath, \
+                        db.rawfiles.c.filesize, \
                         db.rawfiles.c.nbin, \
                         db.rawfiles.c.nchan, \
                         db.rawfiles.c.npol, \
@@ -76,9 +90,10 @@ def get_rawfiles(args):
                         db.pulsars.c.pulsar_name, \
                         db.telescopes.c.telescope_name, \
                         db.obssystems.c.obssystem_id, \
-                        db.obssystems.c.name.label('obssys_name'), \
+                        db.obssystems.c.name.label('obssystem'), \
                         db.obssystems.c.frontend, \
                         db.obssystems.c.backend, \
+                        db.obssystems.c.band_descriptor, \
                         db.obssystems.c.clock], \
                 from_obj=[db.rawfiles.\
                    join(db.pulsar_aliases, \
@@ -108,38 +123,213 @@ def get_rawfiles(args):
     return rows 
 
 
+def custom_show_rawfiles(rawfiles, fmt="%(rawfile_id)d"):
+    for rawfile in rawfiles:
+        print fmt.decode('string-escape') % rawfile
+
+def plot_rawfiles(rawfiles):
+    # Set default parameters
+    plt.rc('xtick', labelsize='x-small')
+    plt.rc('ytick', labelsize='x-small')
+    plt.rc('axes', labelsize='small')
+    plt.rc('font', family='sans-serif')
+
+    fig = plt.figure(figsize=(10,8))
+    titletext = plt.figtext(0.025,0.975, "Raw file Summary", \
+                            size='xx-large', ha='left', va='top')
+    db = database.Database() # Get database info, but don't connect
+    dbtext = plt.figtext(0.025, 0.025, "Database (%s): %s" % \
+                            (db.engine.name, db.engine.url.database), \
+                            size='x-small', ha='left', va='bottom')
+    timetext = plt.figtext(0.975, 0.025, epu.Give_UTC_now(), \
+                            size='x-small', ha='right', va='bottom')
+
+    # Compute data for plotting
+    numfiles = 0
+    size = 0
+    length = 0
+    mjds = np.empty(len(rawfiles))
+    lengths = np.empty(len(rawfiles))
+    bws = np.empty(len(rawfiles))
+    freqs = np.empty(len(rawfiles))
+    obsids = np.empty(len(rawfiles))
+    add_times = []
+    telescopes = {}
+    band_descriptors = {}
+    pulsars = {}
+    for ii, rawfile in enumerate(rawfiles):
+        numfiles += 1
+        size += rawfile['filesize']
+        secs = rawfile['length']
+        length += secs
+        length_day = secs/86400.0
+        mjds[ii] = rawfile['mjd']+length_day/2.0
+        lengths[ii] = length_day
+        bws[ii] = rawfile['bw']
+        freqs[ii] = rawfile['freq']
+        obsids[ii] = rawfile['obssystem_id']
+        add_times.append(rawfile['add_time'])
+        tname = rawfile['telescope_name']
+        telescopes[tname] = telescopes.get(tname, 0) + 1
+        band = rawfile['band_descriptor']
+        band_descriptors[band] = band_descriptors.get(band, 0) + 1
+        psr = rawfile['pulsar_name']
+        psrcnt, psrhr = pulsars.get(psr, (0, 0))
+        pulsars[psr] = (psrcnt+1, psrhr+secs/3600.0)
+    add_times = np.asarray(add_times+[datetime.datetime.utcnow()])
+
+    plt.figtext(0.05, 0.91, "Total number of files archived: %d" % numfiles, \
+                ha='left', size='medium')
+    unit = 's'
+    thresh = 60.0
+    other_thresh = [365.0, 24.0, 60.0]
+    other_units = ['years', 'days', 'hr', 'min']
+    while length >= thresh and len(other_units) > 1:
+        length /= thresh
+        thresh = other_thresh.pop()
+        unit = other_units.pop()
+    plt.figtext(0.05, 0.885, "Total integration time: %.2g %s" % \
+                        (length, unit), \
+                ha='left', size='medium')
+    unit = 'bytes'
+    other_units = ['TB', 'GB', 'MB', 'KB']
+    while size >= 1024.0 and len(other_units) > 1:
+        size /= 1024.0
+        unit = other_units.pop()
+    plt.figtext(0.05, 0.86, "Total disk space used: %.2g %s" % \
+                        (size, unit), \
+                ha='left', size='medium')
+
+    #cnorm = matplotlib.colors.Normalize(obsids.min(), obsids.max())
+    #cmap = plt.get_cmap('gist_rainbow')
+   
+    ax = plt.axes((0.1, 0.375, 0.45, 0.15))
+    #plt.errorbar(mjds, freqs, xerr=lengths/2.0, yerr=bws/2.0, \
+    #                ls='None', ecolor='k')
+    #for ii in xrange(len(rows)):
+    #    ellipse = matplotlib.patches.Ellipse((mjds[ii], freqs[ii]), \
+    #                    width=lengths[ii], height=bws[ii], \
+    #                    ec='none', fc=cmap(cnorm(obsids[ii])), \
+    #                    alpha=0.9)
+    #    ax.add_patch(ellipse)
+    plt.scatter(mjds, freqs, marker='o', alpha=0.7, c=obsids)
+    mjd_range = mjds.ptp()
+    plt.xlim(mjds.min()-0.1*mjd_range, mjds.max()+0.1*mjd_range)
+    freq_range = freqs.ptp()
+    plt.ylim(freqs.min()-0.1*freq_range, freqs.max()+0.1*freq_range)
+    plt.xlabel("MJD")
+    plt.ylabel("Freq (MHz)")
+    fmt = matplotlib.ticker.ScalarFormatter(useOffset=False)
+    fmt.set_scientific(False)
+    ax.xaxis.set_major_formatter(fmt)
+    ax.yaxis.set_major_formatter(fmt)
+
+    ax = plt.axes((0.1, 0.15, 0.45, 0.15))
+    plt.plot(add_times, np.arange(len(add_times)), 'k-', drawstyle='steps')
+    plt.xlabel("Add date")
+    plt.ylabel("Num. files\narchived")
+    ax.fmt_xdata = matplotlib.dates.DateFormatter("%Y-%m-%d %H:%M")
+    fig.autofmt_xdate()
+    loc = matplotlib.dates.AutoDateLocator()
+    fmt = matplotlib.dates.AutoDateFormatter(loc)
+    #fmt.scaled[1./24.] = '%a, %I:%M%p'
+    ax.xaxis.set_major_locator(loc)
+    ax.xaxis.set_major_formatter(fmt)
+    plt.ylim(0, len(add_times)*1.1)
+    plt.title("Total number of raw files archived", size='small')
+    plt.xticks(rotation=30, ha='right')
+    # Make pie charts
+    # Break down by telescope
+    tnames = []
+    labels = []
+    counts = []
+    for t, cnt in telescopes.iteritems():
+        labels.append("%s: %d" % (t, cnt))
+        tnames.append(t)
+        counts.append(cnt)
+
+    ax = plt.axes((0.35, 0.55, 0.25, 0.25))
+    plt.axis('equal')
+    #tel_pie = plt.pie(counts, labels=labels, colors=colours, autopct='%.1f %%')
+    tel_pie = plt.pie(counts, labels=labels, autopct='%.1f %%')
+    plt.setp(tel_pie[1]+tel_pie[2], size='xx-small')
+    plt.title("Num. raw files by telescope", size='small')
+
+    # Break down by observing band
+    bands = []
+    counts = []
+    labels = []
+    for b, cnt in band_descriptors.iteritems():
+        bands.append(b)
+        counts.append(cnt)
+        labels.append("%s: %d" % (b, cnt))
+
+    ax = plt.axes((0.05, 0.55, 0.25, 0.25))
+    plt.axis('equal')
+    #tel_pie = plt.pie(counts, labels=labels, colors=colours, autopct='%.1f %%')
+    band_pie = plt.pie(counts, labels=labels, autopct='%.1f %%')
+    plt.setp(band_pie[1]+band_pie[2], size='xx-small')
+    plt.title("Num. raw files by observing band", size='small')
+    
+    psrs = []
+    counts = []
+    hours = []
+    for p, (cnt, hr) in pulsars.iteritems():
+        psrs.append(p)
+        counts.append(cnt)
+        hours.append(hr)
+    ipsr = np.arange(len(psrs))
+
+    psrtime_ax = plt.axes((0.83, 0.15, 0.12, 0.7))
+    psrtime_bar = plt.barh(ipsr, hours, \
+                    align='center', lw=0, fc='#B22222', \
+                    alpha=0.7, ec='k')
+    plt.xlim(0, np.max(hours)*1.1)
+    plt.xlabel("Hours")
+    plt.setp(psrtime_ax.yaxis.get_ticklabels(), visible=False)
+    plt.title("Obs. time", size='small') 
+    
+    psrcnt_ax = plt.axes((0.7, 0.15, 0.12, 0.7), sharey=psrtime_ax)
+    psrcnt_bar = plt.barh(ipsr, counts, \
+                    align='center', lw=0, fc='#008080', \
+                    alpha=0.7, ec='k')
+    plt.xlim(0, np.max(counts)*1.1)
+    plt.ylim(-0.5,len(psrs)-0.5)
+    plt.yticks(ipsr, psrs, rotation=30, \
+                    va='top', ha='right')
+    plt.title("# of archives", size='small') 
+
+
 def show_rawfiles(rawfiles):
-    if len(rawfiles):
-        for rawdict in rawfiles:
-            print "- "*25
-            print colour.cstring("Rawfile ID:", underline=True, bold=True) + \
-                    colour.cstring(" %d" % rawdict.rawfile_id, bold=True)
-            fn = os.path.join(rawdict.filepath, rawdict.filename)
-            print "\nRawfile: %s" % fn
-            print "Pulsar name: %s" % rawdict.pulsar_name
-            print "Uploaded by: %s (%s)" % \
-                        (rawdict.real_name, rawdict.email_address)
-            print "Date and time rawfile was added: %s" % rawdict.add_time.isoformat(' ')
-            lines = ["Observing System ID: %d" % rawdict.obssystem_id, \
-                     "Observing System Name: %s" % rawdict.obssys_name, \
-                     "Telescope: %s" % rawdict.telescope_name, \
-                     "Frontend: %s" % rawdict.frontend, \
-                     "Backend: %s" % rawdict.backend, \
-                     "Clock: %s" % rawdict.clock]
-            epu.print_info("\n".join(lines), 1)
-            lines = ["MJD: %.6f" % rawdict.mjd, \
-                     "Number of phase bins: %d" % rawdict.nbin, \
-                     "Number of channels: %d" % rawdict.nchan, \
-                     "Number of polarisations: %d" % rawdict.npol, \
-                     "Number of sub-integrations: %d" % rawdict.nsub, \
-                     "Centre frequency (MHz): %g" % rawdict.freq, \
-                     "Bandwidth (MHz): %g" % rawdict.bw, \
-                     "Dispersion measure (pc cm^-3): %g" % rawdict.dm, \
-                     "Integration time (s): %g" % rawdict.length]
-            epu.print_info("\n".join(lines), 2)
-            print " -"*25
-    else:
-        raise errors.EptaPipelineError("No rawfiles match parameters provided!")
+    for rawdict in rawfiles:
+        print "- "*25
+        print colour.cstring("Rawfile ID:", underline=True, bold=True) + \
+                colour.cstring(" %d" % rawdict.rawfile_id, bold=True)
+        fn = os.path.join(rawdict.filepath, rawdict.filename)
+        print "\nRawfile: %s" % fn
+        print "Pulsar name: %s" % rawdict.pulsar_name
+        print "Uploaded by: %s (%s)" % \
+                    (rawdict.real_name, rawdict.email_address)
+        print "Date and time rawfile was added: %s" % rawdict.add_time.isoformat(' ')
+        lines = ["Observing system ID: %d" % rawdict.obssystem_id, \
+                 "Observing system name: %s" % rawdict.obssystem, \
+                 "Observing band: %s" % rawdict.band_descriptor, \
+                 "Telescope: %s" % rawdict.telescope_name, \
+                 "Frontend: %s" % rawdict.frontend, \
+                 "Backend: %s" % rawdict.backend, \
+                 "Clock: %s" % rawdict.clock]
+        epu.print_info("\n".join(lines), 1)
+        lines = ["MJD: %.6f" % rawdict.mjd, \
+                 "Number of phase bins: %d" % rawdict.nbin, \
+                 "Number of channels: %d" % rawdict.nchan, \
+                 "Number of polarisations: %d" % rawdict.npol, \
+                 "Number of sub-integrations: %d" % rawdict.nsub, \
+                 "Centre frequency (MHz): %g" % rawdict.freq, \
+                 "Bandwidth (MHz): %g" % rawdict.bw, \
+                 "Dispersion measure (pc cm^-3): %g" % rawdict.dm, \
+                 "Integration time (s): %g" % rawdict.length]
+        epu.print_info("\n".join(lines), 2)
+        print " -"*25
 
 
 if __name__=='__main__':
@@ -205,6 +395,16 @@ if __name__=='__main__':
                         type=str, default=None, \
                         help="Grab rawfiles from specific clocks. " \
                             "NOTE: SQL regular expression syntax may be used " \
-                            "(Default: No constraint on clock name.)") 
+                            "(Default: No constraint on clock name.)")
+    parser.add_argument("--output-style", default='text', \
+                        dest='output_style', type=str, \
+                        help="The following options control how " \
+                        "the matching rawfiles are presented. Recognized " \
+                        "modes: 'text' - List information. Increase " \
+                        "verbosity to get more info; 'plot' - display " \
+                        "a plot; Other styles are python-style format " \
+                        "strings interpolated using row-information for " \
+                        "each matching rawfile (e.g. 'MJD %%(mjd)d'). " \
+                        "(Default: text).")
     args = parser.parse_args()
     main()
