@@ -123,7 +123,13 @@ def main():
                     raise errors.FileError("The parfile list (%s) does " \
                                 "not appear to exist." % args.from_file)
                 parlist = open(args.from_file, 'r')
+            numfails = 0
             for line in parlist:
+                # Strip comments
+                line = line.partition('#')[0].strip()
+                if not line:
+                    # Skip empty line
+                    continue
                 try:
                     customargs = copy.deepcopy(args)
                     arglist = line.strip().split()
@@ -135,7 +141,16 @@ def main():
                     print "%s has been loaded to the DB. parfile_id: %d" % \
                         (fn, parfile_id)
                 except errors.EptaPipelineError:
+                    numfails += 1
                     traceback.print_exc()
+            if args.from_file != '-':
+                parlist.close()
+            if numfails:
+                raise errors.EptaPipelineError(\
+                    "\n\n===================================\n" \
+                        "The loading of %d parfiles failed!\n" \
+                        "Please review error output.\n" \
+                        "===================================\n" % numfails)
         else:
             fn = customargs.parfile
             parfile_id = load_parfile(fn)
