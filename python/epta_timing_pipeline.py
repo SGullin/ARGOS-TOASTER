@@ -126,7 +126,7 @@ def fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
               'nchan':nchan, \
               'nsub':nsub, \
               'toa_fitting_method':config.toa_fitting_method, \
-              'user_id':epu.get_current_users_id(db)}
+              'user_id':epu.get_userid()}
     result = db.execute(ins, values)
     process_id = result.inserted_primary_key[0]
     result.close()

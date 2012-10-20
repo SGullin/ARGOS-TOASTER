@@ -49,6 +49,8 @@ int_re = re.compile(r"^[-+]?\d+$")
 ##############################################################################
 pulsarid_cache = {}
 pulsarname_cache = {}
+userid_cache = {}
+userinfo_cache = {}
 
 
 ##############################################################################
@@ -71,34 +73,103 @@ def Give_UTC_now():
     return utcnow.strftime("%b %d, %Y - %H:%M:%S (UTC)")
 
 
-def get_userids(existdb=None):
+def get_userid_cache(existdb=None, update=False):
     """Return a dictionary mapping user names to user ids.
 
         Input:
             existdb: A (optional) existing database connection object.
                 (Default: Establish a db connection)
+            update: If True, update the cache even if it already
+                exists. (Default: Don't update)
 
         Output:
-            userids: A dictionary with user names as keys 
+            userid_cache: A dictionary with user names as keys 
                     and user ids as values.
     """
-    # Use the exisitng DB connection, or open a new one if None was provided
-    db = existdb or database.Database()
-    db.connect()
-    select = db.select([db.users.c.user_name, \
-                        db.users.c.user_id])
-    result = db.execute(select)
-    rows = result.fetchall()
-    result.close()
-    if not existdb:
-        # Close the DB connection we opened
-        db.close()
+    global userid_cache
+    if update or not userid_cache:
+        db = existdb or database.Database()
+        db.connect()
 
-    # Create the mapping
-    userids = {}
-    for uname, uid in rows:
-        userids[uname] = uid
-    return userids
+        select = db.select([db.users.c.user_name, \
+                            db.users.c.user_id])
+        result = db.execute(select)
+        rows = result.fetchall()
+        result.close()
+        if not existdb:
+            db.close()
+        # Create the mapping
+        for row in rows:
+            userid_cache[row['user_name']] = row['user_id']
+    return userid_cache
+
+
+def get_userid(user_name=None):
+    """Given a user name. Return the corresponding user_id.
+    
+        Input:
+            user_name: A user name. (Default: return the ID of
+                the current user)
+
+        Output:
+            user_id: The corresponding user_id.
+    """
+    if user_name is None:
+        user_name = get_current_username()
+    cache = get_userid_cache()
+    if user_name not in cache:
+        raise errors.UnrecognizedValueError("The user name (%s) does not " \
+                                "appear in the userid_cache!" % user_name)
+    return cache[user_name]
+
+
+def get_userinfo_cache(existdb=None, update=False):
+    """Return a dictionary mapping user ids to user info.
+
+        Input:
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+            update: If True, update the cache even if it already
+                exists. (Default: Don't update)
+
+        Output:
+            userinfo_cache: A dictionary with user ids as keys
+                    and user-info dicts as values.
+    """
+    global userinfo_cache
+    if update or not userinfo_cach:
+        db = existdb or database.Database()
+        db.connect()
+
+        select = db.select([db.users])
+        result = db.execute(select)
+        rows = result.fetchall()
+        result.close()
+        if not existdb:
+            db.close()
+        # Create the mapping
+        for row in rows:
+            userinfo_cache[row['user_id']] = row
+    return userinfo_cache
+
+
+def get_userinfo(user_id=None):
+    """Given a user_id value. Return the info as a dictionary-like object.
+    
+        Input:
+            user_id: The user_id number from the DB. \
+                    (Default: get info for the current user)
+
+        Output:
+            user_info: A dictionary-like object of user info.
+    """
+    cache = get_userinfo_cache()
+    if user_id is None:
+        user_id = get_userid()
+    if user_id not in cache:
+        raise errors.UnrecognizedValueError("The user ID (%d) does not " \
+                                "appear in the userinfo_cache!" % user_id)
+    return cache[user_id]
 
 
 def get_pulsarid_cache(existdb=None, update=False):
@@ -487,7 +558,7 @@ def prep_parfile(fn):
 
     # normalise pulsar name
     params['name'] = get_prefname(params['name'])
-    params['user_id'] = get_current_users_id()
+    params['user_id'] = get_userid()
     return params
 
 
@@ -549,37 +620,12 @@ def prep_file(fn):
         params['name'] = get_prefname(params['name'])
         params['pulsar_id'] = psr_id
 
-        params['user_id'] = get_current_users_id()
+        params['user_id'] = get_userid()
     return params
 
 
-def get_current_users_id(existdb=None):
-    """Get the user ID of the current user and return it.
-        
-        Input:
-            existdb: A (optional) existing database connection object.
-                (Default: Establish a db connection)
-
-        Output:
-            user_id: The current user's ID.
-    """
-    # Use the exisitng DB connection, or open a new one if None was provided
-    db = existdb or database.Database()
-
-    # Check if user_id is found
-    user_ids = get_userids(db)
-    username = pwd.getpwuid(os.getuid())[0]
-    if username not in user_ids:
-        raise errors.FileError("The current user's username (%s) is not " \
-                            "registered in the database." % username)
-    else:
-        user_id = user_ids[username]
-
-    if not existdb:
-        # Close the DB connection we opened
-        db.close()
-
-    return user_id
+def get_current_username():
+    return pwd.getpwuid(os.getuid())[0]
 
 
 def is_gitrepo_dirty(repodir):

@@ -193,7 +193,7 @@ def create_timfile(toas, cmdline, comments, existdb=None):
 
     # Insert timfile entry
     ins = db.timfiles.insert()
-    values = {'user_id':epu.get_current_users_id(db), \
+    values = {'user_id':epu.get_userid(), \
               'version_id':epu.get_version_id(db), \
               'comments':comments, \
               'input_args':cmdline}
