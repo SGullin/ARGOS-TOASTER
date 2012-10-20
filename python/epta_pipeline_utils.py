@@ -478,6 +478,12 @@ def prep_parfile(fn):
         params['binary_model'] = params['binary']
     if params.has_key('e'):
         params['ecc'] = params['e']
+    
+    # Do some error checking
+    if params.has_key('sini') and type(params['sini']) is types.StringType:
+        # 'SINI' parameter can be 'KIN' in this case omit 'SINI' from
+        # the database.
+        params.pop('sini')
 
     # normalise pulsar name
     params['name'] = get_prefname(params['name'])
@@ -1112,6 +1118,8 @@ def print_debug(msg, category, stepsback=1):
 
 class DefaultArguments(argparse.ArgumentParser):
     def __init__(self, *args, **kwargs):
+        self.added_std_group = False
+        self.added_debug_group = False
         argparse.ArgumentParser.__init__(self, *args, **kwargs)
 
     def parse_args(self, *args, **kwargs):
@@ -1122,6 +1130,9 @@ class DefaultArguments(argparse.ArgumentParser):
         return argparse.ArgumentParser.parse_args(self, *args, **kwargs)
 
     def add_standard_group(self):
+        if self.added_std_group:
+            # Already added standard group
+            return
         group = self.add_argument_group("Standard Options", \
                     "The following options get used by various programs.")
         group.add_argument('-v', '--more-verbose', nargs=0, \
@@ -1136,8 +1147,12 @@ class DefaultArguments(argparse.ArgumentParser):
                             action=self.SetVerbosity, type=int, \
                             help="Set verbosity level. (Default: " \
                                  "verbosity level = %d)." % config.verbosity)
+        self.added_std_group = True
 
     def add_debug_group(self):
+        if self.added_debug_group:
+            # Debug group has already been added
+            return
         group = self.add_argument_group("Debug Options", \
                     "The following options turn on various debugging " \
                     "statements. Multiple debugging options can be " \
@@ -1158,6 +1173,7 @@ class DefaultArguments(argparse.ArgumentParser):
                             action=self.ListDebugModes, \
                             help="List available debugging modes and " \
                                 "descriptions, then exit")
+        self.added_debug_group = True
 
     class TurnUpVerbosity(argparse.Action):
         def __call__(self, parse, namespace, values, option_string):
