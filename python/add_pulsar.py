@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+"""Script to add pulsars (and aliases) to the toaster database.
+"""
+import os.path
+import sys
+import traceback
+import copy
+
 import epta_pipeline_utils as epu
 import database
 import errors
@@ -96,27 +103,73 @@ def add_pulsar(db, pulsar_name, aliases=[]):
 
 
 def main():
+    # Connect to the database
     db = database.Database()
     db.connect()
 
     try:
-        pulsar_id = add_pulsar(db, args.pulsar_name, args.aliases)
-
-        print "Successfully inserted new pulsar. " \
-                    "Returned pulsar_id: %d" % pulsar_id
+        if args.from_file is not None:
+            if args.pulsar_name is not None:
+                raise errors.BadInputError("When adding pulsars from " \
+                                "a file, a pulsar name should _not_ be " \
+                                "provided on the command line. (The value " \
+                                "%s was given on the command line)." % \
+                                args.pulsar_name)
+            if args.from_file == '-':
+                psrlist = sys.stdin
+            else:
+                if not os.path.exists(args.from_file):
+                    raise errors.FileError("The pulsar list (%s) does " \
+                                "not appear to exist." % args.from_file)
+                psrlist = open(args.from_file, 'r')
+            numfails = 0
+            for line in psrlist:
+                # Strip comments
+                line = line.partition('#')[0].strip()
+                if not line:
+                    # Skip empty line
+                    continue
+                try:
+                    customargs = copy.deepcopy(args)
+                    arglist = line.strip().split()
+                    parser.parse_args(arglist, namespace=customargs)
+                    pulsar_id = add_pulsar(db, customargs.pulsar_name, \
+                                            customargs.aliases)
+                    print "Successfully inserted new pulsar. " \
+                        "Returned pulsar_id: %d" % pulsar_id
+                except errors.EptaPipelineError:
+                    numfails += 1
+                    traceback.print_exc()
+            if args.from_file != '-':
+                psrlist.close()
+            if numfails:
+                raise errors.EptaPipelineError(\
+                    "\n\n===================================\n" \
+                        "The adding of %d pulsars failed!\n" \
+                        "Please review error output.\n" \
+                        "===================================\n" % numfails)
+        else:
+            pulsar_id = add_pulsar(db, args.pulsar_name, args.aliases)
+            print "Successfully inserted new pulsar. " \
+                        "Returned pulsar_id: %d" % pulsar_id
     finally:
+        # Close DB connection
         db.close()
 
 if __name__=='__main__':
     parser = epu.DefaultArguments(description="Add a new pulsar to the DB")
-    parser.add_argument('-p', '--pulsar-name', dest='pulsar_name', \
-                        type=str, required=True, \
-                        help="The preferred name of the new pulsar. " \
-                            "NOTE: This is required.")
+    parser.add_argument('pulsar_name', nargs='?', type=str, \
+                        help="The preferred name of the new pulsar.")
     parser.add_argument('-a', '--alias', dest='aliases', \
                         type=str, action='append', default=[], \
                         help="An alias for the pulsar. NOTE: multiple " \
                             "aliases may be provided by including " \
                             "multiple -a/--alias flags.")
+    parser.add_argument('--from-file', dest='from_file', \
+                        type=str, default=None, \
+                        help="A list of pulsars (one per line) to " \
+                            "add. Note: each line can also include " \
+                            "alias flags. (Default: load a single " \
+                            "pulsar given on the cmd line.)")
     args = parser.parse_args()
     main()
