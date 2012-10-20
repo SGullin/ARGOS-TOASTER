@@ -3,10 +3,12 @@
 """
 Script to upload parfiles to the EPTA timing database.
 """
-
+import copy
 import os.path
 import warnings
 import types
+import traceback
+import sys
 
 import database
 import config
@@ -62,16 +64,9 @@ def populate_parfiles_table(db, fn, params):
     return parfile_id 
 
 
-def main():
-    fn = args.parfile
-    parfile_id = load_parfile(fn)
-    print "%s has been loaded to the DB. parfile_id: %d" % \
-            (fn, parfile_id)
-
-
-def load_parfile(fn):
+def load_parfile(fn, is_master=False, existdb=None):
     # Connect to the database
-    db = database.Database()
+    db = existdb or database.Database()
     db.connect()
 
     try:
@@ -93,18 +88,62 @@ def load_parfile(fn):
         if masterpar_id is None:
             # If this is the only parfile for this pulsar 
             # make sure it will be set as the master
-            args.is_master = True
+            is_master = True
 
-        if args.is_master:
+        if is_master:
             epu.print_info("Setting %s as master parfile (%s)" % \
                             (newfn, epu.Give_UTC_now()), 1)
             smp.set_as_master_parfile(db, parfile_id)
         epu.print_info("Finished with %s - parfile_id=%d (%s)" % \
                         (fn, parfile_id, epu.Give_UTC_now()), 1)
     finally:
+        if not existdb:
+            # Close DB connection
+            db.close()
+    return parfile_id
+
+
+def main():
+    # Connect to the database
+    db = database.Database()
+    db.connect()
+   
+    try:
+        if args.from_file is not None:
+            if args.parfile is not None:
+                raise errors.BadInputError("When loading parfiles from " \
+                                "a file, a parfile value should _not_ be " \
+                                "provided on the command line. (The value " \
+                                "%s was given on the command line)." % \
+                                args.parfile)
+            if args.from_file == '-':
+                parlist = sys.stdin
+            else:
+                if not os.path.exists(args.from_file):
+                    raise errors.FileError("The parfile list (%s) does " \
+                                "not appear to exist." % args.from_file)
+                parlist = open(args.from_file, 'r')
+            for line in parlist:
+                try:
+                    customargs = copy.deepcopy(args)
+                    arglist = line.strip().split()
+                    parser.parse_args(arglist, namespace=customargs)
+                 
+                    fn = customargs.parfile
+                    parfile_id = load_parfile(customargs.parfile, \
+                                            customargs.is_master, db)
+                    print "%s has been loaded to the DB. parfile_id: %d" % \
+                        (fn, parfile_id)
+                except errors.EptaPipelineError:
+                    traceback.print_exc()
+        else:
+            fn = customargs.parfile
+            parfile_id = load_parfile(fn)
+            print "%s has been loaded to the DB. parfile_id: %d" % \
+                (fn, parfile_id)
+    finally:
         # Close DB connection
         db.close()
-    return parfile_id
 
 
 if __name__=='__main__':
@@ -117,7 +156,15 @@ if __name__=='__main__':
     #parser.add_argument( '--comments', dest='comments', required=True,
     #                     type = str,
     #                     help='Provide comments describing the par files.')
-    parser.add_argument('parfile', type=str, \
+    parser.add_argument('--from-file', dest='from_file', \
+                        type=str, default=None, \
+                        help="A list of parfiles (one per line) to " \
+                            "load. Note: each line can also include " \
+                            "flags to override what was provided on " \
+                            "the cmd line for that parfile. (Default: " \
+                            "load a single parfile provided on the " \
+                            "cmd line.)")
+    parser.add_argument('parfile', nargs='?', type=str, \
                          help="Parameter file to upload.")
     args = parser.parse_args()
     main()
