@@ -182,4 +182,11 @@ if __name__=='__main__':
     parser.add_argument('parfile', nargs='?', type=str, \
                          help="Parameter file to upload.")
     args = parser.parse_args()
+    if ((args.parfile is None) or (args.parfile == '-')) and \
+                (args.from_file is None):
+        warnings.warn("No input file or --from-file argument given " \
+                        "will read from stdin.", \
+                        errors.EptaPipelineWarning)
+        args.parfile = None # In case it was set to '-'
+        args.from_file = '-'
     main()
