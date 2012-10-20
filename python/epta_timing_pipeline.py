@@ -237,7 +237,7 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         epu.print_info("Generating proessing diagnostics", 0)
         diagdir = epu.make_proc_diagnostics_dir(manipfn, process_id)
         suffix = "_procid%d.%s" % (process_id, manip_name)
-        diagfns = epu.create_datafile_diagnostic_plots(manipfn, diagdir, suffix)
+        diagfns = epu.create_rawfile_diagnostic_plots(manipfn, diagdir, suffix)
        
         # Copy TOA diagnostic plots and register them into DB
         basefn = "%(name)s_%(intmjd)05d_%(secs)05d" % hdr
