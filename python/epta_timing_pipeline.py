@@ -298,6 +298,10 @@ def main():
     if args.rawfile is not None:
         epu.print_info("Loading rawfile %s" % args.rawfile, 1)
         args.rawfile_id = load_rawfile.load_rawfile(args.rawfile)
+    elif args.rawfile_id is None:
+        # Neither a rawfile, nor a rawfile_id was provided
+        raise errors.BadInputError("Either a rawfile, or a rawfile_id " \
+                                    "_must_ be provided!")
 
     if args.parfile is not None:
         epu.print_info("Loading parfile %s" % args.parfile, 1)
@@ -327,32 +331,23 @@ def main():
                      "    template_id: %d" % \
                      (args.rawfile_id, args.parfile_id, args.template_id), 1)
     
-    manip_kwargs = manipulators.extract_manipulator_arguments(args.manipfunc, \
-                                                            args)
-    prepped_manipfunc = manipulators.prepare_manipulator(args.manipfunc, \
-                                                            manip_kwargs)
-    
-    if len(manip_kwargs):
-        manip_arglist = []
-        for key in sorted(manip_kwargs.keys()):
-            manip_arglist.append("%s = %s" % (key, manip_kwargs[key]))
-        manip_argstr = "\n    ".join(manip_arglist)
-    else:
-        manip_argstr = "None"
+    # Load manipulator
+    manip = manipulators.load_manipulator(args.manip_name)
 
-    epu.print_info("Manipuator being used: %s\n" \
-                    "Arguments provided:\n" \
-                    "    %s" % (args.manipulator, manip_argstr), 1) 
-    
     # Run pipeline core
-    pipeline_core(args.manipulator, prepped_manipfunc, \
+    pipeline_core(args.manip_name, manip.run, \
                     args.rawfile_id, args.parfile_id, args.template_id)
 
 
 if __name__ == "__main__":
-    parentparser = argparse.ArgumentParser(add_help=False)
+    parser = manipulators.ManipulatorArguments(prog='epta_pipeline', \
+                            description='Reduce an already-uploaded ' \
+                                'archive. Both a pre-loaded parfile, and a ' \
+                                'pre-loaded template must be provided as well. ' \
+                                'TOAs generated are loaded into the database, ' \
+                                'as is information about the processing run.')
     # Raw data
-    rawgroup = parentparser.add_mutually_exclusive_group(required=True)
+    rawgroup = parser.add_mutually_exclusive_group(required=True)
     rawgroup.add_argument("rawfile", nargs='?', type=str, default=None, \
                         help="A raw file to archive/load to DB and " \
                             "generate TOAs for.")
@@ -361,7 +356,7 @@ if __name__ == "__main__":
                         help="ID of an already archived/loaded raw data " \
                             "file to use for running the full pipeline.")
     # Ephemeris
-    pargroup = parentparser.add_mutually_exclusive_group(required=False)
+    pargroup = parser.add_mutually_exclusive_group(required=False)
     pargroup.add_argument('-p', '--parfile-id', dest='parfile_id', \
                         type=int, default=None, \
                         help="ID of ephemeris to use for running the " \
@@ -371,7 +366,7 @@ if __name__ == "__main__":
                         help="A parfile to archive/load to DB and " \
                             "use when generating TOAs.")
     # Template profile
-    tmpgroup = parentparser.add_mutually_exclusive_group(required=False)
+    tmpgroup = parser.add_mutually_exclusive_group(required=False)
     tmpgroup.add_argument('-t', '--template-id', dest='template_id',
                         type=int, default=None, \
                         help="ID of template profile to use for running " \
@@ -380,29 +375,6 @@ if __name__ == "__main__":
                         default=None,
                         help="A template to archive/load to DB and use " \
                             "when generating TOAs.")
-    mainparser = epu.DefaultArguments(prog='epta_pipeline', \
-                            description='Reduce an already-uploaded ' \
-                                'archive. Both a pre-loaded parfile, and a ' \
-                                'pre-loaded template must be provided as well. ' \
-                                'TOAs generated are loaded into the database, ' \
-                                'as is information about the processing run.')
 
-    subparsers = mainparser.add_subparsers(dest='manipulator', \
-                            title="Manipulators", \
-                            description="The function used to manipulate " \
-                                "rawfiles before generating TOAs. Note: the " \
-                                "number of TOAs is (#subbands * #subints) in " \
-                                "the manipulated file.")
-    for name in manipulators.registered_manipulators:
-        m = manipulators.__dict__[name]
-        m_parser = subparsers.add_parser(m.plugin_name, help=m.__doc__, \
-                description="%s (The options listed below are " \
-                            "'%s'-specific.)" % (m.__doc__, name), \
-                parents=[parentparser])
-        m.add_arguments(m_parser)
-        m_parser.set_defaults(manipfunc=m.manipulate)
-        m_parser.add_standard_group()
-        m_parser.add_debug_group()
-
-    args=mainparser.parse_args()
+    args, leftover_args = parser.parse_known_args()
     main()

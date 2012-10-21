@@ -1175,6 +1175,13 @@ class DefaultArguments(argparse.ArgumentParser):
         self.add_debug_group()
         return argparse.ArgumentParser.parse_args(self, *args, **kwargs)
 
+    def parse_known_args(self, *args, **kwargs):
+        # Add default groups just before parsing so it is the last set of
+        # options displayed in help text
+        self.add_standard_group()
+        self.add_debug_group()
+        return argparse.ArgumentParser.parse_known_args(self, *args, **kwargs)
+
     def add_standard_group(self):
         if self.added_std_group:
             # Already added standard group
@@ -1222,15 +1229,15 @@ class DefaultArguments(argparse.ArgumentParser):
         self.added_debug_group = True
 
     class TurnUpVerbosity(argparse.Action):
-        def __call__(self, parse, namespace, values, option_string):
+        def __call__(self, parser, namespace, values, option_string):
             config.verbosity += 1
 
     class TurnDownVerbosity(argparse.Action):
-        def __call__(self, parse, namespace, values, option_string):
+        def __call__(self, parser, namespace, values, option_string):
             config.verbosity -= 1
 
     class SetVerbosity(argparse.Action):
-        def __call__(self, parse, namespace, values, option_string):
+        def __call__(self, parser, namespace, values, option_string):
             config.verbosity = values[0]
 
     class SetDebugMode(argparse.Action): 
