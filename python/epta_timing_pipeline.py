@@ -138,15 +138,13 @@ def fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
     return process_id
     
 
-def pipeline_core(manip_name, prepped_manipfunc, \
-                        rawfile_id, parfile_id, template_id, \
+def pipeline_core(manipi, rawfile_id, parfile_id, template_id, \
                         existdb=None):
     """Run a prepared manipulator function on the raw file with 
         ID 'rawfile_id'. Then generate TOAs and load them into the DB.
 
         Inputs:
-            manip_name: The name of the manipulator being used.
-            prepped_manipfunc: A prepared manipulator function.
+            manip: A manipulator instance.
             rawfile_id: The ID number of the raw file to generate TOAs from.
             parfile_id: The ID number of the par file to install into the
                 raw file.
@@ -192,7 +190,7 @@ def pipeline_core(manip_name, prepped_manipfunc, \
                             suffix='_manip.ar', dir=config.base_tmp_dir)
         os.close(tmpfile)
         # Run the manipulator
-        prepped_manipfunc([adjustfn], manipfn)
+        manip.run([adjustfn], manipfn)
  
         # Get template from template_id and verify MD5SUM
         template = epu.get_template_from_id(template_id, db, verify_md5=True)
@@ -236,7 +234,7 @@ def pipeline_core(manip_name, prepped_manipfunc, \
         # Create processing diagnostics
         epu.print_info("Generating proessing diagnostics", 0)
         diagdir = epu.make_proc_diagnostics_dir(manipfn, process_id)
-        suffix = "_procid%d.%s" % (process_id, manip_name)
+        suffix = "_procid%d.%s" % (process_id, manip.name)
         diagfns = epu.create_rawfile_diagnostic_plots(manipfn, diagdir, suffix)
        
         # Copy TOA diagnostic plots and register them into DB
@@ -294,37 +292,38 @@ def pipeline_core(manip_name, prepped_manipfunc, \
             db.close()
 
 
-def main():
+def reduce_rawfile(args, leftover_args=[], existdb=None):
     if args.rawfile is not None:
         epu.print_info("Loading rawfile %s" % args.rawfile, 1)
-        args.rawfile_id = load_rawfile.load_rawfile(args.rawfile)
+        args.rawfile_id = load_rawfile.load_rawfile(args.rawfile, existdb)
     elif args.rawfile_id is None:
         # Neither a rawfile, nor a rawfile_id was provided
         raise errors.BadInputError("Either a rawfile, or a rawfile_id " \
                                     "_must_ be provided!")
-
+ 
     if args.parfile is not None:
         epu.print_info("Loading parfile %s" % args.parfile, 1)
-        args.parfile_id = load_parfile.load_parfile(args.parfile)
+        args.parfile_id = load_parfile.load_parfile(args.parfile, existdb=existdb)
         
     if args.template is not None:
         epu.print_info("Loading template %s" % args.template, 1)
-        args.template_id = load_template.load_template(args.template)
-
+        args.template_id = load_template.load_template(args.template, \
+                                                        existdb=existdb)
+ 
     if args.parfile_id is None:
-        args.parfile_id = get_master_parfile_id(args.rawfile_id)
+        args.parfile_id = get_master_parfile_id(args.rawfile_id, existdb=existdb)
         if args.parfile_id is None:
             raise errors.NoMasterError("A master parfile is required " \
                                     "in the database if no parfile is " \
                                     "provided on the command line.")
-
+ 
     if args.template_id is None:
-        args.template_id = get_master_template_id(args.rawfile_id)
+        args.template_id = get_master_template_id(args.rawfile_id, existdb=existdb)
         if args.template_id is None:
             raise errors.NoMasterError("A master template is required " \
                                     "in the database if no template is " \
                                     "provided on the command line.")
-
+ 
     epu.print_info("Using the following IDs:\n" \
                      "    rawfile_id: %d\n" \
                      "    parfile_id: %d\n" \
@@ -333,10 +332,55 @@ def main():
     
     # Load manipulator
     manip = manipulators.load_manipulator(args.manip_name)
-
+    manip.parse_args(leftover_args) 
     # Run pipeline core
-    pipeline_core(args.manip_name, manip.run, \
-                    args.rawfile_id, args.parfile_id, args.template_id)
+    pipeline_core(manip, args.rawfile_id, args.parfile_id, \
+                    args.template_id, existdb)
+
+
+def main():
+    # Connect to the database
+    db = database.Database()
+    db.connect()
+
+    try:
+        if args.from_file is not None:
+            if args.from_file == '-':
+                argfile = sys.stdin
+            else:
+                if not os.path.exists(args.from_file):
+                    raise errors.FileError("The pulsar list (%s) does " \
+                                "not appear to exist." % args.from_file)
+                argfile = open(args.from_file, 'r')
+            numfails = 0
+            for line in argfile:
+                # Strip comments
+                line = line.partition('#')[0].strip()
+                if not line:
+                    # Skip empty line
+                    continue
+                try:
+                    customargs = copy.deepcopy(args)
+                    arglist = line.strip().split()
+                    customargs, custom_leftover_args = \
+                            parser.parse_known_args(arglist, namespace=customargs)
+                    reduce_rawfile(customargs, custom_leftover_args, db)
+                except errors.EptaPipelineError:
+                    numfails += 1
+                    traceback.print_exc()
+            if args.from_file != '-':
+                argfile.close()
+            if numfails:
+                raise errors.EptaPipelineError(\
+                    "\n\n===================================\n" \
+                        "The reduction of %d rawfiles failed!\n" \
+                        "Please review error output.\n" \
+                        "===================================\n" % numfails)
+        else:
+            reduce_rawfile(args, leftover_args, db)
+    finally:
+        # Close DB connection
+        db.close()
 
 
 if __name__ == "__main__":
@@ -375,6 +419,12 @@ if __name__ == "__main__":
                         default=None,
                         help="A template to archive/load to DB and use " \
                             "when generating TOAs.")
+    parser.add_argument('--from-file', dest='from_file', \
+                        type=str, default=None, \
+                        help="A list of pulsars (one per line) to " \
+                            "add. Note: each line can also include " \
+                            "alias flags. (Default: load a single " \
+                            "pulsar given on the cmd line.)")
 
     args, leftover_args = parser.parse_known_args()
     main()
