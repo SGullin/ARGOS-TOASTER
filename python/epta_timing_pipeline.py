@@ -140,7 +140,7 @@ def fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
     return process_id
     
 
-def pipeline_core(manipi, rawfile_id, parfile_id, template_id, \
+def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
                         existdb=None):
     """Run a prepared manipulator function on the raw file with 
         ID 'rawfile_id'. Then generate TOAs and load them into the DB.
