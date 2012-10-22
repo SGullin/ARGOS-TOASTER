@@ -3,6 +3,7 @@
     register file-info into the database, reduce data, and store
     TOAs and processing information into the DB.
 """
+import copy
 import sys
 import os
 import os.path
@@ -10,6 +11,7 @@ import argparse
 import warnings
 import tempfile
 import shutil
+import traceback
 
 import colour
 import errors
@@ -368,6 +370,7 @@ def main():
                 except errors.EptaPipelineError:
                     numfails += 1
                     traceback.print_exc()
+                    raise
             if args.from_file != '-':
                 argfile.close()
             if numfails:
@@ -425,6 +428,13 @@ if __name__ == "__main__":
                             "add. Note: each line can also include " \
                             "alias flags. (Default: load a single " \
                             "pulsar given on the cmd line.)")
-
     args, leftover_args = parser.parse_known_args()
+    if ((args.rawfile is None) or (args.rawfile == '-')) and \
+                (args.from_file is None):
+        warnings.warn("No input file or --from-file argument given " \
+                        "will read from stdin.", \
+                        errors.EptaPipelineWarning)
+        args.rawfile = None # In case it was set to '-'
+        args.from_file = '-'
+
     main()

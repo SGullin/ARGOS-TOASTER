@@ -4,7 +4,7 @@
 import shutil
 import argparse
 
-import manipulators.base
+import manipulators
 import epta_pipeline_utils as epu
 
 
