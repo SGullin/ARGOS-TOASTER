@@ -137,7 +137,7 @@ def get_userinfo_cache(existdb=None, update=False):
                     and user-info dicts as values.
     """
     global userinfo_cache
-    if update or not userinfo_cach:
+    if update or not userinfo_cache:
         db = existdb or database.Database()
         db.connect()
 
