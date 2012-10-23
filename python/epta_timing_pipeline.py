@@ -280,8 +280,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
     else:
         # No exceptions encountered
         # Commit database transaction
-        if not existdb:
-            db.commit()
+        db.commit()
     finally:
         #End pipeline
         print "###################################################"
@@ -394,7 +393,7 @@ if __name__ == "__main__":
                                 'TOAs generated are loaded into the database, ' \
                                 'as is information about the processing run.')
     # Raw data
-    rawgroup = parser.add_mutually_exclusive_group(required=True)
+    rawgroup = parser.add_mutually_exclusive_group(required=False)
     rawgroup.add_argument("rawfile", nargs='?', type=str, default=None, \
                         help="A raw file to archive/load to DB and " \
                             "generate TOAs for.")
