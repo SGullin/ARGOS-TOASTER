@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import database
 
 db = database.Database()

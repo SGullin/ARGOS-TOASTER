@@ -138,6 +138,7 @@ if __name__=='__main__':
                             "immediately activated.)")
     pwgroup = parser.add_mutually_exclusive_group(required=False)
     pwgroup.add_argument('-p', '--password', dest='passwd_hash',
+                        metavar="PASSWORD", \
                         type=str, action=HashPasswordAction, \
                         help="The new user's password. NOTE: Providing a " \
                             "password using this flag will require typing " \
