@@ -962,7 +962,8 @@ def create_rawfile_diagnostic_plots(archivefn, outdir, suffix=""):
                 The keys are the plot type descriptions, and 
                 the values are the full path to the plots.
     """
-    hdr = get_header_vals(archivefn, ['name', 'intmjd', 'fracmjd', 'npol'])
+    hdr = get_header_vals(archivefn, ['name', 'intmjd', 'fracmjd', \
+                                        'nsub', 'nchan', 'npol'])
     hdr['secs'] = int(hdr['fracmjd']*24*3600+0.5) # Add 0.5 so result is 
                                                   # rounded to nearest int
     basefn = "%(name)s_%(intmjd)05d_%(secs)05d" % hdr
@@ -971,21 +972,23 @@ def create_rawfile_diagnostic_plots(archivefn, outdir, suffix=""):
     # To keep track of all diagnostics created, keyed by their description
     diagfns = {}
 
-    # Create Time vs. Phase plot (psrplot -p time).
-    outfn = os.path.join(outdir, "%s.time.png" % basefn)
-    execute("psrplot -p time -j DFp -c 'above:c=%s' " \
-                                "-D %s.time.png/PNG %s" % \
-                    (os.path.split(archivefn)[-1], basefn, archivefn), \
-                    dir=outdir)
-    diagfns['Time vs. Phase'] = outfn
+    if hdr['nsub'] > 1:
+        # Create Time vs. Phase plot (psrplot -p time).
+        outfn = os.path.join(outdir, "%s.time.png" % basefn)
+        execute("psrplot -p time -j DFp -c 'above:c=%s' " \
+                                    "-D %s.time.png/PNG %s" % \
+                        (os.path.split(archivefn)[-1], basefn, archivefn), \
+                        dir=outdir)
+        diagfns['Time vs. Phase'] = outfn
 
-    # Create Freq vs. Phase plot (pav -dGTp).
-    outfn = os.path.join(outdir, "%s.freq.png" % basefn)
-    execute("psrplot -p freq -j DTp -c 'above:c=%s' " \
-                                "-D %s.freq.png/PNG %s" % \
-                    (os.path.split(archivefn)[-1], basefn, archivefn), \
-                    dir=outdir)
-    diagfns['Freq vs. Phase'] = outfn
+    if hdr['nchan'] > 1:
+        # Create Freq vs. Phase plot (pav -dGTp).
+        outfn = os.path.join(outdir, "%s.freq.png" % basefn)
+        execute("psrplot -p freq -j DTp -c 'above:c=%s' " \
+                                    "-D %s.freq.png/PNG %s" % \
+                        (os.path.split(archivefn)[-1], basefn, archivefn), \
+                        dir=outdir)
+        diagfns['Freq vs. Phase'] = outfn
 
     if hdr['npol'] > 1:
         # Create summed profile, with polarisation information.
