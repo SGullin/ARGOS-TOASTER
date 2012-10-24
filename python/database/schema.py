@@ -80,7 +80,8 @@ sa.Table('process', metadata, \
                     nullable=False), \
         sa.Column('add_time', sa.DateTime, nullable=False, \
                     default=sa.func.now()), \
-        sa.Column('input_args', sa.Text, nullable=False), \
+        sa.Column('manipulator', sa.String(32), nullable=False), \
+        sa.Column('manipulator_args', sa.Text, nullable=False), \
         sa.Column('nchan', sa.Integer, nullable=False), \
         sa.Column('nsub', sa.Integer, nullable=False), \
         sa.Column('toa_fitting_method', sa.String(12), nullable=False), \

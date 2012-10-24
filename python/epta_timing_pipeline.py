@@ -115,16 +115,17 @@ def get_master_template_id(rawfile_id, existdb=None):
 
 
 def fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
-                            cmdline, nchan, nsub, existdb=None):
+                        manip, nchan, nsub, existdb=None):
     db = existdb or database.Database()
     db.connect()
 
     ins = db.process.insert()
     values = {'version_id':version_id, \
               'rawfile_id':rawfile_id, \
-              'input_args':cmdline, \
               'parfile_id':parfile_id, \
               'template_id':template_id, \
+              'manipulator': manip.name, \
+              'manipulator_args': manip.argstr, \
               'nchan':nchan, \
               'nsub':nsub, \
               'toa_fitting_method':config.toa_fitting_method, \
@@ -225,7 +226,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         # Fill pipeline table
         cmdline = " ".join(sys.argv)
         process_id = fill_process_table(version_id, rawfile_id, parfile_id, \
-                            template_id, cmdline, hdr['nchan'], hdr['nsub'], db)
+                                     template_id, manip, hdr['nchan'], hdr['nsub'], db)
         
         # Parse pat output
         toainfo = epu.parse_pat_output(patout)

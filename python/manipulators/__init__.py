@@ -27,6 +27,7 @@ class BaseManipulator(object):
                                     description="The '%s' manipulator -- %s" % \
                                                 (self.name, self.description))
         self._add_arguments(self.parser)
+        self.argstr = ""
         # Grab the default arguments directly, in case the user
         # Doesn't parse any command line arguments.
         #self.default_kwargs = {}
@@ -35,6 +36,7 @@ class BaseManipulator(object):
         #        self.default_kwargs[action.dest] = action.default
 
     def parse_args(self, args):
+        self.argstr = " ".join(args)
         tmp = self.parser.parse_args(args)
         self.kwargs = dict(tmp._get_kwargs())
 
