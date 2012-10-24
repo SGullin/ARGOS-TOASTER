@@ -231,8 +231,8 @@ if __name__=='__main__':
                             "-f %(frontend)s_%(backend)s", \
                         help="Set flags appropriate for the IPTA exchange " \
                             "format.")
-    parser.add_argument('--sort', dest='sortkeys', \
-        action='append', default=[], \
+    parser.add_argument('--sort', dest='sortkeys', metavar='SORTKEY', \
+        action='append', default=['mjd', 'freq'], \
         help="DB column to sort TOAs by. Multiple --sort options can " \
             "be provided. Options provided later will take precedent " \
             "over previous options. (Default: Sort by MJD, then freq.)")
