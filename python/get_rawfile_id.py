@@ -196,7 +196,7 @@ def plot_rawfiles(rawfiles):
     while size >= 1024.0 and len(other_units) > 1:
         size /= 1024.0
         unit = other_units.pop()
-    plt.figtext(0.05, 0.86, "Total disk space used: %.2g %s" % \
+    plt.figtext(0.05, 0.86, "Total disk space used: %.2f %s" % \
                         (size, unit), \
                 ha='left', size='medium')
 
