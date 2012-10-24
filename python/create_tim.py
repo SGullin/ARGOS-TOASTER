@@ -209,6 +209,7 @@ def add_timfile_entry(toas, cmdline, comments, existdb=None):
     values = {'user_id':epu.get_userid(), \
               'version_id':epu.get_version_id(db), \
               'comments':comments, \
+              'pulsar_id':toas[0]['pulsar_id'], \
               'input_args':cmdline}
     result = db.execute(ins, values)
     timfile_id = result.inserted_primary_key[0]

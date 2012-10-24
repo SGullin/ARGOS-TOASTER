@@ -125,6 +125,9 @@ sa.Table('timfiles', metadata, \
         sa.Column('version_id', sa.Integer, \
                     sa.ForeignKey("versions.version_id"), \
                     nullable=False), \
+        sa.Column('pulsar_id', sa.Integer, \
+                    sa.ForeignKey("pulsars.pulsar_id"), \
+                    nullable=False), \
         sa.Column('input_args', sa.Text, nullable=False), \
         mysql_engine='InnoDB')
 
