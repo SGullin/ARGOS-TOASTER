@@ -395,7 +395,8 @@ if __name__ == "__main__":
                                 'as is information about the processing run.')
     # Raw data
     rawgroup = parser.add_mutually_exclusive_group(required=False)
-    rawgroup.add_argument("rawfile", nargs='?', type=str, default=None, \
+    rawgroup.add_argument("--rawfile", dest='rawfile', type=str, \
+                        default=None, \
                         help="A raw file to archive/load to DB and " \
                             "generate TOAs for.")
     rawgroup.add_argument('-r', '--rawfile-id', dest='rawfile_id', \
