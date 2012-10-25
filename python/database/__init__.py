@@ -56,6 +56,18 @@ class Database(object):
         """
         return self.conn and not self.conn.closed
 
+    def is_created(self):
+        """Return True if the database appears to be setup
+            (i.e. it has tables).
+
+            Inputs:
+                None
+
+            Output:
+                is_setup: True if the database is set up, False otherwise.
+        """
+        return bool(self.engine.table_names())
+
     def connect(self):
         """Connect to the database, setting self.conn.
             
@@ -66,6 +78,12 @@ class Database(object):
                 conn: The established SQLAlchemy Connection object, 
                     which is also available as self.conn.
         """
+        if not self.is_created():
+            raise errors.DatabaseError("The database (%s) does not appear " \
+                                        "to have any tables. Be sure to run " \
+                                        "'create_tables.py' before attempting " \
+                                        "to connect to the database." % \
+                                                self.engine.url.database)
         # Only open a connection if not already connected
         if not self.is_connected():
             # Establish a connection
@@ -165,9 +183,10 @@ class Database(object):
             Outputs:
                 None
         """
-        self.conn.close()
-        if self.result is not None:
-            self.result.close()
+        if self.is_connected():
+            self.conn.close()
+            if self.result is not None:
+                self.result.close()
 
     def fetchone(self):
         """Fetch and return a single row from the
