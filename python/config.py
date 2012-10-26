@@ -8,4 +8,7 @@ else:
     cfg_file = cfg_files[0]
 execfile(cfg_file, {}, locals())
 
+diagnostics_location = os.path.join(data_archive_location, "diagnostics")
+epta_pipeline_dir = os.path.split(os.path.abspath(__file__))[0]
+
 import debug
