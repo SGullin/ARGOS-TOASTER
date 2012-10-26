@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+import os.path
+import traceback
+import copy
+import shlex
+
 import utils
 import database
 import errors
@@ -128,12 +133,62 @@ def main():
     db.connect()
 
     try:
-        telescope_id = add_telescope(db, args.name, args.itrf_x, \
-                                        args.itrf_y, args.itrf_x, \
-                                        args.abbrev, args.code, \
-                                        args.aliases)
-        print "Successfully inserted new telescope. " \
-                    "Returned telescope_id: %d" % telescope_id
+        if args.from_file is not None:
+            if args.from_file == '-':
+                tellist = sys.stdin
+            else:
+                if not os.path.exists(args.from_file):
+                    raise errors.FileError("The telescope list (%s) does " \
+                                "not appear to exist." % args.from_file)
+                tellist = open(args.from_file, 'r')
+            numfails = 0
+            numadded = 0
+            for line in tellist:
+                # Strip comments
+                line = line.partition('#')[0].strip()
+                if not line:
+                    # Skip empty line
+                    continue
+                try:
+                    customargs = copy.deepcopy(args)
+                    arglist = shlex.split(line.strip())
+                    parser.parse_args(arglist, namespace=customargs)
+        
+                    if customargs.name is None or customargs.itrf_x is None or \
+                            customargs.itrf_y is None or customargs.itrf_z is None or \
+                            customargs.abbrev is None or customargs.code is None:
+                        raise errors.BadInputError("Telescopes " \
+                                "must have a name, IRTF coordinates (X,Y,Z), " \
+                                "an abbreviation, and a site code. " \
+                                "One of these is missing.")
+                    telescope_id = add_telescope(db, customargs.name, \
+                                        customargs.itrf_x, customargs.itrf_y, \
+                                        customargs.itrf_x, customargs.abbrev, \
+                                        customargs.code, customargs.aliases)
+                    print "Successfully inserted new telescope. " \
+                               "Returned telescope_id: %d" % telescope_id
+                    numadded += 1
+                except errors.ToasterError:
+                    numfails += 1
+                    traceback.print_exc()
+            if args.from_file != '-':
+                tellist.close()
+            print "\n\n===================================\n" \
+                      "%d telescopes successfully added\n" \
+                      "===================================\n" % numadded
+            if numfails:
+                raise errors.ToasterError(\
+                    "\n\n===================================\n" \
+                        "The adding of %d telescopes failed!\n" \
+                        "Please review error output.\n" \
+                        "===================================\n" % numfails)
+        else:
+            telescope_id = add_telescope(db, customargs.name, \
+                                customargs.itrf_x, customargs.itrf_y, \
+                                customargs.itrf_x, customargs.abbrev, \
+                                customargs.code, customargs.aliases)
+            print "Successfully inserted new telescope. " \
+                       "Returned telescope_id: %d" % telescope_id
     finally:
         db.close()
 
@@ -141,36 +196,37 @@ def main():
 if __name__=='__main__':
     parser = utils.DefaultArguments(description="Add a new telescope to the DB")
     parser.add_argument('-t', '--telescope-name', dest='name', \
-                        type=str, required=True, \
-                        help="The preferred name of the new telescope. " \
-                            "NOTE: This is required.")
+                        type=str, \
+                        help="The preferred name of the new telescope.")
     parser.add_argument('-x', dest='itrf_x', \
-                        type=float, required=True, \
+                        type=float, \
                         help="The x-coordinate of the telescope, as is " \
-                            "provided in TEMPO's obsys.dat. NOTE: This " \
-                            "is required.")
+                            "provided in TEMPO's obsys.dat.")
     parser.add_argument('-y', dest='itrf_y', \
-                        type=float, required=True, \
+                        type=float, \
                         help="The y-coordinate of the telescope, as is " \
-                            "provided in TEMPO's obsys.dat. NOTE: This " \
-                            "is required.")
+                            "provided in TEMPO's obsys.dat.")
     parser.add_argument('-z', dest='itrf_z', \
-                        type=float, required=True, \
+                        type=float, \
                         help="The z-coordinate of the telescope, as is " \
-                            "provided in TEMPO's obsys.dat. NOTE: This " \
-                            "is required.")
+                            "provided in TEMPO's obsys.dat.")
     parser.add_argument('-s', '--abbrev', dest='abbrev', \
-                        type=str, required=True, \
-                        help="The abbreviated name of the telescope. " \
-                            "NOTE: This is required.")
+                        type=str, \
+                        help="The abbreviated name of the telescope.")
     parser.add_argument('-c', '--code', dest='code', \
-                        type=str, required=True, \
+                        type=str, \
                         help="The TEMPO-recognized site-code of this " \
-                            "telescope. NOTE: This is required.")
+                            "telescope.")
     parser.add_argument('-a', '--alias', dest='aliases', \
                         type=str, action='append', default=[], \
                         help="An alias for the telescope. NOTE: multiple " \
                             "aliases may be provided by including " \
                             "multiple -a/--alias flags.")
+    parser.add_argument('--from-file', dest='from_file', \
+                        type=str, default=None, \
+                        help="A list of telescopes (one per line) to " \
+                            "add. Note: each line can also include " \
+                            "alias flags. (Default: load a single " \
+                            "telescope given on the cmd line.)")
     args = parser.parse_args()
     main()
