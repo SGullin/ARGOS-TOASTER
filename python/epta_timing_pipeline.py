@@ -20,7 +20,7 @@ import database
 import load_rawfile
 import load_parfile
 import load_template
-import epta_pipeline_utils as epu
+import utils
 import config
 
 ###############################################################################
@@ -129,11 +129,11 @@ def fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
               'nchan':nchan, \
               'nsub':nsub, \
               'toa_fitting_method':config.toa_fitting_method, \
-              'user_id':epu.get_userid()}
+              'user_id':utils.get_userid()}
     result = db.execute(ins, values)
     process_id = result.inserted_primary_key[0]
     result.close()
-    epu.print_info("Added processing run to DB. Processing ID: %d" % \
+    utils.print_info("Added processing run to DB. Processing ID: %d" % \
                         process_id, 1)
     # Close DB connection
     if not existdb:
@@ -161,7 +161,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
     #Start pipeline
     print "###################################################"
     print "Starting EPTA Timing Pipeline"
-    print "Start time: %s"%epu.Give_UTC_now()
+    print "Start time: %s"%utils.Give_UTC_now()
     print "###################################################"
     
     db = existdb or database.Database()
@@ -171,14 +171,14 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         trans = db.begin() # Open a transaction
 
         # Get version ID
-        version_id = epu.get_version_id(db)
+        version_id = utils.get_version_id(db)
         # Get raw data from rawfile_id and verify MD5SUM
-        rawfile = epu.get_rawfile_from_id(rawfile_id, db, verify_md5=True)
+        rawfile = utils.get_rawfile_from_id(rawfile_id, db, verify_md5=True)
         # Get ephemeris from parfile_id and verify MD5SUM
-        parfile = epu.get_parfile_from_id(parfile_id, db, verify_md5=True)
+        parfile = utils.get_parfile_from_id(parfile_id, db, verify_md5=True)
  
         # Manipulate the raw file
-        epu.print_info("Manipulating file", 0)
+        utils.print_info("Manipulating file", 0)
         # Create a temporary file for the adjusted results
         tmpfile, adjustfn = tempfile.mkstemp(prefix='toaster_tmp', \
                             suffix='_newephem.ar', dir=config.base_tmp_dir)
@@ -186,7 +186,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         # Re-install ephemeris
         shutil.copy(rawfile, adjustfn)
         cmd = "pam -m -E %s --update_dm %s" % (parfile, adjustfn)
-        epu.execute(cmd)
+        utils.execute(cmd)
         
         # Create a temporary file for the manipulated results
         tmpfile, manipfn = tempfile.mkstemp(prefix='toaster_tmp', \
@@ -196,21 +196,21 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         manip.run([adjustfn], manipfn)
  
         # Get template from template_id and verify MD5SUM
-        template = epu.get_template_from_id(template_id, db, verify_md5=True)
+        template = utils.get_template_from_id(template_id, db, verify_md5=True)
         
         # Create a temporary file for the toa diagnostic plots
         tmpfile, toadiagfn = tempfile.mkstemp(prefix='toaster_tmp', \
                             suffix='_TOAdiag.png', dir=config.base_tmp_dir)
         os.close(tmpfile)
         # Generate TOAs with pat
-        epu.print_info("Computing TOAs", 0)
-        patout, paterr = epu.execute("pat -f tempo2 -A %s -s %s " \
+        utils.print_info("Computing TOAs", 0)
+        patout, paterr = utils.execute("pat -f tempo2 -A %s -s %s " \
                                 "-C 'gof length bw nbin nchan nsubint' " \
                                 "-t -K %s/PNG  %s" % \
                     (config.toa_fitting_method, template, toadiagfn, manipfn))
  
         # Check version ID is still the same. Just in case.
-        new_version_id = epu.get_version_id(db)
+        new_version_id = utils.get_version_id(db)
         if version_id != new_version_id:
             raise errors.EptaPipelineError("Weird... Version ID at the start " \
                                             "of processing (%s) is different " \
@@ -218,7 +218,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
                                             (version_id, new_version_id))
         
         # Read some header values from the manipulated archive
-        hdr = epu.get_header_vals(manipfn, ['nchan', 'nsub', 'name', \
+        hdr = utils.get_header_vals(manipfn, ['nchan', 'nsub', 'name', \
                                             'intmjd', 'fracmjd'])
         hdr['secs'] = int(hdr['fracmjd']*24*3600+0.5) # Add 0.5 so result is 
                                                       # rounded to nearest int
@@ -229,16 +229,16 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
                                      template_id, manip, hdr['nchan'], hdr['nsub'], db)
         
         # Parse pat output
-        toainfo = epu.parse_pat_output(patout)
+        toainfo = utils.parse_pat_output(patout)
 
         # Insert TOAs into DB
-        toa_ids = epu.load_toas(toainfo, process_id, template_id, rawfile_id, db)
+        toa_ids = utils.load_toas(toainfo, process_id, template_id, rawfile_id, db)
                  
         # Create processing diagnostics
-        epu.print_info("Generating proessing diagnostics", 0)
-        diagdir = epu.make_proc_diagnostics_dir(manipfn, process_id)
+        utils.print_info("Generating proessing diagnostics", 0)
+        diagdir = utils.make_proc_diagnostics_dir(manipfn, process_id)
         suffix = "_procid%d.%s" % (process_id, manip.name)
-        diagfns = epu.create_rawfile_diagnostic_plots(manipfn, diagdir, suffix)
+        diagfns = utils.create_rawfile_diagnostic_plots(manipfn, diagdir, suffix)
        
         # Copy TOA diagnostic plots and register them into DB
         basefn = "%(name)s_%(intmjd)05d_%(secs)05d" % hdr
@@ -258,7 +258,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
                             'plot_type':'Prof-Temp Resids'})
         result = db.execute(ins, values)
         result.close()
-        epu.print_info("Inserted %d TOA diagnostic plots." % len(toa_ids), 2)
+        utils.print_info("Inserted %d TOA diagnostic plots." % len(toa_ids), 2)
 
         # Load processing diagnostics
         values = []
@@ -269,7 +269,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
                       'filename': fn, \
                       'filepath': dir, \
                       'plot_type':diagtype})
-            epu.print_info("Inserting processing diagnostic plot (type: %s)." % \
+            utils.print_info("Inserting processing diagnostic plot (type: %s)." % \
                         diagtype, 2)
         result = db.execute(ins, values)
         result.close()
@@ -286,7 +286,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         #End pipeline
         print "###################################################"
         print "Finished EPTA Timing Pipeline"
-        print "End time: %s" % epu.Give_UTC_now()
+        print "End time: %s" % utils.Give_UTC_now()
         print "###################################################"    
         
         # Close DB connection
@@ -296,7 +296,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
 
 def reduce_rawfile(args, leftover_args=[], existdb=None):
     if args.rawfile is not None:
-        epu.print_info("Loading rawfile %s" % args.rawfile, 1)
+        utils.print_info("Loading rawfile %s" % args.rawfile, 1)
         args.rawfile_id = load_rawfile.load_rawfile(args.rawfile, existdb)
     elif args.rawfile_id is None:
         # Neither a rawfile, nor a rawfile_id was provided
@@ -304,11 +304,11 @@ def reduce_rawfile(args, leftover_args=[], existdb=None):
                                     "_must_ be provided!")
  
     if args.parfile is not None:
-        epu.print_info("Loading parfile %s" % args.parfile, 1)
+        utils.print_info("Loading parfile %s" % args.parfile, 1)
         args.parfile_id = load_parfile.load_parfile(args.parfile, existdb=existdb)
         
     if args.template is not None:
-        epu.print_info("Loading template %s" % args.template, 1)
+        utils.print_info("Loading template %s" % args.template, 1)
         args.template_id = load_template.load_template(args.template, \
                                                         existdb=existdb)
  
@@ -326,7 +326,7 @@ def reduce_rawfile(args, leftover_args=[], existdb=None):
                                     "in the database if no template is " \
                                     "provided on the command line.")
  
-    epu.print_info("Using the following IDs:\n" \
+    utils.print_info("Using the following IDs:\n" \
                      "    rawfile_id: %d\n" \
                      "    parfile_id: %d\n" \
                      "    template_id: %d" % \

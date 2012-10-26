@@ -4,7 +4,7 @@
 """
 
 import database
-import epta_pipeline_utils as epu
+import utils
 import colour
 
 def get_timfiles(psr='%', timfile_id=None):
@@ -87,7 +87,7 @@ def show_timfiles(timfiles):
                      "Last TOA (MJD): %s" % timfile['endmjd'], \
                      "Number of telescopes used: %d" % timfile['numtelescopes'], \
                      "Number of observing systems used: %d" % timfile['numobsys']]
-            epu.print_info("\n".join(lines), 1)
+            utils.print_info("\n".join(lines), 1)
             print " -"*25
     else:
         raise errors.EptaPipelineError("No timfiles match parameters provided!")
@@ -100,7 +100,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Print an overview of info " \
+    parser = utils.DefaultArguments(description="Print an overview of info " \
                                             "about timfiles.")
     parser.add_argument('-p', '--psr', dest='pulsar_name', \
                         type=str, default='%', \

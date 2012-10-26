@@ -8,7 +8,7 @@ import textwrap
 
 import colour
 import errors
-import epta_pipeline_utils as epu
+import utils
 
 registered_manipulators = ["pamit"]
 
@@ -102,7 +102,7 @@ class BaseManipulator(object):
             shutil.rmtree(workdir)
 
 
-class ManipulatorArguments(epu.DefaultArguments):
+class ManipulatorArguments(utils.DefaultArguments):
     def __init__(self, *args, **kwargs):
         super(ManipulatorArguments, self).__init__(add_help=False, \
                                                 *args, **kwargs)
@@ -236,7 +236,7 @@ def run_manipulator(prepped_manipfunc, infns, outname=None, \
         prepped_manipfunc(newfns, outname)
     finally:
         if debug.MANIPULATOR:
-            epu.print_debug("Manipulator worked in %s. Not removing it.", \
+            utils.print_debug("Manipulator worked in %s. Not removing it.", \
                                 'manipulator')
         else:
             shutil.rmtree(workdir)

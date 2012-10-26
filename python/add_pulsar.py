@@ -6,7 +6,7 @@ import sys
 import traceback
 import copy
 
-import epta_pipeline_utils as epu
+import utils
 import database
 import errors
 
@@ -157,7 +157,7 @@ def main():
         db.close()
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Add a new pulsar to the DB")
+    parser = utils.DefaultArguments(description="Add a new pulsar to the DB")
     parser.add_argument('pulsar_name', nargs='?', type=str, \
                         help="The preferred name of the new pulsar.")
     parser.add_argument('-a', '--alias', dest='aliases', \

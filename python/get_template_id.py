@@ -13,7 +13,7 @@ import os.path
 import datetime
 import warnings
 
-import epta_pipeline_utils as epu
+import utils
 import database
 import errors
 import colour
@@ -134,11 +134,11 @@ def show_templates(templates):
                      "Frontend: %s" % tdict['frontend'], \
                      "Backend: %s" % tdict['backend'], \
                      "Clock: %s" % tdict['clock']]
-            epu.print_info("\n".join(lines), 1)
+            utils.print_info("\n".join(lines), 1)
             
             # Show the template if verbosity is >= 2
             cmd = "psrtxt %s" % fn
-            psrtxtout, stderr = epu.execute(cmd)
+            psrtxtout, stderr = utils.execute(cmd)
 
             gnuplotcode = """set term dumb
                              set format y ""
@@ -153,15 +153,15 @@ def show_templates(templates):
                              %s
                              end
                          """ % (tdict.nbin-1, psrtxtout)
-            plot, stderr = epu.execute("gnuplot", stdinstr=gnuplotcode)
-            epu.print_info(plot, 2)
+            plot, stderr = utils.execute("gnuplot", stdinstr=gnuplotcode)
+            utils.print_info(plot, 2)
             print " -"*25
     else:
         raise errors.EptaPipelineError("No templates match parameters provided!")
 
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Get a listing of tempalte_id " \
+    parser = utils.DefaultArguments(description="Get a listing of tempalte_id " \
                                         "values from the DB to help the user" \
                                         "find the appropriate one to use.")
     parser.add_argument('--template-id', dest='template_id', \

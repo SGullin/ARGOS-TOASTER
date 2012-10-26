@@ -11,15 +11,15 @@ import sys
 import config
 import database
 import errors
-import epta_pipeline_utils as epu
+import utils
 import set_master_template as smt
     
 def populate_templates_table(db, fn, params, comments):
     if comments is None:
         raise errors.BadInputError("A comment is required for every " \
                                         "template!")
-    # md5sum helper function in epu
-    md5 = epu.Get_md5sum(fn);
+    # md5sum helper function in utils 
+    md5 = utils.Get_md5sum(fn);
     path, fn = os.path.split(os.path.abspath(fn))
     
     trans = db.begin()
@@ -92,22 +92,22 @@ def load_template(fn, is_master=False, existdb=None):
 
     try:
         # Now load the template file into database
-        epu.print_info("Working on %s (%s)" % (fn, epu.Give_UTC_now()), 1)
+        utils.print_info("Working on %s (%s)" % (fn, utils.Give_UTC_now()), 1)
         
         # Check the template and parse the header
-        params = epu.prep_file(fn)
+        params = utils.prep_file(fn)
         
         # Move the file
-        destdir = epu.get_archive_dir(fn, site=params['telescop'], \
+        destdir = utils.get_archive_dir(fn, site=params['telescop'], \
                     backend=params['backend'], receiver=params['rcvr'], \
                     psrname=params['name'])
-        newfn = epu.archive_file(fn, destdir)
+        newfn = utils.archive_file(fn, destdir)
  
         # Register the template into the database
         template_id = populate_templates_table(db, newfn, params, \
                         comments=args.comments)
 
-        mastertemp_id, tempfn = epu.get_master_template(params['pulsar_id'], \
+        mastertemp_id, tempfn = utils.get_master_template(params['pulsar_id'], \
                                                         params['obssystem_id'])
         if mastertemp_id is None:
             # If this is the only template for this pulsar
@@ -115,11 +115,11 @@ def load_template(fn, is_master=False, existdb=None):
             is_master = True
 
         if is_master:
-            epu.print_info("Setting %s as master template (%s)" % \
-                            (newfn, epu.Give_UTC_now()), 1)
+            utils.print_info("Setting %s as master template (%s)" % \
+                            (newfn, utils.Give_UTC_now()), 1)
             smt.set_as_master_template(db, template_id)
-        epu.print_info("Finished with %s - template_id=%d (%s)" % \
-                        (fn, template_id, epu.Give_UTC_now()), 1)
+        utils.print_info("Finished with %s - template_id=%d (%s)" % \
+                        (fn, template_id, utils.Give_UTC_now()), 1)
     finally:
         if not existdb:
             # Close DB connection
@@ -186,7 +186,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Upload a standard template " \
+    parser = utils.DefaultArguments(description="Upload a standard template " \
                                               "into the database.")
     parser.add_argument('--master', dest='is_master', \
                          action = 'store_true', default=False, \

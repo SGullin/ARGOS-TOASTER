@@ -5,7 +5,7 @@ import warnings
 
 import config
 import errors
-import epta_pipeline_utils as epu
+import utils
 
 
 def get_header_params(fn):
@@ -20,7 +20,7 @@ def get_header_params(fn):
                 the values are the values reported by 'psredit'.
     """
     params_to_get = ['rcvr', 'backend', 'telescop']
-    return epu.get_header_vals(fn, params_to_get)
+    return utils.get_header_vals(fn, params_to_get)
 
 
 def correct_header(fn, rcvr=None, backend=None):
@@ -49,7 +49,7 @@ def correct_header(fn, rcvr=None, backend=None):
                         "any new header values." % fn, \
                         errors.EptaPipelineWarning)
     else:
-        stdout, stderr = epu.execute(cmd)
+        stdout, stderr = utils.execute(cmd)
 
 
 def main():
@@ -95,7 +95,7 @@ def main():
             
 
 if __name__ == '__main__':
-    parser = epu.DefaultArguments(description="Change archive header " \
+    parser = utils.DefaultArguments(description="Change archive header " \
                         "values *IN PLACE*. The current receiver and/or " \
                         "backend values must be specified with " \
                         "--old-receiver and/or --old-backend (unless -f/" \

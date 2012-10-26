@@ -11,7 +11,7 @@ Patrick Lazarus, Dec. 9, 2011.
 import os.path
 import datetime
 
-import epta_pipeline_utils as epu
+import utils
 import database
 import errors
 import colour
@@ -97,14 +97,14 @@ def show_parfiles(parfiles):
             msg = "Parfile contents:\n\n"
             for line in open(fn, 'r'):
                 msg += "%s\n" % line.strip()
-            epu.print_info(msg, 1)
+            utils.print_info(msg, 1)
             print " -"*25
     else:
         raise errors.EptaPipelineError("No parfiles match parameters provided!")
 
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Get a listing of parfile_id " \
+    parser = utils.DefaultArguments(description="Get a listing of parfile_id " \
                                         "values from the DB to help the user" \
                                         "find the appropriate one to use.")
     parser.add_argument('-p', '--psr', dest='pulsar_name', \

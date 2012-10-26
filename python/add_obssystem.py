@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import epta_pipeline_utils as epu
+import utils
 import database
 import errors
 
@@ -91,7 +91,7 @@ def main():
     db = database.Database()
     db.connect()
 
-    tinfo = epu.get_telescope_info(args.telescope, db)
+    tinfo = utils.get_telescope_info(args.telescope, db)
     telescope_id = tinfo['telescope_id']
 
     if args.name is None:
@@ -108,7 +108,7 @@ def main():
 
 
 if __name__ =='__main__':
-    parser = epu.DefaultArguments(description="Add a new observing system " \
+    parser = utils.DefaultArguments(description="Add a new observing system " \
                                                 "to the DB")
     parser.add_argument('-o', '--obssys-name', dest='name', type=str, \
                         help="The name of the new observing system. " \

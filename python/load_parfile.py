@@ -13,12 +13,12 @@ import sys
 import database
 import config
 import errors
-import epta_pipeline_utils as epu
+import utils
 import set_master_parfile as smp
 
 def populate_parfiles_table(db, fn, params):
-    # md5sum helper function in epu
-    md5 = epu.Get_md5sum(fn);
+    # md5sum helper function in utils 
+    md5 = utils.Get_md5sum(fn);
     path, fn = os.path.split(os.path.abspath(fn))
    
     db.begin() # Begin a transaction
@@ -71,31 +71,31 @@ def load_parfile(fn, is_master=False, existdb=None):
 
     try:
         # Now load the parfile file into database
-        epu.print_info("Working on %s (%s)" % (fn, epu.Give_UTC_now()), 1)
+        utils.print_info("Working on %s (%s)" % (fn, utils.Give_UTC_now()), 1)
         
         # Check the parfile and parse it
-        params = epu.prep_parfile(fn)
+        params = utils.prep_parfile(fn)
 
         # Archive the parfile
         destdir = os.path.join(config.data_archive_location, \
                     'parfiles', params['name'])
-        newfn = epu.archive_file(fn, destdir)
+        newfn = utils.archive_file(fn, destdir)
 
         # Register the parfile into the database
         parfile_id = populate_parfiles_table(db, newfn, params)
        
-        masterpar_id, parfn = epu.get_master_parfile(params['pulsar_id'])
+        masterpar_id, parfn = utils.get_master_parfile(params['pulsar_id'])
         if masterpar_id is None:
             # If this is the only parfile for this pulsar 
             # make sure it will be set as the master
             is_master = True
 
         if is_master:
-            epu.print_info("Setting %s as master parfile (%s)" % \
-                            (newfn, epu.Give_UTC_now()), 1)
+            utils.print_info("Setting %s as master parfile (%s)" % \
+                            (newfn, utils.Give_UTC_now()), 1)
             smp.set_as_master_parfile(db, parfile_id)
-        epu.print_info("Finished with %s - parfile_id=%d (%s)" % \
-                        (fn, parfile_id, epu.Give_UTC_now()), 1)
+        utils.print_info("Finished with %s - parfile_id=%d (%s)" % \
+                        (fn, parfile_id, utils.Give_UTC_now()), 1)
     finally:
         if not existdb:
             # Close DB connection
@@ -162,7 +162,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Upoad a parfile into " \
+    parser = utils.DefaultArguments(description="Upoad a parfile into " \
                                                  "the database.")
     parser.add_argument('--master', dest='is_master', \
                          action='store_true', default=False, \

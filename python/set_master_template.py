@@ -9,7 +9,7 @@ import os.path
 import config
 import database
 import errors
-import epta_pipeline_utils as epu
+import utils
 
 
 def set_as_master_template(db, template_id):
@@ -81,7 +81,7 @@ def get_template_id(db, template):
     # Make sure we can read the result regardless which cursor class
     # is being used
     path, fn = os.path.split(os.path.abspath(template))
-    md5sum = epu.Get_md5sum(template)
+    md5sum = utils.Get_md5sum(template)
     select = db.select([db.templates.c.template_id, \
                         db.templates.c.md5sum]).\
                 where(db.templates.c.filename==fn)
@@ -113,13 +113,13 @@ def main():
 
     try:
         if args.template is not None:
-            epu.print_info("Getting template ID for %s using filename and md5" % \
+            utils.print_info("Getting template ID for %s using filename and md5" % \
                             args.template, 1)
             # template filename provided. Get template_id
             template_id = get_template_id(db, args.template)
         else:
             template_id = args.template_id
-        epu.print_info("Template ID to set as master: %d" % template_id, 1)
+        utils.print_info("Template ID to set as master: %d" % template_id, 1)
         if not args.dry_run:
             set_as_master_template(db, template_id)
     finally:
@@ -128,7 +128,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Set a standard template " \
+    parser = utils.DefaultArguments(description="Set a standard template " \
                                               "already uploaded into the " \
                                               "database to be a master.")
     parser.add_argument('-n', '--dry-run', dest='dry_run', \

@@ -3,13 +3,13 @@ import re
 import sys
 import getpass
 
-import epta_pipeline_utils as epu
+import utils
 import database
 import errors
 
-class HashPasswordAction(epu.argparse.Action):
+class HashPasswordAction(utils.argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        setattr(namespace, self.dest, epu.hash_password(values))
+        setattr(namespace, self.dest, utils.hash_password(values))
 
 
 def add_new_user(db, user_name, real_name, email_address, passwd_hash, \
@@ -97,9 +97,9 @@ def main():
     while args.passwd_hash is None:
         # No password (or hash) provided on command line
         # Ask user for password
-        hash1 = epu.hash_password(getpass.getpass("Password for %s: " % \
+        hash1 = utils.hash_password(getpass.getpass("Password for %s: " % \
                                             args.user_name))
-        hash2 = epu.hash_password(getpass.getpass("Re-type password: "))
+        hash2 = utils.hash_password(getpass.getpass("Re-type password: "))
         if hash1 == hash2:
             args.passwd_hash = hash1
         else:
@@ -113,7 +113,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Add a new user to the DB.")
+    parser = utils.DefaultArguments(description="Add a new user to the DB.")
     parser.add_argument('-u', '--user-name', dest='user_name', \
                         type=str, required=True, \
                         help="The new user's username. NOTE: This is required.")

@@ -7,14 +7,14 @@ import warnings
 import traceback
 import copy
 
-import epta_pipeline_utils as epu
+import utils
 import errors
 import database
 
 
 def populate_rawfiles_table(db, archivefn, params):
-    # md5sum helper function in epu
-    md5 = epu.Get_md5sum(archivefn)
+    # md5sum helper function in utils 
+    md5 = utils.Get_md5sum(archivefn)
     path, fn = os.path.split(os.path.abspath(archivefn))
     size = os.path.getsize(archivefn) # File size in bytes
 
@@ -63,7 +63,7 @@ def populate_rawfiles_table(db, archivefn, params):
         result.close()
 
         # Create rawfile diagnostics
-        diagfns = epu.create_rawfile_diagnostic_plots(archivefn, path)
+        diagfns = utils.create_rawfile_diagnostic_plots(archivefn, path)
         # Load processing diagnostics
         for diagtype, diagpath in diagfns.iteritems():
             diagdir, diagfn = os.path.split(diagpath)
@@ -74,7 +74,7 @@ def populate_rawfiles_table(db, archivefn, params):
                       'plot_type':diagtype}
             result = db.execute(ins, values)
             result.close()
-            epu.print_info("Inserted rawfile diagnostic plot (type: %s)." % \
+            utils.print_info("Inserted rawfile diagnostic plot (type: %s)." % \
                         diagtype, 2)
     db.commit()
     return rawfile_id
@@ -87,24 +87,24 @@ def load_rawfile(fn, existdb=None):
 
     try:
         # Enter information in rawfiles table
-        epu.print_info("Working on %s (%s)" % (fn, epu.Give_UTC_now()), 1)
+        utils.print_info("Working on %s (%s)" % (fn, utils.Give_UTC_now()), 1)
         # Check the file and parse the header
-        params = epu.prep_file(fn)
+        params = utils.prep_file(fn)
         
         # Move the File
-        destdir = epu.get_archive_dir(fn, site=params['telescop'], \
+        destdir = utils.get_archive_dir(fn, site=params['telescop'], \
                     backend=params['backend'], \
                     receiver=params['rcvr'], \
                     psrname=params['name'])
-        newfn = epu.archive_file(fn, destdir)
+        newfn = utils.archive_file(fn, destdir)
         
-        epu.print_info("%s moved to %s (%s)" % (fn, newfn, epu.Give_UTC_now()), 1)
+        utils.print_info("%s moved to %s (%s)" % (fn, newfn, utils.Give_UTC_now()), 1)
 
         # Register the file into the database
         rawfile_id = populate_rawfiles_table(db, newfn, params)
         
-        epu.print_info("Successfully loaded %s - rawfile_id=%d (%s)" % \
-                (fn, rawfile_id, epu.Give_UTC_now()), 1)
+        utils.print_info("Successfully loaded %s - rawfile_id=%d (%s)" % \
+                (fn, rawfile_id, utils.Give_UTC_now()), 1)
     finally:
         if not existdb:
             # Close DB connection
@@ -173,7 +173,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Archive a single raw file, " \
+    parser = utils.DefaultArguments(description="Archive a single raw file, " \
                                         "and load its info into the database.")
     parser.add_argument('--from-file', dest='from_file', \
                         type=str, default=None, \

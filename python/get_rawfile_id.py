@@ -15,7 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 
-import epta_pipeline_utils as epu
+import utils
 import database
 import errors
 import colour
@@ -141,7 +141,7 @@ def plot_rawfiles(rawfiles):
     dbtext = plt.figtext(0.025, 0.025, "Database (%s): %s" % \
                             (db.engine.name, db.engine.url.database), \
                             size='x-small', ha='left', va='bottom')
-    timetext = plt.figtext(0.975, 0.025, epu.Give_UTC_now(), \
+    timetext = plt.figtext(0.975, 0.025, utils.Give_UTC_now(), \
                             size='x-small', ha='right', va='bottom')
 
     # Compute data for plotting
@@ -318,7 +318,7 @@ def show_rawfiles(rawfiles):
                  "Frontend: %s" % rawdict.frontend, \
                  "Backend: %s" % rawdict.backend, \
                  "Clock: %s" % rawdict.clock]
-        epu.print_info("\n".join(lines), 1)
+        utils.print_info("\n".join(lines), 1)
         lines = ["MJD: %.6f" % rawdict.mjd, \
                  "Number of phase bins: %d" % rawdict.nbin, \
                  "Number of channels: %d" % rawdict.nchan, \
@@ -328,12 +328,12 @@ def show_rawfiles(rawfiles):
                  "Bandwidth (MHz): %g" % rawdict.bw, \
                  "Dispersion measure (pc cm^-3): %g" % rawdict.dm, \
                  "Integration time (s): %g" % rawdict.length]
-        epu.print_info("\n".join(lines), 2)
+        utils.print_info("\n".join(lines), 2)
         print " -"*25
 
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Get a listing of rawfile_id " \
+    parser = utils.DefaultArguments(description="Get a listing of rawfile_id " \
                                         "values from the DB to help the user " \
                                         "find the appropriate one to use.")
     parser.add_argument('-r', '--rawfile-id', dest='rawfile_id', \

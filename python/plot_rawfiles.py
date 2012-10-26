@@ -8,7 +8,7 @@ import matplotlib.dates
 import matplotlib.ticker
 import matplotlib.patches
 
-import epta_pipeline_utils as epu
+import utils
 import database
 
 # Set default parameters
@@ -43,7 +43,7 @@ def make_plot(existdb=None):
     dbtext = plt.figtext(0.025, 0.025, "Database (%s): %s" % \
                             (db.engine.name, db.engine.url.database), \
                             size='x-small', ha='left', va='bottom')
-    timetext = plt.figtext(0.975, 0.025, epu.Give_UTC_now(), \
+    timetext = plt.figtext(0.975, 0.025, utils.Give_UTC_now(), \
                             size='x-small', ha='right', va='bottom')
     
     # Get brief summary of all files
@@ -256,7 +256,7 @@ def make_plot(existdb=None):
 
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Make a plot summarising " \
+    parser = utils.DefaultArguments(description="Make a plot summarising " \
                                         "data in the archive.")
     parser.add_argument('-o', "--outfile", \
                 dest='outfile', default=None, \

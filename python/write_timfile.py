@@ -8,7 +8,7 @@ import types
 
 import database
 import errors
-import epta_pipeline_utils as epu
+import utils
 
 def get_timfile(timfile_id, existdb=None):
     """Get a timfile's comments and TOAs.
@@ -147,10 +147,10 @@ def write_timfile(toas, timfile, sortkeys=['freq', 'mjd'], flags="", outname="-"
         if sortkey.endswith("_r"):
             sortkey = sortkey[:-2]
             rev = True
-            epu.print_info("Reverse sorting TOAs by %s..." % sortkey, 2)
+            utils.print_info("Reverse sorting TOAs by %s..." % sortkey, 2)
         else:
             rev = False
-            epu.print_info("Sorting TOAs by %s..." % sortkey, 2)
+            utils.print_info("Sorting TOAs by %s..." % sortkey, 2)
         if sortkey not in toas[0].keys():
             raise errors.UnrecognizedValueError("The sorting key (%s) " \
                                     "is not recognized." % sortkey)
@@ -168,7 +168,7 @@ def write_timfile(toas, timfile, sortkeys=['freq', 'mjd'], flags="", outname="-"
                                    subsequent_indent="# ")
     tim.write(wrapper.fill(timfile['comments'])+'\n')
     # tim.write("# Created by: %s (%s)\n" % NotImplemented)
-    userinfo = epu.get_userinfo(timfile['user_id']) 
+    userinfo = utils.get_userinfo(timfile['user_id']) 
     tim.write("# Created by: %s (%s)\n" % \
                     (userinfo['real_name'], userinfo['email_address']))
     tim.write("#         at: %s\n" % timfile['add_time'])
@@ -187,7 +187,7 @@ def write_timfile(toas, timfile, sortkeys=['freq', 'mjd'], flags="", outname="-"
 
     if outname != '-':
         tim.close()
-        epu.print_info("Successfully wrote %d TOAs to timfile (%s)" % \
+        utils.print_info("Successfully wrote %d TOAs to timfile (%s)" % \
                         (len(toas), outname), 1)
 
 
@@ -198,7 +198,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description='Writes out a tim file ' \
+    parser = utils.DefaultArguments(description='Writes out a tim file ' \
                                 'already defined in the DB. The output ' \
                                 'format is suitable for TEMPO2.')
     parser.add_argument('-t', '--timfile-id', dest='timfile_id', \

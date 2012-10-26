@@ -3,7 +3,7 @@ import argparse
 import sys
 import glob
 
-import epta_pipeline_utils as epu
+import utils
 import errors
 import config
 
@@ -25,21 +25,21 @@ def main():
     for fn in infiles:
         try:
             if config.verbosity:
-                print "Checking %s (%s)" % (fn, epu.Give_UTC_now())
+                print "Checking %s (%s)" % (fn, utils.Give_UTC_now())
 
             # Check the file and parse the header
-            params = epu.prep_file(fn)
+            params = utils.prep_file(fn)
             
             # Move the File
-            destdir = epu.get_archive_dir(fn, site=params['telescop'], \
+            destdir = utils.get_archive_dir(fn, site=params['telescop'], \
                         backend=params['backend'], receiver=params['rcvr'], \
                         psrname=params['name'])
             
-            epu.print_info("%s will get archived to %s (%s)" % \
-                        (fn, destdir, epu.Give_UTC_now()), 1)
+            utils.print_info("%s will get archived to %s (%s)" % \
+                        (fn, destdir, utils.Give_UTC_now()), 1)
 
-            epu.print_info("Finished with %s - pre-check successful (%s)" % \
-                        (fn, epu.Give_UTC_now()), 1)
+            utils.print_info("Finished with %s - pre-check successful (%s)" % \
+                        (fn, utils.Give_UTC_now()), 1)
 
         except errors.EptaPipelineError, msg:
             sys.stderr.write("Pre-check of %s failed!\n%s\nSkipping...\n" % \
@@ -47,7 +47,7 @@ def main():
     
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Pre-check raw files.")
+    parser = utils.DefaultArguments(description="Pre-check raw files.")
     parser.add_argument("infiles", nargs='*', action='store', \
                         help="Files with headers to check.")
     parser.add_argument("-g", "--glob-files", action="append", \

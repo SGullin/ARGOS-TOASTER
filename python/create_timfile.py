@@ -5,7 +5,7 @@ import sys
 import os.path
 import textwrap
 
-import epta_pipeline_utils as epu
+import utils
 import database
 import errors
 
@@ -206,8 +206,8 @@ def add_timfile_entry(toas, cmdline, comments, existdb=None):
 
     # Insert timfile entry
     ins = db.timfiles.insert()
-    values = {'user_id':epu.get_userid(), \
-              'version_id':epu.get_version_id(db), \
+    values = {'user_id':utils.get_userid(), \
+              'version_id':utils.get_version_id(db), \
               'comments':comments, \
               'pulsar_id':toas[0]['pulsar_id'], \
               'input_args':cmdline}
@@ -239,8 +239,8 @@ def main():
         toa_getter = toa_getters[args.on_conflict]
         toas = toa_getter(args, db)
         timfile_id = add_timfile_entry(toas, cmdline, args.comments)
-        epu.print_info("Created new timfile entry - timfile_id=%d (%s)" % \
-                (timfile_id, epu.Give_UTC_now()), 1)
+        utils.print_info("Created new timfile entry - timfile_id=%d (%s)" % \
+                (timfile_id, utils.Give_UTC_now()), 1)
     except:
         db.rollback()
         db.close()
@@ -254,7 +254,7 @@ if __name__=='__main__':
     toa_getters = {'raise': get_toas, \
                    'newest': get_newest_toas}
 
-    parser = epu.DefaultArguments(description='Extracts TOA information ' \
+    parser = utils.DefaultArguments(description='Extracts TOA information ' \
                                 'from table, and creates a tim file for '
                                 'use with tempo2.')
     parser.add_argument('-p', '--psr', dest='pulsar_name', \

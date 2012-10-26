@@ -9,7 +9,7 @@ import warnings
 import config
 import database
 import errors
-import epta_pipeline_utils as epu
+import utils
 
 
 def set_as_master_parfile(db, parfile_id):
@@ -67,10 +67,10 @@ def get_parfile_id(db, parfile):
         Output:
             parfile_id: the corresponding parfile_id value.
     """
-    epu.print_info("Getting parfile ID for %s using "
+    utils.print_info("Getting parfile ID for %s using "
                     "filename and md5sum" % args.parfile, 2)
     path, fn = os.path.split(os.path.abspath(parfile))
-    md5sum = epu.Get_md5sum(parfile)
+    md5sum = utils.Get_md5sum(parfile)
     select = db.select([db.parfiles.c.md5sum, \
                         db.parfiles.c.filename, \
                         db.parfiles.c.parfile_id]).\
@@ -116,7 +116,7 @@ def main():
             parfile_id = get_parfile_id(db, args.parfile)
         else:
             parfile_id = args.parfile_id
-        epu.print_info("Parfile ID to set as master: %d" % parfile_id, 1)
+        utils.print_info("Parfile ID to set as master: %d" % parfile_id, 1)
         if not args.dry_run:
             set_as_master_parfile(db, parfile_id)
     finally:
@@ -125,7 +125,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Set a parfile " \
+    parser = utils.DefaultArguments(description="Set a parfile " \
                                               "already uploaded into the " \
                                               "database to be a master.")
     parser.add_argument('-n', '--dry-run', dest='dry_run', \

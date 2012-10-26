@@ -5,7 +5,7 @@ import shutil
 import argparse
 
 import manipulators
-import epta_pipeline_utils as epu
+import utils
 
 
 class PamitManipulator(manipulators.BaseManipulator):
@@ -52,7 +52,7 @@ class PamitManipulator(manipulators.BaseManipulator):
             cmd += " --setnbin %d" % nbin
 
         # Scrunch the heck out of it
-        epu.execute(cmd)
+        utils.execute(cmd)
 
     def _add_arguments(self, parser):
         """Add any arguments to subparser that are required 

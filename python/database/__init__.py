@@ -4,7 +4,7 @@ import sqlalchemy as sa
 import errors
 import config
 import schema
-import epta_pipeline_utils as epu
+import utils
 
 
 # The following will execute the PRAGMA every time a connection
@@ -106,7 +106,7 @@ class Database(object):
             msg += "\n    Executing %d statements" % len(parameters)
         elif parameters:
             msg += "\n    Params: %s" % str(parameters)
-        epu.print_debug(msg, "queries", stepsback=7)
+        utils.print_debug(msg, "queries", stepsback=7)
 
     def execute(self, *args, **kwargs):
         """Execute a query.

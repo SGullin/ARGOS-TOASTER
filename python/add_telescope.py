@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import epta_pipeline_utils as epu
+import utils
 import database
 import errors
 
@@ -139,7 +139,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = epu.DefaultArguments(description="Add a new telescope to the DB")
+    parser = utils.DefaultArguments(description="Add a new telescope to the DB")
     parser.add_argument('-t', '--telescope-name', dest='name', \
                         type=str, required=True, \
                         help="The preferred name of the new telescope. " \
