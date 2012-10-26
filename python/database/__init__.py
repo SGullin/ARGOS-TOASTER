@@ -16,6 +16,20 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
     cursor.execute("PRAGMA foreign_keys=ON")
     cursor.close()
 
+    
+def fancy_getitem(self, key):
+    if self.has_key(key):
+        return super(self.__class__, self).__getitem__(key)
+    elif (type(key) is type('str') or type(u'str')) and key.endswith("_L"):
+        result = super(self.__class__, self).__getitem__(key[:-2])
+        return result.lower()
+    elif (type(key) is type('str') or type(u'str')) and key.endswith("_U"):
+        result = super(self.__class__, self).__getitem__(key[:-2])
+        return result.upper()
+    else:
+        raise errors.UnrecognizedValueError("The column '%s' doesn't exist!" % key)
+
+sa.engine.RowProxy.__getitem__ = fancy_getitem
 
 class Database(object):
     def __init__(self, autocommit=True, url=config.dburl, *args, **kwargs):
