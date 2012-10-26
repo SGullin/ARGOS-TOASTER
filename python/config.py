@@ -9,6 +9,6 @@ else:
 execfile(cfg_file, {}, locals())
 
 diagnostics_location = os.path.join(data_archive_location, "diagnostics")
-epta_pipeline_dir = os.path.split(os.path.abspath(__file__))[0]
+toaster_dir = os.path.split(os.path.abspath(__file__))[0]
 
 import debug

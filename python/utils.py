@@ -679,7 +679,7 @@ def get_version_id(existdb=None):
     # Check to make sure the repositories are clean
     check_repos()
     # Get git hashes
-    pipeline_githash = get_githash(config.epta_pipeline_dir)
+    pipeline_githash = get_githash(config.toaster_dir)
     psrchive_githash = get_githash(config.psrchive_dir)
     
     # Use the exisitng DB connection, or open a new one if None was provided
@@ -733,7 +733,7 @@ def check_repos():
         Outputs:
             None
     """
-    if is_gitrepo_dirty(config.epta_pipeline_dir):
+    if is_gitrepo_dirty(config.toaster_dir):
         if config.debug.GITTEST:
             warnings.warn("Git repository is dirty! Will tolerate because " \
                             "pipeline debugging is on.", \

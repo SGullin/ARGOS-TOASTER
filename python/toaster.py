@@ -387,7 +387,7 @@ def main():
 
 
 if __name__ == "__main__":
-    parser = manipulators.ManipulatorArguments(prog='epta_pipeline', \
+    parser = manipulators.ManipulatorArguments(prog='toaster.py', \
                             description='Reduce an already-uploaded ' \
                                 'archive. Both a pre-loaded parfile, and a ' \
                                 'pre-loaded template must be provided as well. ' \
