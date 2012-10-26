@@ -42,7 +42,7 @@ def populate_templates_table(db, fn, params, comments):
                             "in the DB for this pulsar (ID: %d). " \
                             "The file will not be re-registed into the DB. " \
                             "Doing nothing..." % (md5, psr_id), \
-                            errors.EptaPipelineWarning)
+                            errors.ToasterWarning)
             db.commit()
             return template_id
         else:
@@ -164,13 +164,13 @@ def main():
                                             customargs.is_master, db)
                     print "%s has been loaded to the DB. template_id: %d" % \
                         (fn, template_id)
-                except errors.EptaPipelineError:
+                except errors.ToasterError:
                     numfails += 1
                     traceback.print_exc()
             if args.from_file != '-':
                 templatelist.close()
             if numfails:
-                raise errors.EptaPipelineError(\
+                raise errors.ToasterError(\
                     "\n\n===================================\n" \
                         "The loading of %d templates failed!\n" \
                         "Please review error output.\n" \
@@ -209,7 +209,7 @@ if __name__=='__main__':
                 (args.from_file is None):
         warnings.warn("No input file or --from-file argument given " \
                         "will read from stdin.", \
-                        errors.EptaPipelineWarning)
+                        errors.ToasterWarning)
         args.template = None # In case it was set to '-'
         args.from_file = '-'
     main()

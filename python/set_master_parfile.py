@@ -28,7 +28,7 @@ def set_as_master_parfile(db, parfile_id):
             warnings.warn("Parfile (ID: %d) is already the master parfile " \
                             "for this pulsar (ID: %d). Doing nothing..." % \
                             (row['parfile_id'], row['pulsar_id']), \
-                            errors.EptaPipelineWarning)
+                            errors.ToasterWarning)
             db.commit()
             return
         else:
@@ -85,7 +85,7 @@ def get_parfile_id(db, parfile):
         if row['md5sum']==md5sum and row['filename']==fn:
             warnings.warn("A parfile with this filename and md5sum " \
                             "already exists in the DB.", \
-                            errors.EptaPipelineWarning)
+                            errors.ToasterWarning)
             return row['parfile_id']
         elif row['md5sum']==md5sum:
             raise errors.FileError("A parfile (parfile_id=%d) with " \
@@ -96,7 +96,7 @@ def get_parfile_id(db, parfile):
                             "this filename, but a different md5sum " \
                             "exists in the DB." % row['parfile_id'])
     elif len(rows) == 0:
-        raise errors.EptaPipelineError("Input parfile (%s) does not appear " \
+        raise errors.ToasterError("Input parfile (%s) does not appear " \
                                         "to be registered in the DB! " \
                                         "Use 'load_parfile.py' to load " \
                                         "it into the DB." % parfile)

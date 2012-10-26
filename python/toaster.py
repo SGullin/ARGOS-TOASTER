@@ -62,7 +62,7 @@ def get_master_parfile_id(rawfile_id, existdb=None):
     elif len(rows) == 0:
         warnings.warn("There is no master parfile for the given " \
                         "raw file (ID: %d). Returning nothing..." % \
-                        rawfile_id, errors.EptaPipelineWarning)
+                        rawfile_id, errors.ToasterWarning)
         return None
     else:
         return rows[0]['parfile_id']
@@ -108,7 +108,7 @@ def get_master_template_id(rawfile_id, existdb=None):
     elif len(rows) == 0:
         warnings.warn("There is no master template for the given " \
                         "raw file (ID: %d). Returning nothing..." % \
-                        rawfile_id, errors.EptaPipelineError)
+                        rawfile_id, errors.ToasterError)
         return None
     else:
         return rows[0]['template_id']
@@ -212,7 +212,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         # Check version ID is still the same. Just in case.
         new_version_id = utils.get_version_id(db)
         if version_id != new_version_id:
-            raise errors.EptaPipelineError("Weird... Version ID at the start " \
+            raise errors.ToasterError("Weird... Version ID at the start " \
                                             "of processing (%s) is different " \
                                             "from at the end (%d)!" % \
                                             (version_id, new_version_id))
@@ -367,14 +367,14 @@ def main():
                     customargs, custom_leftover_args = \
                             parser.parse_known_args(arglist, namespace=customargs)
                     reduce_rawfile(customargs, custom_leftover_args, db)
-                except errors.EptaPipelineError:
+                except errors.ToasterError:
                     numfails += 1
                     traceback.print_exc()
                     raise
             if args.from_file != '-':
                 argfile.close()
             if numfails:
-                raise errors.EptaPipelineError(\
+                raise errors.ToasterError(\
                     "\n\n===================================\n" \
                         "The reduction of %d rawfiles failed!\n" \
                         "Please review error output.\n" \
@@ -434,7 +434,7 @@ if __name__ == "__main__":
                 (args.from_file is None):
         warnings.warn("No input file or --from-file argument given " \
                         "will read from stdin.", \
-                        errors.EptaPipelineWarning)
+                        errors.ToasterWarning)
         args.rawfile = None # In case it was set to '-'
         args.from_file = '-'
 

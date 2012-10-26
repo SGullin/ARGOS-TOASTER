@@ -6,51 +6,51 @@ Patrick Lazarus, Feb. 9, 2012
 
 import colour
 
-class EptaPipelineError(Exception):
+class ToasterError(Exception):
     def __str__(self):
-       return colour.cstring(super(EptaPipelineError, self).__str__(), 'error')
+       return colour.cstring(super(ToasterError, self).__str__(), 'error')
 
 
-class SystemCallError(EptaPipelineError):
+class SystemCallError(ToasterError):
     pass
 
 
-class FileError(EptaPipelineError):
+class FileError(ToasterError):
     pass
 
 
-class UnrecognizedValueError(EptaPipelineError):
+class UnrecognizedValueError(ToasterError):
     pass
 
 
-class DatabaseError(EptaPipelineError):
+class DatabaseError(ToasterError):
     pass
 
 
-class InconsistentDatabaseError(EptaPipelineError):
+class InconsistentDatabaseError(ToasterError):
     pass
 
 
-class ArchivingError(EptaPipelineError):
+class ArchivingError(ToasterError):
     pass
 
 
-class NoMasterError(EptaPipelineError):
+class NoMasterError(ToasterError):
     pass
 
 
-class BadInputError(EptaPipelineError):
+class BadInputError(ToasterError):
     pass
 
 
-class BadDebugMode(EptaPipelineError):
+class BadDebugMode(ToasterError):
     pass
 
 
-class ConflictingToasError(EptaPipelineError):
+class ConflictingToasError(ToasterError):
     pass
 
 # Custom Warnings
-class EptaPipelineWarning(Warning):
+class ToasterWarning(Warning):
     def __str__(self):
-        return colour.cstring(super(EptaPipelineWarning, self).__str__(), 'warning')
+        return colour.cstring(super(ToasterWarning, self).__str__(), 'warning')

@@ -142,7 +142,7 @@ class Database(object):
         """
         if self.open_transactions:
             warnings.warn("A transaction already appears to be in progress.", \
-                           errors.EptaPipelineWarning) 
+                           errors.ToasterWarning) 
         trans = self.conn.begin()
         self.open_transactions.append(trans)
 

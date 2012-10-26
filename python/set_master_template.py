@@ -34,7 +34,7 @@ def set_as_master_template(db, template_id):
                             "observing system (ID: %d) combination. " \
                             "Doing nothing..." % (row['template_id'], \
                             row['pulsar_id'], row['obssystem_id']), \
-                            errors.EptaPipelineWarning)
+                            errors.ToasterWarning)
             db.commit()
             return
         else:
@@ -98,7 +98,7 @@ def get_template_id(db, template):
         else:
             return row['template_id']
     elif rows == 0:
-        raise errors.EptaPipelineError("No matching template found! " \
+        raise errors.ToasterError("No matching template found! " \
                                         "Use 'load_template.py' to add " \
                                         "a new template to the DB.")
     else:

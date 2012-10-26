@@ -100,7 +100,7 @@ def show_parfiles(parfiles):
             utils.print_info(msg, 1)
             print " -"*25
     else:
-        raise errors.EptaPipelineError("No parfiles match parameters provided!")
+        raise errors.ToasterError("No parfiles match parameters provided!")
 
 
 if __name__=='__main__':

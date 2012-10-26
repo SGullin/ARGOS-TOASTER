@@ -41,7 +41,7 @@ def main():
             utils.print_info("Finished with %s - pre-check successful (%s)" % \
                         (fn, utils.Give_UTC_now()), 1)
 
-        except errors.EptaPipelineError, msg:
+        except errors.ToasterError, msg:
             sys.stderr.write("Pre-check of %s failed!\n%s\nSkipping...\n" % \
                                 (fn, msg))
     

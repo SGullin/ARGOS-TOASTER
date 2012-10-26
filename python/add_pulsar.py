@@ -137,13 +137,13 @@ def main():
                                             customargs.aliases)
                     print "Successfully inserted new pulsar. " \
                         "Returned pulsar_id: %d" % pulsar_id
-                except errors.EptaPipelineError:
+                except errors.ToasterError:
                     numfails += 1
                     traceback.print_exc()
             if args.from_file != '-':
                 psrlist.close()
             if numfails:
-                raise errors.EptaPipelineError(\
+                raise errors.ToasterError(\
                     "\n\n===================================\n" \
                         "The adding of %d pulsars failed!\n" \
                         "Please review error output.\n" \

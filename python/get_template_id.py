@@ -157,7 +157,7 @@ def show_templates(templates):
             utils.print_info(plot, 2)
             print " -"*25
     else:
-        raise errors.EptaPipelineError("No templates match parameters provided!")
+        raise errors.ToasterError("No templates match parameters provided!")
 
 
 if __name__=='__main__':

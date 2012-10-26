@@ -90,7 +90,7 @@ def show_timfiles(timfiles):
             utils.print_info("\n".join(lines), 1)
             print " -"*25
     else:
-        raise errors.EptaPipelineError("No timfiles match parameters provided!")
+        raise errors.ToasterError("No timfiles match parameters provided!")
 
             
 

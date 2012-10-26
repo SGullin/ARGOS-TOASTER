@@ -24,7 +24,7 @@ import colour
 def main():
     rawfiles = get_rawfiles(args)
     if not len(rawfiles):
-        raise errors.EptaPipelineError("No rawfiles match parameters provided!")
+        raise errors.ToasterError("No rawfiles match parameters provided!")
     if args.output_style=='text':
         show_rawfiles(rawfiles)
     elif args.output_style=='plot':

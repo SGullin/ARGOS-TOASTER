@@ -47,7 +47,7 @@ def correct_header(fn, rcvr=None, backend=None):
     if not rcvr and not backend:
         warnings.warn("Trying to correct file %s, but didn't provide " \
                         "any new header values." % fn, \
-                        errors.EptaPipelineWarning)
+                        errors.ToasterWarning)
     else:
         stdout, stderr = utils.execute(cmd)
 

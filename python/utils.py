@@ -400,7 +400,7 @@ def get_header_vals(fn, hdritems):
         elif val == "*" or val == "UNDEF":
             warnings.warn("The vap header key '%s' is not " \
                             "defined in this file (%s)" % (key, fn), \
-                            errors.EptaPipelineWarning)
+                            errors.ToasterWarning)
             params[key] = None
         else:
             # Get param's type to cast value
@@ -658,7 +658,7 @@ def get_githash(repodir):
     """
     if is_gitrepo_dirty(repodir):
         warnings.warn("Git repository has uncommitted changes!", \
-                        errors.EptaPipelineWarning)
+                        errors.ToasterWarning)
     stdout, stderr = execute("git rev-parse HEAD", dir=repodir)
     githash = stdout.strip()
     return githash
@@ -737,13 +737,13 @@ def check_repos():
         if config.debug.GITTEST:
             warnings.warn("Git repository is dirty! Will tolerate because " \
                             "pipeline debugging is on.", \
-                            errors.EptaPipelineWarning)
+                            errors.ToasterWarning)
         else:
-            raise errors.EptaPipelineError("Pipeline's git repository is dirty. " \
+            raise errors.ToasterError("Pipeline's git repository is dirty. " \
                                             "Aborting!")
 
     if is_gitrepo_dirty(config.psrchive_dir):
-        raise errors.EptaPipelineError("PSRCHIVE's git repository is dirty. " \
+        raise errors.ToasterError("PSRCHIVE's git repository is dirty. " \
                                         "Clean up your act!")
 
 
@@ -751,7 +751,7 @@ def archive_file(toarchive, destdir):
     if not config.archive:
         # Configured to not archive files
         warnings.warn("Configurations are set to _not_ archive files. " \
-                        "Doing nothing...", errors.EptaPipelineWarning)
+                        "Doing nothing...", errors.ToasterWarning)
         return toarchive
     srcdir, fn = os.path.split(toarchive)
     dest = os.path.join(destdir, fn)
@@ -792,7 +792,7 @@ def archive_file(toarchive, destdir):
         # Do nothing
         warnings.warn("Source file %s is already in the archive (and in " \
                         "the correct place). Doing nothing..." % toarchive, \
-                        errors.EptaPipelineWarning)
+                        errors.ToasterWarning)
         pass
     else:
         # Another file with the same name is the destination directory
@@ -809,7 +809,7 @@ def archive_file(toarchive, destdir):
                             "MD5 (%s) is already in the archive. " \
                             "Doing nothing..." % \
                             (toarchive, destsize, destmd5), \
-                            errors.EptaPipelineWarning)
+                            errors.ToasterWarning)
         else:
             # The files are not the same! This is not good.
             # Raise an exception.
