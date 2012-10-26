@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+import os.path
+import traceback
+import copy
+import shlex
 
 import utils
 import database
@@ -88,21 +92,73 @@ def add_obssystem(db, name, telescope_id, frontend, backend, band, clock):
 
 
 def main():
+    # Connect to the database
     db = database.Database()
     db.connect()
 
-    tinfo = utils.get_telescope_info(args.telescope, db)
-    telescope_id = tinfo['telescope_id']
-
-    if args.name is None:
-        args.name = "%s_%s_%s" % (tinfo['telescope_abbrev'].upper(), \
-                                    args.backend.upper(), \
-                                    args.frontend.upper())
     try:
-        obssystem_id = add_obssystem(db, args.name, telescope_id, \
+        if args.from_file is not None:
+            if args.from_file == '-':
+                obssyslist = sys.stdin
+            else:
+                if not os.path.exists(args.from_file):
+                    raise errors.FileError("The obssystem list (%s) does " \
+                                "not appear to exist." % args.from_file)
+                obssyslist = open(args.from_file, 'r')
+            numfails = 0
+            numadded = 0
+            for line in obssyslist:
+                # Strip comments
+                line = line.partition('#')[0].strip()
+                if not line:
+                    # Skip empty line
+                    continue
+                try:
+                    customargs = copy.deepcopy(args)
+                    arglist = shlex.split(line.strip())
+                    parser.parse_args(arglist, namespace=customargs)
+        
+                    if customargs.telescope is None or customargs.backend is None or \
+                            customargs.frontend is None or customargs.band is None or \
+                            customargs.clock is None:
+                        raise errors.BadInputError("Observing systems " \
+                                "must have a telescope, backend, frontend, " \
+                                "band descriptor, and clock file! At least " \
+                                "one of these is missing.")
+                    tinfo = utils.get_telescope_info(customargs.telescope, db)
+                    telescope_id = tinfo['telescope_id']
+
+                    if customargs.name is None:
+                        customargs.name = "%s_%s_%s" % \
+                                    (tinfo['telescope_abbrev'].upper(), \
+                                     customargs.backend.upper(), \
+                                     customargs.frontend.upper())
+                    
+                    obssystem_id = add_obssystem(db, customargs.name, telescope_id, \
+                                    customargs.frontend, customargs.backend, \
+                                    customargs.band, customargs.clock)
+                    print "Successfully inserted new observing system. " \
+                            "Returned obssystem_id: %d" % obssystem_id
+                    numadded += 1
+                except errors.ToasterError:
+                    numfails += 1
+                    traceback.print_exc()
+            if args.from_file != '-':
+                obssyslist.close()
+            print "\n\n===================================\n" \
+                      "%d obssystems successfully added\n" \
+                      "===================================\n" % numadded
+            if numfails:
+                raise errors.ToasterError(\
+                    "\n\n===================================\n" \
+                        "The adding of %d obssystems failed!\n" \
+                        "Please review error output.\n" \
+                        "===================================\n" % numfails)
+        else:
+            obssystem_id = add_obssystem(db, args.name, telescope_id, \
                         args.frontend, args.backend, args.band, args.clock)
-        print "Successfully inserted new observing system. " \
-                    "Returned obssystem_id: %d" % obssystem_id
+            print "Successfully inserted new observing system. " \
+                        "Returned obssystem_id: %d" % obssystem_id
     finally:
         db.close()
 
@@ -115,24 +171,26 @@ if __name__ =='__main__':
                             "(Default: Generate a name from the telescope, " \
                             "frontend and backend).")
     parser.add_argument('-t', '--telescope', dest='telescope', \
-                        type=str, required=True, \
-                        help="The name of the telescope. This could be " \
-                            "an alias. NOTE: This is required.")
+                        type=str, \
+                        help="The name of the telescope. This can be " \
+                            "an alias.")
     parser.add_argument('-f', '--frontend', dest='frontend', \
-                        type=str, required=True, \
-                        help="The name of the frontend. " \
-                            "NOTE: This is required.")
+                        type=str, \
+                        help="The name of the frontend.")
     parser.add_argument('-b', '--backend', dest='backend', \
-                        type=str, required=True, \
-                        help="The name of the backend. " \
-                            "NOTE: This is required.")
+                        type=str, \
+                        help="The name of the backend.")
     parser.add_argument('-B', '--band-descriptor', dest='band', \
-                        type=str, required=True, \
-                        help="The name of the observing band. " \
-                            "NOTE: This is required.")
+                        type=str, \
+                        help="The name of the observing band.")
     parser.add_argument('-c', '--clock', dest='clock', \
-                        type=str, required=True, \
-                        help="The name of the clock file. " \
-                            "NOTE: This is required.")
+                        type=str, \
+                        help="The name of the clock file.")
+    parser.add_argument('--from-file', dest='from_file', \
+                        type=str, default=None, \
+                        help="A list of obssystems (one per line) to " \
+                            "add. Note: each line can also include " \
+                            "alias flags. (Default: load a single " \
+                            "obssystem given on the cmd line.)") 
     args = parser.parse_args()
     main()
