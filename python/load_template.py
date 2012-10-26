@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Script to upload template profiles to the EPTA timing database
+Script to upload template profiles to the TOASTER database
 """
 import copy
 import os.path

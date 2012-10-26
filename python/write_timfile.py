@@ -225,8 +225,8 @@ if __name__=='__main__':
                         default='', \
                         const="-fe %(frontend)s -be %(backend)s " \
                             "-B %(band_descriptor)s -bw %(bw).1f " \
-                            "-tobs %(length).1f -pta EPTA " \
-                            "-proc EPTA_pipeline_verID%(version_id)d " \
+                            "-tobs %(length).1f " \
+                            "-proc TOASTER_verID%(version_id)d " \
                             "-tmplt %(template)s -gof %(goodness_of_fit).3f " \
                             "-nbin %(nbin)d -nch %(nchan)d " \
                             "-f %(frontend)s_%(backend)s", \

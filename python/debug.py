@@ -1,7 +1,7 @@
 """
-This module maintains a list of debug options for the EPTA 
-timing pipline, and their current settings. This way the listing 
-of debug modes currently enabled can be shared between different 
+This module maintains a list of debug options for TOASTER, 
+and their current settings. This way the listing of debug 
+modes currently enabled can be shared between different 
 modules of a single process.
 
 Patrick Lazarus, Feb. 9, 2012

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Script to upload parfiles to the EPTA timing database.
+Script to upload parfiles to the TOASTER database.
 """
 import copy
 import os.path

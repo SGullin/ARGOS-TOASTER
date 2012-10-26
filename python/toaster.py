@@ -160,7 +160,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
     """
     #Start pipeline
     print "###################################################"
-    print "Starting EPTA Timing Pipeline"
+    print "Starting to toast data"
     print "Start time: %s"%utils.Give_UTC_now()
     print "###################################################"
     
@@ -285,7 +285,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
     finally:
         #End pipeline
         print "###################################################"
-        print "Finished EPTA Timing Pipeline"
+        print "Your data are freshly toasted"
         print "End time: %s" % utils.Give_UTC_now()
         print "###################################################"    
         

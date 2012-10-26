@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-This EPTA Pipeline utility script provides the user with a listing
+This TOASTER utility script provides the user with a listing
 of parfile_id values from the database to help the user choose which
 input is most appropriate.
 

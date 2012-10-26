@@ -1,5 +1,5 @@
 """
-This file contains custom errors for the EPTA timing pipeline.
+This file contains custom errors for TOASTER.
 
 Patrick Lazarus, Feb. 9, 2012
 """
