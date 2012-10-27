@@ -1022,8 +1022,9 @@ def make_proc_diagnostics_dir(fn, proc_id):
         Outputs:
             dir: The diagnostic directory's name.
     """
+    diagnostics_location = os.path.join(config.data_archive_location, "diagnostics")
     basedir = get_archive_dir(fn, \
-                    data_archive_location=config.diagnostics_location)
+                    data_archive_location=diagnostics_location)
     dir = os.path.join(basedir, "procid_%d" % proc_id)
     # Make sure directory exists
     if not os.path.isdir(dir):
@@ -1031,7 +1032,7 @@ def make_proc_diagnostics_dir(fn, proc_id):
         print_info("Making diagnostic directory: %s" % dir, 2)
         os.makedirs(dir, 0770)
 
-    crossrefdir = os.path.join(config.diagnostics_location, "processing")
+    crossrefdir = os.path.join(diagnostics_location, "processing")
     if not os.path.isdir(crossrefdir):
         # Create directory
         print_info("Making diagnostic crossref dir: %s" % crossrefdir, 2)
