@@ -7,6 +7,7 @@ import utils
 import errors
 import config
 
+
 def main():
     # Collect input files
     infiles = set(args.infiles)
@@ -24,7 +25,7 @@ def main():
     # Also fill-in raw_diagnostics and raw_diagnostic_plots tables
     for fn in infiles:
         try:
-            if config.verbosity:
+            if config.cfg.verbosity:
                 print "Checking %s (%s)" % (fn, utils.Give_UTC_now())
 
             # Check the file and parse the header

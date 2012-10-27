@@ -3,6 +3,7 @@ import sqlalchemy as sa
 
 import errors
 import config
+
 import schema
 import utils
 
@@ -32,7 +33,7 @@ def fancy_getitem(self, key):
 sa.engine.RowProxy.__getitem__ = fancy_getitem
 
 class Database(object):
-    def __init__(self, autocommit=True, url=config.dburl, *args, **kwargs):
+    def __init__(self, autocommit=True, url=config.cfg.dburl, *args, **kwargs):
         """Set up a Toaster Database object using SQLAlchemy.
         """
         # Create the database engine

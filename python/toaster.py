@@ -23,6 +23,7 @@ import load_template
 import utils
 import config
 
+
 ###############################################################################
 # DO NOT EDIT BELOW HERE
 ###############################################################################
@@ -128,7 +129,7 @@ def fill_process_table(version_id, rawfile_id, parfile_id, template_id, \
               'manipulator_args': manip.argstr, \
               'nchan':nchan, \
               'nsub':nsub, \
-              'toa_fitting_method':config.toa_fitting_method, \
+              'toa_fitting_method':config.cfg.toa_fitting_method, \
               'user_id':utils.get_userid()}
     result = db.execute(ins, values)
     process_id = result.inserted_primary_key[0]
@@ -181,7 +182,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         utils.print_info("Manipulating file", 0)
         # Create a temporary file for the adjusted results
         tmpfile, adjustfn = tempfile.mkstemp(prefix='toaster_tmp', \
-                            suffix='_newephem.ar', dir=config.base_tmp_dir)
+                            suffix='_newephem.ar', dir=config.cfg.base_tmp_dir)
         os.close(tmpfile)
         # Re-install ephemeris
         shutil.copy(rawfile, adjustfn)
@@ -190,7 +191,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         
         # Create a temporary file for the manipulated results
         tmpfile, manipfn = tempfile.mkstemp(prefix='toaster_tmp', \
-                            suffix='_manip.ar', dir=config.base_tmp_dir)
+                            suffix='_manip.ar', dir=config.cfg.base_tmp_dir)
         os.close(tmpfile)
         # Run the manipulator
         manip.run([adjustfn], manipfn)
@@ -200,14 +201,14 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         
         # Create a temporary file for the toa diagnostic plots
         tmpfile, toadiagfn = tempfile.mkstemp(prefix='toaster_tmp', \
-                            suffix='_TOAdiag.png', dir=config.base_tmp_dir)
+                            suffix='_TOAdiag.png', dir=config.cfg.base_tmp_dir)
         os.close(tmpfile)
         # Generate TOAs with pat
         utils.print_info("Computing TOAs", 0)
         patout, paterr = utils.execute("pat -f tempo2 -A %s -s %s " \
                                 "-C 'gof length bw nbin nchan nsubint' " \
                                 "-t -K %s/PNG  %s" % \
-                    (config.toa_fitting_method, template, toadiagfn, manipfn))
+                    (config.cfg.toa_fitting_method, template, toadiagfn, manipfn))
  
         # Check version ID is still the same. Just in case.
         new_version_id = utils.get_version_id(db)

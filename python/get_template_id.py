@@ -20,6 +20,7 @@ import colour
 import config
 
 
+
 def main():
     templates = get_templates(args)
     show_templates(templates)

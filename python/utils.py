@@ -18,6 +18,7 @@ import pwd
 import errors
 import colour
 import config
+
 import database
 
 ##############################################################################
@@ -441,7 +442,7 @@ def parse_psrfits_header(fn, hdritems):
     return params
    
 
-def get_archive_dir(fn, data_archive_location=config.data_archive_location, \
+def get_archive_dir(fn, data_archive_location=config.cfg.data_archive_location, \
                         site=None, backend=None, receiver=None, psrname=None):
     """Given a file name return where it should be archived.
 
@@ -679,8 +680,8 @@ def get_version_id(existdb=None):
     # Check to make sure the repositories are clean
     check_repos()
     # Get git hashes
-    pipeline_githash = get_githash(config.toaster_dir)
-    psrchive_githash = get_githash(config.psrchive_dir)
+    pipeline_githash = get_githash(config.cfg.toaster_dir)
+    psrchive_githash = get_githash(config.cfg.psrchive_dir)
     
     # Use the exisitng DB connection, or open a new one if None was provided
     db = existdb or database.Database()
@@ -733,7 +734,7 @@ def check_repos():
         Outputs:
             None
     """
-    if is_gitrepo_dirty(config.toaster_dir):
+    if is_gitrepo_dirty(config.cfg.toaster_dir):
         if config.debug.GITTEST:
             warnings.warn("Git repository is dirty! Will tolerate because " \
                             "pipeline debugging is on.", \
@@ -742,13 +743,13 @@ def check_repos():
             raise errors.ToasterError("Pipeline's git repository is dirty. " \
                                             "Aborting!")
 
-    if is_gitrepo_dirty(config.psrchive_dir):
+    if is_gitrepo_dirty(config.cfg.psrchive_dir):
         raise errors.ToasterError("PSRCHIVE's git repository is dirty. " \
                                         "Clean up your act!")
 
 
 def archive_file(toarchive, destdir):
-    if not config.archive:
+    if not config.cfg.archive:
         # Configured to not archive files
         warnings.warn("Configurations are set to _not_ archive files. " \
                         "Doing nothing...", errors.ToasterWarning)
@@ -776,7 +777,7 @@ def archive_file(toarchive, destdir):
         destmd5 = Get_md5sum(dest)
         destsize = os.path.getsize(dest)
         if (srcmd5==destmd5) and (srcsize==destsize):
-            if config.move_on_archive:
+            if config.cfg.move_on_archive:
                 os.remove(toarchive)
                 print_info("File (%s) successfully moved to %s." % \
                             (toarchive, dest), 2)
@@ -1022,7 +1023,7 @@ def make_proc_diagnostics_dir(fn, proc_id):
         Outputs:
             dir: The diagnostic directory's name.
     """
-    diagnostics_location = os.path.join(config.data_archive_location, "diagnostics")
+    diagnostics_location = os.path.join(config.cfg.data_archive_location, "diagnostics")
     basedir = get_archive_dir(fn, \
                     data_archive_location=diagnostics_location)
     dir = os.path.join(basedir, "procid_%d" % proc_id)
@@ -1123,8 +1124,8 @@ def print_info(msg, level=1):
         Outputs:
             None
     """
-    if config.verbosity >= level:
-        if config.excessive_verbosity:
+    if config.cfg.verbosity >= level:
+        if config.cfg.excessive_verbosity:
             # Get caller info
             fn, lineno, funcnm = inspect.stack()[1][1:4]
             colour.cprint("INFO (level: %d) [%s:%d - %s(...)]:" % 
@@ -1152,7 +1153,7 @@ def print_debug(msg, category, stepsback=1):
             None
     """
     if config.debug.is_on(category):
-        if config.helpful_debugging:
+        if config.cfg.helpful_debugging:
             # Get caller info
             fn, lineno, funcnm = inspect.stack()[stepsback][1:4]
             to_print = colour.cstring("DEBUG %s [%s:%d - %s(...)]:\n" % \
@@ -1195,15 +1196,15 @@ class DefaultArguments(argparse.ArgumentParser):
         group.add_argument('-v', '--more-verbose', nargs=0, \
                             action=self.TurnUpVerbosity, \
                             help="Be more verbose. (Default: " \
-                                 "verbosity level = %d)." % config.verbosity)
+                                 "verbosity level = %d)." % config.cfg.verbosity)
         group.add_argument('-q', '--less-verbose', nargs=0, \
                             action=self.TurnDownVerbosity, \
                             help="Be less verbose. (Default: " \
-                                 "verbosity level = %d)." % config.verbosity)
+                                 "verbosity level = %d)." % config.cfg.verbosity)
         group.add_argument('--set-verbosity', nargs=1, dest='level', \
                             action=self.SetVerbosity, type=int, \
                             help="Set verbosity level. (Default: " \
-                                 "verbosity level = %d)." % config.verbosity)
+                                 "verbosity level = %d)." % config.cfg.verbosity)
         self.added_std_group = True
 
     def add_debug_group(self):
@@ -1234,15 +1235,15 @@ class DefaultArguments(argparse.ArgumentParser):
 
     class TurnUpVerbosity(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
-            config.verbosity += 1
+            config.cfg.verbosity += 1
 
     class TurnDownVerbosity(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
-            config.verbosity -= 1
+            config.cfg.verbosity -= 1
 
     class SetVerbosity(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
-            config.verbosity = values[0]
+            config.cfg.verbosity = values[0]
 
     class SetDebugMode(argparse.Action): 
         def __call__(self, parser, namespace, values, option_string):
@@ -1453,7 +1454,7 @@ def parse_pat_output(patout):
                 # fitting method. The GoF value returned for other 
                 # methods is innaccurate.
                 gofvalstr = toasplit[toasplit.index('-gof')+1]
-                if config.toa_fitting_method=='FDM' and gofvalstr!='*error*':
+                if config.cfg.toa_fitting_method=='FDM' and gofvalstr!='*error*':
                     gof = float(gofvalstr)
                 else:
                     gof = None

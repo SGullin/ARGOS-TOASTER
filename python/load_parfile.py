@@ -12,6 +12,7 @@ import sys
 
 import database
 import config
+
 import errors
 import utils
 import set_master_parfile as smp
@@ -77,7 +78,7 @@ def load_parfile(fn, is_master=False, existdb=None):
         params = utils.prep_parfile(fn)
 
         # Archive the parfile
-        destdir = os.path.join(config.data_archive_location, \
+        destdir = os.path.join(config.cfg.data_archive_location, \
                     'parfiles', params['name'])
         newfn = utils.archive_file(fn, destdir)
 

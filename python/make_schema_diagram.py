@@ -16,6 +16,7 @@ import database
 import config
 
 
+
 def main():
     db = database.Database()
     tables = db.tables

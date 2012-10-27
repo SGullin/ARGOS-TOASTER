@@ -7,6 +7,7 @@ Script to promote a previously uploaded template to be a master
 import os.path
 
 import config
+
 import database
 import errors
 import utils

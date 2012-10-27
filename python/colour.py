@@ -12,6 +12,7 @@ import types
 
 import config
 
+
 # Default colour (reset to this colour)
 DEFAULT_CODE = "\033[0;39;49m"
 
@@ -121,7 +122,7 @@ def cstring(s, *override, **kwoverride):
     Keyword is optional. It will override the current
     colour code.
     """
-    if not config.colour:
+    if not config.cfg.colour:
         return s
 
     global current_code, DEFAULT_CODE
