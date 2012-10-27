@@ -442,7 +442,7 @@ def parse_psrfits_header(fn, hdritems):
     return params
    
 
-def get_archive_dir(fn, data_archive_location=config.cfg.data_archive_location, \
+def get_archive_dir(fn, data_archive_location=None, \
                         site=None, backend=None, receiver=None, psrname=None):
     """Given a file name return where it should be archived.
 
@@ -471,6 +471,8 @@ def get_archive_dir(fn, data_archive_location=config.cfg.data_archive_location, 
         Output:
             dir: The directory where the file should be archived.
     """
+    if data_archive_location is None:
+        data_archive_location = config.cfg.data_archive_location
     if (site is None) or (backend is None) or (psrname is None) or \
             (receiver is None):
         params_to_get = ['telescop', 'backend', 'rcvr', 'name']
@@ -1167,100 +1169,6 @@ def print_debug(msg, category, stepsback=1):
         sys.stderr.flush()
 
 
-class DefaultArguments(argparse.ArgumentParser):
-    def __init__(self, *args, **kwargs):
-        self.added_std_group = False
-        self.added_debug_group = False
-        argparse.ArgumentParser.__init__(self, *args, **kwargs)
-
-    def parse_args(self, *args, **kwargs):
-        # Add default groups just before parsing so it is the last set of
-        # options displayed in help text
-        self.add_standard_group()
-        self.add_debug_group()
-        return argparse.ArgumentParser.parse_args(self, *args, **kwargs)
-
-    def parse_known_args(self, *args, **kwargs):
-        # Add default groups just before parsing so it is the last set of
-        # options displayed in help text
-        self.add_standard_group()
-        self.add_debug_group()
-        return argparse.ArgumentParser.parse_known_args(self, *args, **kwargs)
-
-    def add_standard_group(self):
-        if self.added_std_group:
-            # Already added standard group
-            return
-        group = self.add_argument_group("Standard Options", \
-                    "The following options get used by various programs.")
-        group.add_argument('-v', '--more-verbose', nargs=0, \
-                            action=self.TurnUpVerbosity, \
-                            help="Be more verbose. (Default: " \
-                                 "verbosity level = %d)." % config.cfg.verbosity)
-        group.add_argument('-q', '--less-verbose', nargs=0, \
-                            action=self.TurnDownVerbosity, \
-                            help="Be less verbose. (Default: " \
-                                 "verbosity level = %d)." % config.cfg.verbosity)
-        group.add_argument('--set-verbosity', nargs=1, dest='level', \
-                            action=self.SetVerbosity, type=int, \
-                            help="Set verbosity level. (Default: " \
-                                 "verbosity level = %d)." % config.cfg.verbosity)
-        self.added_std_group = True
-
-    def add_debug_group(self):
-        if self.added_debug_group:
-            # Debug group has already been added
-            return
-        group = self.add_argument_group("Debug Options", \
-                    "The following options turn on various debugging " \
-                    "statements. Multiple debugging options can be " \
-                    "provided.")
-        group.add_argument('-d', '--debug', nargs=0, \
-                            action=self.SetAllDebugModes, \
-                            help="Turn on all debugging modes. (Same as --debug-all).")
-        group.add_argument('--debug-all', nargs=0, \
-                            action=self.SetAllDebugModes, \
-                            help="Turn on all debugging modes. (Same as -d/--debug).")
-        group.add_argument('--set-debug-mode', nargs=1, dest='mode', \
-                            action=self.SetDebugMode, \
-                            help="Turn on specified debugging mode. Use " \
-                                "--list-debug-modes to see the list of " \
-                                "available modes and descriptions. " \
-                                "(Default: all debugging modes are off)")
-        group.add_argument('--list-debug-modes', nargs=0, \
-                            action=self.ListDebugModes, \
-                            help="List available debugging modes and " \
-                                "descriptions, then exit")
-        self.added_debug_group = True
-
-    class TurnUpVerbosity(argparse.Action):
-        def __call__(self, parser, namespace, values, option_string):
-            config.cfg.verbosity += 1
-
-    class TurnDownVerbosity(argparse.Action):
-        def __call__(self, parser, namespace, values, option_string):
-            config.cfg.verbosity -= 1
-
-    class SetVerbosity(argparse.Action):
-        def __call__(self, parser, namespace, values, option_string):
-            config.cfg.verbosity = values[0]
-
-    class SetDebugMode(argparse.Action): 
-        def __call__(self, parser, namespace, values, option_string):
-            config.debug.set_mode_on(values[0])
-
-    class SetAllDebugModes(argparse.Action): 
-        def __call__(self, parser, namespace, values, option_string):
-            config.debug.set_allmodes_on()
-
-    class ListDebugModes(argparse.Action): 
-        def __call__(self, parser, namespace, values, option_string):
-            print "Available debugging modes:"
-            for name, desc in config.debug.modes:
-                print "    %s: %s" % (name, desc)
-            sys.exit(1)
-
-
 def get_parfile_from_id(parfile_id, existdb=None, verify_md5=True):
     """Return the path to the raw file that has the given ID number.
         Optionally double check the file's MD5 sum, to make sure
@@ -1550,3 +1458,107 @@ def load_toas(toainfo, process_id, template_id, rawfile_id, existdb=None):
         db.close()
     
     return toa_ids
+
+
+class DefaultArguments(argparse.ArgumentParser):
+    def __init__(self, *args, **kwargs):
+        self.added_std_group = False
+        self.added_debug_group = False
+        argparse.ArgumentParser.__init__(self, *args, **kwargs)
+
+    def parse_args(self, *args, **kwargs):
+        # Add default groups just before parsing so it is the last set of
+        # options displayed in help text
+        self.add_standard_group()
+        self.add_debug_group()
+        return argparse.ArgumentParser.parse_args(self, *args, **kwargs)
+
+    def parse_known_args(self, *args, **kwargs):
+        # Add default groups just before parsing so it is the last set of
+        # options displayed in help text
+        self.add_standard_group()
+        self.add_debug_group()
+        return argparse.ArgumentParser.parse_known_args(self, *args, **kwargs)
+
+    def add_standard_group(self):
+        if self.added_std_group:
+            # Already added standard group
+            return
+        group = self.add_argument_group("Standard Options", \
+                    "The following options get used by various programs.")
+        group.add_argument('-v', '--more-verbose', nargs=0, \
+                            action=self.TurnUpVerbosity, \
+                            help="Be more verbose. (Default: " \
+                                 "verbosity level = %d)." % config.cfg.verbosity)
+        group.add_argument('-q', '--less-verbose', nargs=0, \
+                            action=self.TurnDownVerbosity, \
+                            help="Be less verbose. (Default: " \
+                                 "verbosity level = %d)." % config.cfg.verbosity)
+        group.add_argument('--set-verbosity', nargs=1, dest='level', \
+                            action=self.SetVerbosity, type=int, \
+                            help="Set verbosity level. (Default: " \
+                                 "verbosity level = %d)." % config.cfg.verbosity)
+        group.add_argument('--config-file', dest='cfg_file', \
+                            action=self.LoadConfigFile, type=str, \
+                            help="Configuration file to load. (Default: " \
+                                "no personalized configs are loaded.)")
+        self.added_std_group = True
+
+    def add_debug_group(self):
+        if self.added_debug_group:
+            # Debug group has already been added
+            return
+        group = self.add_argument_group("Debug Options", \
+                    "The following options turn on various debugging " \
+                    "statements. Multiple debugging options can be " \
+                    "provided.")
+        group.add_argument('-d', '--debug', nargs=0, \
+                            action=self.SetAllDebugModes, \
+                            help="Turn on all debugging modes. (Same as --debug-all).")
+        group.add_argument('--debug-all', nargs=0, \
+                            action=self.SetAllDebugModes, \
+                            help="Turn on all debugging modes. (Same as -d/--debug).")
+        group.add_argument('--set-debug-mode', nargs=1, dest='mode', \
+                            action=self.SetDebugMode, \
+                            help="Turn on specified debugging mode. Use " \
+                                "--list-debug-modes to see the list of " \
+                                "available modes and descriptions. " \
+                                "(Default: all debugging modes are off)")
+        group.add_argument('--list-debug-modes', nargs=0, \
+                            action=self.ListDebugModes, \
+                            help="List available debugging modes and " \
+                                "descriptions, then exit")
+        self.added_debug_group = True
+
+    class LoadConfigFile(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string):
+            config.cfg.load_configs(values)
+
+    class TurnUpVerbosity(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string):
+            config.cfg.verbosity += 1
+
+    class TurnDownVerbosity(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string):
+            config.cfg.verbosity -= 1
+
+    class SetVerbosity(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string):
+            config.cfg.verbosity = values[0]
+
+    class SetDebugMode(argparse.Action): 
+        def __call__(self, parser, namespace, values, option_string):
+            config.debug.set_mode_on(values[0])
+
+    class SetAllDebugModes(argparse.Action): 
+        def __call__(self, parser, namespace, values, option_string):
+            config.debug.set_allmodes_on()
+
+    class ListDebugModes(argparse.Action): 
+        def __call__(self, parser, namespace, values, option_string):
+            print "Available debugging modes:"
+            for name, desc in config.debug.modes:
+                print "    %s: %s" % (name, desc)
+            sys.exit(1)
+
+

@@ -33,11 +33,12 @@ def fancy_getitem(self, key):
 sa.engine.RowProxy.__getitem__ = fancy_getitem
 
 class Database(object):
-    def __init__(self, autocommit=True, url=config.cfg.dburl, *args, **kwargs):
+    def __init__(self, autocommit=True, url=None, *args, **kwargs):
         """Set up a Toaster Database object using SQLAlchemy.
         """
+        self.url = url or config.cfg.dburl
         # Create the database engine
-        self.engine = sa.create_engine(url, *args, **kwargs)
+        self.engine = sa.create_engine(self.url, *args, **kwargs)
         self.conn = None # No connection is established 
                          # until self.connect() is called
         sa.event.listen(self.engine, "before_cursor_execute", \
