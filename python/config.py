@@ -3,6 +3,7 @@ import glob
 
 import debug
 import errors
+import utils
 
 class ToasterConfigs(dict):
     def __init__(self):
@@ -30,6 +31,8 @@ class ToasterConfigs(dict):
             if not fn.endswith('.cfg'):
                 raise errors.FileError("TOASTER configuration files must " \
                                         "end with the extention '.cfg'.")
+            utils.print_debug("Loading configurations from %s" % fn, 'config')
             execfile(fn, {}, self)
+
 
 cfg = ToasterConfigs()

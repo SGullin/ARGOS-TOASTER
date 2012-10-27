@@ -15,6 +15,7 @@ modes = [('syscalls', 'Print commands being executed as system calls.'), \
          ('gittest', "Raise warnings instead of errors when checking " \
                         "git repos. This is useful for testing " \
                         "un-committed changes."), \
+         ('config', "Display what config files are loaded."), \
             ]
 
 modes.sort()
