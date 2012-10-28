@@ -50,6 +50,7 @@ int_re = re.compile(r"^[-+]?\d+$")
 ##############################################################################
 pulsarid_cache = {}
 pulsarname_cache = {}
+pulsaralias_cache = {}
 userid_cache = {}
 userinfo_cache = {}
 
@@ -202,6 +203,29 @@ def get_pulsarid_cache(existdb=None, update=False):
         for row in rows:
             pulsarid_cache[row['pulsar_alias']] = row['pulsar_id']
     return pulsarid_cache
+
+
+def get_pulsaralias_cache(existdb=None, update=False):
+    """Return a dictionary mapping pulsar IDs to pulsar aliases.
+
+        Input:
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+            update: If True, update the cache even if it already
+                exists. (Default: Don't update)
+
+        Output:
+            pulsaralias_cache: A dictionary with pulsar IDs as keys
+                    and a list of pulsar aliases as values.
+    """
+    global pulsaralias_cache
+    if update or not pulsaralias_cache:
+        pulsarid_cache = get_pulsarid_cache(existdb, update)
+        pulsaralias_cache = {}
+        for alias, id in pulsarid_cache.iteritems():
+            aliases = pulsaralias_cache.setdefault(id, [])
+            aliases.append(alias)
+    return pulsaralias_cache
 
 
 def get_pulsarname_cache(existdb=None, update=False):
