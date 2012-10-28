@@ -969,7 +969,7 @@ def create_rawfile_diagnostic_plots(archivefn, outdir, suffix=""):
                                         'nsub', 'nchan', 'npol'])
     hdr['secs'] = int(hdr['fracmjd']*24*3600+0.5) # Add 0.5 so result is 
                                                   # rounded to nearest int
-    basefn = "%(name)s_%(intmjd)05d_%(secs)05d" % hdr
+    basefn = os.path.split(archivefn)[-1]
     # Add the suffix to the end of the base file name
     basefn += suffix
     # To keep track of all diagnostics created, keyed by their description
