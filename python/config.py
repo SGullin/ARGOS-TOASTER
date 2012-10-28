@@ -29,9 +29,8 @@ class ToasterConfigs(dict):
     def load_configs(self, fn):
         if os.path.isfile(fn):
             if not fn.endswith('.cfg'):
-                raise errors.FileError("TOASTER configuration files must " \
+                raise ValueError("TOASTER configuration files must " \
                                         "end with the extention '.cfg'.")
-            utils.print_debug("Loading configurations from %s" % fn, 'config')
             execfile(fn, {}, self)
 
 
