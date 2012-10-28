@@ -6,6 +6,7 @@ import os.path
 import warnings
 import traceback
 import copy
+import shlex
 
 import utils
 import errors
@@ -144,7 +145,7 @@ def main():
                     # since 'load_rawfile.py' doesn't take any 
                     # arguments, but this makes the code more future-proof
                     customargs = copy.deepcopy(args)
-                    arglist = line.strip().split()
+                    arglist = shlex.strip(line.strip())
                     parser.parse_args(arglist, namespace=customargs)
                  
                     fn = customargs.rawfile

@@ -5,6 +5,7 @@ import os.path
 import sys
 import traceback
 import copy
+import shlex
 
 import utils
 import database
@@ -131,7 +132,7 @@ def main():
                     continue
                 try:
                     customargs = copy.deepcopy(args)
-                    arglist = line.strip().split()
+                    arglist = shlex.split(line.strip())
                     parser.parse_args(arglist, namespace=customargs)
                     pulsar_id = add_pulsar(db, customargs.pulsar_name, \
                                             customargs.aliases)

@@ -9,6 +9,7 @@ import warnings
 import types
 import traceback
 import sys
+import shlex
 
 import database
 import config
@@ -133,7 +134,7 @@ def main():
                     continue
                 try:
                     customargs = copy.deepcopy(args)
-                    arglist = line.strip().split()
+                    arglist = shlex.split(line.strip())
                     parser.parse_args(arglist, namespace=customargs)
                  
                     fn = customargs.parfile

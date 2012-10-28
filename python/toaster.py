@@ -12,6 +12,7 @@ import warnings
 import tempfile
 import shutil
 import traceback
+import shlex
 
 import colour
 import errors
@@ -364,7 +365,7 @@ def main():
                     continue
                 try:
                     customargs = copy.deepcopy(args)
-                    arglist = line.strip().split()
+                    arglist = shlex.split(line.strip())
                     customargs, custom_leftover_args = \
                             parser.parse_known_args(arglist, namespace=customargs)
                     reduce_rawfile(customargs, custom_leftover_args, db)

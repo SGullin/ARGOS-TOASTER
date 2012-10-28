@@ -7,9 +7,9 @@ import os.path
 import warnings
 import traceback
 import sys
+import shlex
 
 import config
-
 import database
 import errors
 import utils
@@ -157,7 +157,7 @@ def main():
                     continue
                 try:
                     customargs = copy.deepcopy(args)
-                    arglist = line.strip().split()
+                    arglist = shlex.split(line.strip())
                     parser.parse_args(arglist, namespace=customargs)
                  
                     fn = customargs.template
