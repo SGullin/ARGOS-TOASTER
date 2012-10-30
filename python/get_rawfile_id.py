@@ -176,7 +176,7 @@ def plot_rawfiles(rawfiles):
         psr = rawfile['pulsar_name']
         psrcnt, psrhr = pulsars.get(psr, (0, 0))
         pulsars[psr] = (psrcnt+1, psrhr+secs/3600.0)
-    add_times = np.asarray(add_times+[datetime.datetime.utcnow()])
+    add_times = np.asarray(sorted(add_times+[datetime.datetime.utcnow()]))
 
     plt.figtext(0.05, 0.91, "Total number of files archived: %d" % numfiles, \
                 ha='left', size='medium')
