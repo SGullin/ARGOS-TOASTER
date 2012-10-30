@@ -667,7 +667,8 @@ def is_gitrepo(repodir):
             is_git: True if directory is part of a git repository. False otherwise.
     """
     try:
-        stdout, stderr = execute("git rev-parse", dir=repodir)
+        stdout, stderr = execute("git rev-parse", dir=repodir, \
+                                    stderr=open(os.devnull))
     except errors.SystemCallError:
         # Exit code is non-zero
         return False
@@ -731,6 +732,10 @@ def get_version_id(existdb=None):
     if is_gitrepo(config.cfg.psrchive_dir):
         psrchive_githash = get_githash(config.cfg.psrchive_dir)
     else:
+        warnings.warn("PSRCHIVE directory (%s) is not a git repository! " \
+                        "Falling back to 'psrchive --version' for version " \
+                        "information." % config.cfg.psrchive_dir, \
+                        errors.ToasterWarning)
         stdout, stderr = execute("psrchive --version")
         psrchive_githash = stdout.strip()
     
@@ -793,8 +798,10 @@ def check_repos():
         else:
             raise errors.ToasterError("Pipeline's git repository is dirty. " \
                                             "Aborting!")
-
-    if is_gitrepo_dirty(config.cfg.psrchive_dir):
+    if not is_gitrepo(config.cfg.psrchive_dir):
+        warnings.warn("PSRCHIVE directory (%s) is not a git repository!" % \
+                        config.cfg.psrchive_dir, errors.ToasterWarning)
+    elif is_gitrepo_dirty(config.cfg.psrchive_dir):
         raise errors.ToasterError("PSRCHIVE's git repository is dirty. " \
                                         "Clean up your act!")
 
@@ -1119,7 +1126,11 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, \
         unless subprocess.PIPE is provided.
     """
     # Log command to stdout
-    print_debug(cmd, "syscalls", stepsback=2)
+    if dir is not None:
+        msg = "(In %s)\n%s" % (dir, cmd)
+    else:
+        msg = cmd
+    print_debug(msg, "syscalls", stepsback=2)
 
     stdoutfile = False
     stderrfile = False
