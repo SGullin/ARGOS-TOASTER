@@ -3,8 +3,9 @@ import database
 import utils
 
 def main():
-    db = database.Database()
-    db.metadata.create_all(db.engine)
+    engine = database.get_toaster_engine()
+    db.metadata.create_all(engine)
+
 
 if __name__=='__main__':
     parser = utils.DefaultArguments(\
