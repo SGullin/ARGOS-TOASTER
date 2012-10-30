@@ -657,6 +657,25 @@ def get_current_username():
     return pwd.getpwuid(os.getuid())[0]
 
 
+def is_gitrepo(repodir):
+    """Return True if the given dir is a git repository.
+
+        Input:
+            repodir: The location of the git repository.
+
+        Output:
+            is_git: True if directory is part of a git repository. False otherwise.
+    """
+    try:
+        stdout, stderr = execute("git rev-parse", dir=repodir)
+    except errors.SystemCallError:
+        # Exit code is non-zero
+        return False
+    else:
+        # Success error code (i.e. dir is in a git repo)
+        return True
+
+
 def is_gitrepo_dirty(repodir):
     """Return True if the git repository has local changes.
 
@@ -709,7 +728,11 @@ def get_version_id(existdb=None):
     check_repos()
     # Get git hashes
     pipeline_githash = get_githash(config.cfg.toaster_dir)
-    psrchive_githash = get_githash(config.cfg.psrchive_dir)
+    if is_gitrepo(config.cfg.psrchive_dir):
+        psrchive_githash = get_githash(config.cfg.psrchive_dir)
+    else:
+        stdout, stderr = execute("psrchive --version")
+        psrchive_githash = stdout.strip()
     
     # Use the exisitng DB connection, or open a new one if None was provided
     db = existdb or database.Database()
