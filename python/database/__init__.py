@@ -7,16 +7,6 @@ import config
 import schema
 import utils
 
-
-# The following will execute the PRAGMA every time a connection
-# is established. The PRAGMA is required to turn on foreign
-# key support for sqlite databases.
-@sa.event.listens_for(sa.engine.Engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
-
     
 def fancy_getitem(self, key):
     if self.has_key(key):
@@ -38,7 +28,9 @@ class Database(object):
         """
         self.url = url or config.cfg.dburl
         # Create the database engine
-        self.engine = sa.create_engine(self.url, *args, **kwargs)
+        # Disable pooling of connections
+        self.engine = sa.create_engine(self.url, poolclass=sa.pool.NullPool, \
+                                        *args, **kwargs)
         self.conn = None # No connection is established 
                          # until self.connect() is called
         sa.event.listen(self.engine, "before_cursor_execute", \
@@ -94,19 +86,24 @@ class Database(object):
                 conn: The established SQLAlchemy Connection object, 
                     which is also available as self.conn.
         """
-        if not self.is_created():
-            raise errors.DatabaseError("The database (%s) does not appear " \
+        # Only open a connection if not already connected
+        if not self.is_connected():
+            if not self.is_created():
+                raise errors.DatabaseError("The database (%s) does not appear " \
                                         "to have any tables. Be sure to run " \
                                         "'create_tables.py' before attempting " \
                                         "to connect to the database." % \
                                                 self.engine.url.database)
-        # Only open a connection if not already connected
-        if not self.is_connected():
             # Establish a connection
             self.conn = self.engine.connect()
             self.conn.execution_options(autocommit=self.autocommit)
             self.open_transactions = []
             self.result = None
+            if self.engine.dialect.name == 'sqlite':
+                result = self.execute("PRAGMA foreign_keys=ON")
+                result.close()
+            utils.print_debug("Database connection established.", 'dbconn', \
+                                stepsback=2)
         return self.conn
 
     def before_cursor_execute(self, conn, cursor, statement, parameters, \
@@ -200,6 +197,8 @@ class Database(object):
                 None
         """
         if self.is_connected():
+            utils.print_debug("Database connection closed.", 'dbconn', \
+                                stepsback=2)
             self.conn.close()
             if self.result is not None:
                 self.result.close()
