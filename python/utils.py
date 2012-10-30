@@ -989,6 +989,7 @@ def create_rawfile_diagnostic_plots(archivefn, outdir, suffix=""):
                 The keys are the plot type descriptions, and 
                 the values are the full path to the plots.
     """
+    archivefn = os.path.abspath(archivefn)
     hdr = get_header_vals(archivefn, ['name', 'intmjd', 'fracmjd', \
                                         'nsub', 'nchan', 'npol'])
     hdr['secs'] = int(hdr['fracmjd']*24*3600+0.5) # Add 0.5 so result is 
