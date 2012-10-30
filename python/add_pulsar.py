@@ -124,6 +124,7 @@ def main():
                                 "not appear to exist." % args.from_file)
                 psrlist = open(args.from_file, 'r')
             numfails = 0
+            numadded = 0
             for line in psrlist:
                 # Strip comments
                 line = line.partition('#')[0].strip()
@@ -138,11 +139,16 @@ def main():
                                             customargs.aliases)
                     print "Successfully inserted new pulsar. " \
                         "Returned pulsar_id: %d" % pulsar_id
+                    numadded += 1
                 except errors.ToasterError:
                     numfails += 1
                     traceback.print_exc()
             if args.from_file != '-':
                 psrlist.close()
+            if numadded:
+                utils.print_success("\n\n===================================\n" \
+                                    "%d pulsars successfully added\n" \
+                                    "===================================\n" % numadded)
             if numfails:
                 raise errors.ToasterError(\
                     "\n\n===================================\n" \

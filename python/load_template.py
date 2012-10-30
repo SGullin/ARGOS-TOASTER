@@ -149,6 +149,7 @@ def main():
                                 "not appear to exist." % args.from_file)
                 templatelist = open(args.from_file, 'r')
             numfails = 0
+            numloaded = 0
             for line in templatelist:
                 # Strip comments
                 line = line.partition('#')[0].strip()
@@ -165,11 +166,16 @@ def main():
                                             customargs.is_master, db)
                     print "%s has been loaded to the DB. template_id: %d" % \
                         (fn, template_id)
+                    numloaded += 1
                 except errors.ToasterError:
                     numfails += 1
                     traceback.print_exc()
             if args.from_file != '-':
                 templatelist.close()
+            if numloaded:
+                utils.print_success("\n\n===================================\n" \
+                                    "%d templates successfully loaded\n" \
+                                    "===================================\n" % numloaded)
             if numfails:
                 raise errors.ToasterError(\
                     "\n\n===================================\n" \

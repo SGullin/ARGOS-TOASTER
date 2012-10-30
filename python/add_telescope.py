@@ -173,9 +173,10 @@ def main():
                     traceback.print_exc()
             if args.from_file != '-':
                 tellist.close()
-            print "\n\n===================================\n" \
-                      "%d telescopes successfully added\n" \
-                      "===================================\n" % numadded
+            if numadded:
+                utils.print_success("\n\n===================================\n" \
+                                    "%d telescopes successfully added\n" \
+                                    "===================================\n" % numadded)
             if numfails:
                 raise errors.ToasterError(\
                     "\n\n===================================\n" \

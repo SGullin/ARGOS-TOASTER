@@ -134,6 +134,7 @@ def main():
                                 "not appear to exist." % args.from_file)
                 rawlist = open(args.from_file, 'r')
             numfails = 0
+            numloaded = 0
             for line in rawlist:
                 # Strip comments
                 line = line.partition('#')[0].strip()
@@ -152,11 +153,16 @@ def main():
                     rawfile_id = load_rawfile(fn, db)
                     print "%s has been loaded to the DB. rawfile_id: %d" % \
                                 (fn, rawfile_id)
+                    numloaded += 1
                 except errors.ToasterError:
                     numfails += 1
                     traceback.print_exc()
             if args.from_file != '-':
                 rawlist.close()
+            if numloaded:
+                utils.print_success("\n\n===================================\n" \
+                                    "%d rawfiles successfully loaded\n" \
+                                    "===================================\n" % numloaded)
             if numfails:
                 raise errors.ToasterError(\
                     "\n\n===================================\n" \
