@@ -176,6 +176,10 @@ class Database(object):
             Outputs:
                 None
         """
+        if not self.is_connected():
+            raise errors.DatabaseError("Connection to database not " \
+                    "established. Be sure self.connect(...) is called " \
+                    "before attempting to execute queries.")
         if self.open_transactions:
             warnings.warn("A transaction already appears to be in progress.", \
                            errors.ToasterWarning) 
