@@ -145,7 +145,7 @@ def main():
                     # since 'load_rawfile.py' doesn't take any 
                     # arguments, but this makes the code more future-proof
                     customargs = copy.deepcopy(args)
-                    arglist = shlex.strip(line.strip())
+                    arglist = shlex.split(line.strip())
                     parser.parse_args(arglist, namespace=customargs)
                  
                     fn = customargs.rawfile
