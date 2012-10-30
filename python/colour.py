@@ -24,7 +24,8 @@ preset_codes = {"default": DEFAULT_CODE, \
                 "debughdr": "\033[1;35m", \
                 "debug": "\033[0;35m", \
                 "warning": "\033[1;33m", \
-                "error": "\033[1;31m"}
+                "error": "\033[1;31m", \
+                "success": "\033[1;32m"}
 
 attributes = {"reset": 0, \
               "bold": 1, \
