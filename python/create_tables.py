@@ -4,7 +4,7 @@ import utils
 
 def main():
     engine = database.get_toaster_engine()
-    db.metadata.create_all(engine)
+    database.schema.metadata.create_all(engine)
 
 
 if __name__=='__main__':
