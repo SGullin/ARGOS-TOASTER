@@ -955,6 +955,7 @@ def get_master_template(pulsar_id, obssystem_id):
     result = db.execute(select)
     rows = result.fetchall()
     result.close()
+    db.close()
     if len(rows) > 1:
         raise errors.InconsistentDatabaseError("There are too many (%d) " \
                                             "master templates for pulsar #%d" % \
