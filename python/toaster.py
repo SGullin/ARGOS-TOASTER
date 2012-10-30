@@ -372,7 +372,6 @@ def main():
                 except errors.ToasterError:
                     numfails += 1
                     traceback.print_exc()
-                    raise
             if args.from_file != '-':
                 argfile.close()
             if numfails:
