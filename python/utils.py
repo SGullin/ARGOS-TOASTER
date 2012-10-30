@@ -1174,6 +1174,19 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, \
     return (stdoutdata, stderrdata)
 
 
+def print_success(msg):
+    """Print a success message.
+
+        The message is colourized with the preset 'success' mode.
+
+        Inputs:
+            msg: The message to print.
+
+        Outputs:
+            None
+    """
+    colour.cprint(msg, 'success')
+
 def print_info(msg, level=1):
     """Print an informative message if the current verbosity is
         higher than the 'level' of this message.
