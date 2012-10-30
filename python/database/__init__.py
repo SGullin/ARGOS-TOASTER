@@ -22,15 +22,41 @@ def fancy_getitem(self, key):
 
 sa.engine.RowProxy.__getitem__ = fancy_getitem
 
+# Cache of database engines
+engines = {}
+
+def get_toaster_engine(url=None):
+    """Given a DB URL string return the corresponding DB engine.
+        Create the Engine object if necessary. If the engine 
+        already exists return it rather than creating a new one.
+
+        Input:
+            url: A DB URL string.
+
+        Output:
+            engine: The corresponding DB engine.
+    """
+    global engines
+    if url is None:
+        url = config.cfg.dburl
+    if url not in engines:
+        # Create the database engine
+        engine = sa.create_engine(config.cfg.dburl)
+        engines[url] = engine
+    return engines[url]
+
+
 class Database(object):
-    def __init__(self, autocommit=True, url=None, *args, **kwargs):
+    def __init__(self, autocommit=True):
         """Set up a Toaster Database object using SQLAlchemy.
         """
-        self.url = url or config.cfg.dburl
-        # Create the database engine
-        # Disable pooling of connections
-        self.engine = sa.create_engine(self.url, poolclass=sa.pool.NullPool, \
-                                        *args, **kwargs)
+        self.engine = get_toaster_engine()
+        if not self.is_created():
+            raise errors.DatabaseError("The database (%s) does not appear " \
+                                    "to have any tables. Be sure to run " \
+                                    "'create_tables.py' before attempting " \
+                                    "to connect to the database." % \
+                                            self.engine.url.database)
         self.conn = None # No connection is established 
                          # until self.connect() is called
         sa.event.listen(self.engine, "before_cursor_execute", \
@@ -74,7 +100,10 @@ class Database(object):
             Output:
                 is_setup: True if the database is set up, False otherwise.
         """
-        return bool(self.engine.table_names())
+        conn = self.engine.connect()
+        table_names = self.engine.table_names(connection=conn)
+        conn.close()
+        return bool(table_names)
 
     def connect(self):
         """Connect to the database, setting self.conn.
@@ -88,12 +117,6 @@ class Database(object):
         """
         # Only open a connection if not already connected
         if not self.is_connected():
-            if not self.is_created():
-                raise errors.DatabaseError("The database (%s) does not appear " \
-                                        "to have any tables. Be sure to run " \
-                                        "'create_tables.py' before attempting " \
-                                        "to connect to the database." % \
-                                                self.engine.url.database)
             # Establish a connection
             self.conn = self.engine.connect()
             self.conn.execution_options(autocommit=self.autocommit)
