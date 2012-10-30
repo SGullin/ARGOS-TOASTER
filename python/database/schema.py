@@ -17,7 +17,7 @@ sa.Table('users', metadata, \
                     default=True), \
         sa.Column('admin', sa.Boolean, nullable=False, \
                     default=False), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define versions table
 sa.Table('versions', metadata, \
@@ -28,26 +28,26 @@ sa.Table('versions', metadata, \
         sa.Column('tempo2_cvsrevno', sa.String(64), nullable=False), \
         sa.UniqueConstraint('pipeline_githash', 'psrchive_githash', \
                                 'tempo2_cvsrevno'), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define toas table
 sa.Table('toas', metadata, \
         sa.Column('toa_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('process_id', sa.Integer, \
-                    sa.ForeignKey("process.process_id"), \
+                    sa.ForeignKey("process.process_id", name="fk_toas_proc"), \
                     nullable=False), \
         sa.Column('template_id', sa.Integer, \
-                    sa.ForeignKey("templates.template_id"), \
+                    sa.ForeignKey("templates.template_id", name="fk_toas_temp"), \
                     nullable=False), \
         sa.Column('rawfile_id', sa.Integer, \
-                    sa.ForeignKey("rawfiles.rawfile_id"), \
+                    sa.ForeignKey("rawfiles.rawfile_id", name="fk_toas_raw"), \
                     nullable=False), \
         sa.Column('pulsar_id', sa.Integer, \
-                    sa.ForeignKey("pulsars.pulsar_id"), \
+                    sa.ForeignKey("pulsars.pulsar_id", name="fk_toas_psr"), \
                     nullable=False), \
         sa.Column('obssystem_id', sa.Integer, \
-                    sa.ForeignKey("obssystems.obssystem_id"), \
+                    sa.ForeignKey("obssystems.obssystem_id", name="fk_toas_obssys"), \
                     nullable=False), \
         sa.Column('imjd', sa.Integer, nullable=False), \
         sa.Column('fmjd', sa.Float(53), nullable=False), \
@@ -57,26 +57,26 @@ sa.Table('toas', metadata, \
         sa.Column('length', sa.Float(24), nullable=False), \
         sa.Column('nbin', sa.Integer, nullable=False), \
         sa.Column('goodness_of_fit', sa.Float(24), nullable=True), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define process table
 sa.Table('process', metadata, \
         sa.Column('process_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('version_id', sa.Integer, \
-                    sa.ForeignKey("versions.version_id"), \
+                    sa.ForeignKey("versions.version_id", name="fk_proc_version"), \
                     nullable=False), \
         sa.Column('rawfile_id', sa.Integer, \
-                    sa.ForeignKey("rawfiles.rawfile_id"), \
+                    sa.ForeignKey("rawfiles.rawfile_id", name="fk_proc_raw"), \
                     nullable=False), \
         sa.Column('template_id', sa.Integer, \
-                    sa.ForeignKey("templates.template_id"), \
+                    sa.ForeignKey("templates.template_id", name="fk_proc_temp"), \
                     nullable=False), \
         sa.Column('parfile_id', sa.Integer, \
-                    sa.ForeignKey("parfiles.parfile_id"), \
+                    sa.ForeignKey("parfiles.parfile_id", name="fk_proc_par"), \
                     nullable=False), \
         sa.Column('user_id', sa.Integer, \
-                    sa.ForeignKey("users.user_id"), \
+                    sa.ForeignKey("users.user_id", name="fk_proc_user"), \
                     nullable=False), \
         sa.Column('add_time', sa.DateTime, nullable=False, \
                     default=sa.func.now()), \
@@ -85,87 +85,87 @@ sa.Table('process', metadata, \
         sa.Column('nchan', sa.Integer, nullable=False), \
         sa.Column('nsub', sa.Integer, nullable=False), \
         sa.Column('toa_fitting_method', sa.String(12), nullable=False), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define toa_diagnostics table
 sa.Table('toa_diagnostics', metadata, \
         sa.Column('toa_diagnostic_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('toa_id', sa.Integer, \
-                    sa.ForeignKey("toas.toa_id"), \
+                    sa.ForeignKey("toas.toa_id", name="fk_toadig_toa"), \
                     nullable=False), \
         sa.Column('value', sa.Float(53), nullable=False), \
         sa.Column('type', sa.String(16), nullable=False), \
         sa.UniqueConstraint('toa_id', 'type'), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define toa_diagnostic_plots table
 sa.Table('toa_diagnostic_plots', metadata, \
         sa.Column('toa_diagnostic_plot_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('toa_id', sa.Integer, \
-                    sa.ForeignKey("toas.toa_id"), \
+                    sa.ForeignKey("toas.toa_id", name="fk_toadiagplot_toa"), \
                     nullable=False), \
-        sa.Column('filename', sa.String(512), nullable=False, \
+        sa.Column('filename', sa.String(256), nullable=False, \
                     unique=True), \
         sa.Column('filepath', sa.String(512), nullable=False), \
         sa.Column('plot_type', sa.String(16), nullable=False), \
         sa.UniqueConstraint('toa_id', 'plot_type'), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define timfiles table
 sa.Table('timfiles', metadata, \
         sa.Column('timfile_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('user_id', sa.Integer, \
-                    sa.ForeignKey("users.user_id"), \
+                    sa.ForeignKey("users.user_id", name="fk_tim_user"), \
                     nullable=False), \
         sa.Column('comments', sa.Text, nullable=False), \
         sa.Column('add_time', sa.DateTime, nullable=False, \
                     default=sa.func.now()), \
         sa.Column('version_id', sa.Integer, \
-                    sa.ForeignKey("versions.version_id"), \
+                    sa.ForeignKey("versions.version_id", name="fk_tim_version"), \
                     nullable=False), \
         sa.Column('pulsar_id', sa.Integer, \
-                    sa.ForeignKey("pulsars.pulsar_id"), \
+                    sa.ForeignKey("pulsars.pulsar_id", name="fk_tim_psr"), \
                     nullable=False), \
         sa.Column('input_args', sa.Text, nullable=False), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define toa_tim table (mapping which TOAs are included in which .tim files)
 sa.Table('toa_tim', metadata, \
         sa.Column('timfile_id', sa.Integer, \
-                    sa.ForeignKey("timfiles.timfile_id"), \
+                    sa.ForeignKey("timfiles.timfile_id", name="fk_toatim_tim"), \
                     nullable=False), \
         sa.Column('toa_id', sa.Integer, \
-                    sa.ForeignKey("toas.toa_id"), \
+                    sa.ForeignKey("toas.toa_id", name="fk_toatim_toa"), \
                     nullable=False), \
         sa.UniqueConstraint('toa_id', 'timfile_id'), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define templates table
 sa.Table('templates', metadata, \
         sa.Column('template_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('pulsar_id', sa.Integer, \
-                    sa.ForeignKey("pulsars.pulsar_id"), \
+                    sa.ForeignKey("pulsars.pulsar_id", name="fk_temp_psr"), \
                     nullable=False), \
         sa.Column('obssystem_id', sa.Integer, \
-                    sa.ForeignKey("obssystems.obssystem_id"), \
+                    sa.ForeignKey("obssystems.obssystem_id", name="fk_temp_obssys"), \
                     nullable=False), \
         sa.Column('user_id', sa.Integer, \
-                    sa.ForeignKey("users.user_id"), \
+                    sa.ForeignKey("users.user_id", name="fk_temp_user"), \
                     nullable=False), \
         sa.Column('nbin', sa.Integer, nullable=True), \
         sa.Column('filepath', sa.String(512), nullable=False), \
-        sa.Column('filename', sa.String(512), nullable=False, \
+        sa.Column('filename', sa.String(256), nullable=False, \
                     unique=True), \
         sa.Column('md5sum', sa.String(64), nullable=False, \
                     unique=True), \
         sa.Column('add_time', sa.DateTime, nullable=False, \
                     default=sa.func.now()), \
         sa.Column('comments', sa.Text, nullable=False), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define telescopes table
 sa.Table('telescopes', metadata, \
@@ -183,40 +183,40 @@ sa.Table('telescopes', metadata, \
                     unique=True), \
         sa.Column('telescope_code', sa.String(2), nullable=False, \
                     unique=True), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define telescope_aliases table
 sa.Table('telescope_aliases', metadata, \
         sa.Column('telescope_alias_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('telescope_id', sa.Integer, \
-                    sa.ForeignKey('telescopes.telescope_id'), \
+                    sa.ForeignKey('telescopes.telescope_id', name="fk_telalias_tel"), \
                     nullable=False), \
         sa.Column('telescope_alias', sa.String(64), nullable=False, \
                     unique=True), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define rawfiles table
 sa.Table('rawfiles', metadata, \
         sa.Column('rawfile_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
-        sa.Column('filename', sa.String(512), nullable=False, \
+        sa.Column('filename', sa.String(256), nullable=False, \
                     unique=True), \
         sa.Column('filepath', sa.String(512), nullable=False), \
         sa.Column('filesize', sa.Integer, nullable=False), \
-        sa.Column('md5sum', sa.String(512), nullable=False, \
+        sa.Column('md5sum', sa.String(64), nullable=False, \
                     unique=True), \
         sa.Column('add_time', sa.DateTime, nullable=False, \
                     default=sa.func.now()), \
         sa.Column('user_id', sa.Integer, \
-                    sa.ForeignKey('users.user_id'), \
+                    sa.ForeignKey('users.user_id', name="fk_raw_user"), \
                     nullable=False), \
         sa.Column('comments', sa.Text, nullable=True), \
         sa.Column('pulsar_id', sa.Integer, \
-                    sa.ForeignKey('pulsars.pulsar_id'), \
+                    sa.ForeignKey('pulsars.pulsar_id', name="fk_raw_psr"), \
                     nullable=False), \
         sa.Column('obssystem_id', sa.Integer, \
-                    sa.ForeignKey('obssystems.obssystem_id'), \
+                    sa.ForeignKey('obssystems.obssystem_id', name="fk_raw_obssys"), \
                     nullable=False), \
         sa.Column('nbin', sa.Integer, nullable=True), \
         sa.Column('nchan', sa.Integer, nullable=True), \
@@ -241,33 +241,33 @@ sa.Table('rawfiles', metadata, \
         sa.Column('rcvr', sa.String(16), nullable=True), \
         sa.Column('basis', sa.String(16), nullable=True), \
         sa.Column('backend', sa.String(16), nullable=True), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define raw_diagnostics table
 sa.Table('raw_diagnostics', metadata, \
         sa.Column('raw_diagnostic_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('rawfile_id', sa.Integer, \
-                    sa.ForeignKey("rawfiles.rawfile_id"), \
+                    sa.ForeignKey("rawfiles.rawfile_id", name="fk_rawdiag_raw"), \
                     nullable=False), \
         sa.Column('value', sa.Float(53), nullable=False), \
         sa.Column('type', sa.String(16), nullable=False), \
         sa.UniqueConstraint('rawfile_id', 'type'), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define raw_diagnostic_plots table
 sa.Table('raw_diagnostic_plots', metadata, \
         sa.Column('raw_diagnostic_plot_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('rawfile_id', sa.Integer, \
-                    sa.ForeignKey("rawfiles.rawfile_id"), \
+                    sa.ForeignKey("rawfiles.rawfile_id", name="fk_rawdiagplot_raw"), \
                     nullable=False), \
-        sa.Column('filename', sa.String(512), nullable=False, \
+        sa.Column('filename', sa.String(256), nullable=False, \
                     unique=True), \
         sa.Column('filepath', sa.String(512), nullable=False), \
         sa.Column('plot_type', sa.String(16), nullable=False), \
         sa.UniqueConstraint('rawfile_id', 'plot_type'), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define pulsars table
 sa.Table('pulsars', metadata, \
@@ -275,61 +275,61 @@ sa.Table('pulsars', metadata, \
                     autoincrement=True, nullable=False), \
         sa.Column('pulsar_name', sa.String(20), nullable=False, \
                     unique=True), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define pulsar_aliases table
 sa.Table('pulsar_aliases', metadata, \
         sa.Column('pulsar_alias_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('pulsar_id', sa.Integer, \
-                    sa.ForeignKey('pulsars.pulsar_id'), \
+                    sa.ForeignKey('pulsars.pulsar_id', name="fk_psralias_psr"), \
                     nullable=False), \
         sa.Column('pulsar_alias', sa.String(20), nullable=False, \
                     unique=True), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define proc_diagnostics table
 sa.Table('proc_diagnostics', metadata, \
         sa.Column('proc_diagnostic_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('process_id', sa.Integer, \
-                    sa.ForeignKey("process.process_id"), \
+                    sa.ForeignKey("process.process_id", name="fk_procdiag_proc"), \
                     nullable=False), \
         sa.Column('value', sa.Float(53), nullable=False), \
         sa.Column('type', sa.String(16), nullable=False), \
         sa.UniqueConstraint('process_id', 'type'), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define proc_diagnostic_plots table
 sa.Table('proc_diagnostic_plots', metadata, \
         sa.Column('proc_diagnostic_plot_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('process_id', sa.Integer, \
-                    sa.ForeignKey("process.process_id"), \
+                    sa.ForeignKey("process.process_id", name="fk_procdiagplot_proc"), \
                     nullable=False), \
-        sa.Column('filename', sa.String(512), nullable=False, \
+        sa.Column('filename', sa.String(256), nullable=False, \
                     unique=True), \
         sa.Column('filepath', sa.String(512), nullable=False), \
         sa.Column('plot_type', sa.String(16), nullable=False), \
         sa.UniqueConstraint('process_id', 'plot_type'), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define parfiles table
 sa.Table('parfiles', metadata, \
         sa.Column('parfile_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
-        sa.Column('filename', sa.String(512), nullable=False, \
+        sa.Column('filename', sa.String(256), nullable=False, \
                     unique=True), \
         sa.Column('filepath', sa.String(512), nullable=False), \
-        sa.Column('md5sum', sa.String(512), nullable=False, \
+        sa.Column('md5sum', sa.String(64), nullable=False, \
                     unique=True), \
         sa.Column('add_time', sa.DateTime, nullable=False, \
                     default=sa.func.now()), \
         sa.Column('user_id', sa.Integer, \
-                    sa.ForeignKey('users.user_id'), \
+                    sa.ForeignKey('users.user_id', name="fk_par_user"), \
                     nullable=False), \
         sa.Column('pulsar_id', sa.Integer, \
-                    sa.ForeignKey('pulsars.pulsar_id'), \
+                    sa.ForeignKey('pulsars.pulsar_id', name="fk_par_psr"), \
                     nullable=False), \
         sa.Column('psrj', sa.String(12), nullable=True), \
         sa.Column('psrb', sa.String(12), nullable=True), \
@@ -366,7 +366,7 @@ sa.Table('parfiles', metadata, \
         sa.Column('tzrmjd', sa.Float(53), nullable=True), \
         sa.Column('tzrfrq', sa.Float(53), nullable=True), \
         sa.Column('tzrsite', sa.String(2), nullable=True), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Create obssystem table
 sa.Table('obssystems', metadata, \
@@ -375,7 +375,7 @@ sa.Table('obssystems', metadata, \
         sa.Column('name', sa.String(64), nullable=False, \
                     unique=True), \
         sa.Column('telescope_id', sa.Integer, \
-                    sa.ForeignKey('telescopes.telescope_id'), \
+                    sa.ForeignKey('telescopes.telescope_id', name="fk_obssys_tel"), \
                     nullable=False), \
         sa.Column('frontend', sa.String(64), nullable=False), \
         sa.Column('backend', sa.String(64), nullable=False), \
@@ -383,28 +383,28 @@ sa.Table('obssystems', metadata, \
         sa.Column('clock', sa.String(64), nullable=False), \
         sa.UniqueConstraint('telescope_id', 'frontend', 'backend', \
                             'clock'), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Create master_templates table
 sa.Table('master_templates', metadata, \
         sa.Column('template_id', sa.Integer, \
-                    sa.ForeignKey("templates.template_id"), \
+                    sa.ForeignKey("templates.template_id", name="fk_mt_temp"), \
                     nullable=False), \
         sa.Column('pulsar_id', sa.Integer, \
-                    sa.ForeignKey('pulsars.pulsar_id'), \
+                    sa.ForeignKey('pulsars.pulsar_id', name="fk_mt_psr"), \
                     nullable=False), \
         sa.Column('obssystem_id', sa.Integer, \
-                    sa.ForeignKey("obssystems.obssystem_id"), \
+                    sa.ForeignKey("obssystems.obssystem_id", name="fk_mt_obssys"), \
                     nullable=False), \
         sa.UniqueConstraint('pulsar_id', 'obssystem_id'), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Create master_parfiles table
 sa.Table('master_parfiles', metadata, \
         sa.Column('parfile_id', sa.Integer, \
-                    sa.ForeignKey("parfiles.parfile_id"), \
+                    sa.ForeignKey("parfiles.parfile_id", name="fk_mp_par"), \
                     nullable=False), \
         sa.Column('pulsar_id', sa.Integer, \
-                    sa.ForeignKey('pulsars.pulsar_id'), \
+                    sa.ForeignKey('pulsars.pulsar_id', name="fk_mp_psr"), \
                     nullable=False, unique=True), \
-        mysql_engine='InnoDB')
+        mysql_engine='InnoDB', mysql_charset='ascii')
