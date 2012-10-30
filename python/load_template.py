@@ -39,12 +39,12 @@ def populate_templates_table(db, fn, params, comments):
         psr_id = rows[0]['pulsar_id']
         template_id = rows[0]['template_id']
         if psr_id == params['pulsar_id']:
+            db.commit()
             warnings.warn("A template with this MD5 (%s) already exists " \
                             "in the DB for this pulsar (ID: %d). " \
                             "The file will not be re-registed into the DB. " \
                             "Doing nothing..." % (md5, psr_id), \
                             errors.ToasterWarning)
-            db.commit()
             return template_id
         else:
             db.rollback()
