@@ -615,7 +615,9 @@ def prep_file(fn):
     # Grab header info
     hdritems = ["nbin", "nchan", "npol", "nsub", "type", "telescop", \
          	"name", "dec", "ra", "freq", "bw", "dm", "rm", \
-      	        "dmc", "rm_c", "pol_c", "scale", "state", "length", \
+                # "dmc", "rm_c", "pol_c", # The names of these header params 
+                                          # vary with psrchive version
+      	        "scale", "state", "length", \
     	        "rcvr", "basis", "backend", "mjd"]
     params = get_header_vals(fn, hdritems)
 
