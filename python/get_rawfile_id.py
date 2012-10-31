@@ -30,6 +30,8 @@ def main():
     elif args.output_style=='plot':
         plot_rawfiles(rawfiles)
         plt.show()
+    elif args.output_style=='summary':
+        summarize_rawfiles(rawfiles)
     else:
         custom_show_rawfiles(rawfiles, fmt=args.output_style)
 
@@ -126,6 +128,32 @@ def get_rawfiles(args):
 def custom_show_rawfiles(rawfiles, fmt="%(rawfile_id)d"):
     for rawfile in rawfiles:
         print fmt.decode('string-escape') % rawfile
+
+def summarize_rawfiles(rawfiles):
+    numfiles = 0
+    size = 0
+    length = 0
+    for ii, rawfile in enumerate(rawfiles):
+        numfiles += 1
+        size += rawfile['filesize']
+        length += rawfile['length']
+    print "Total number of matching raw files in archive: %d" % numfiles
+    unit = 's'
+    thresh = 60.0
+    other_thresh = [365.0, 24.0, 60.0]
+    other_units = ['years', 'days', 'hr', 'min']
+    while length >= thresh and len(other_units) > 1:
+        length /= thresh
+        thresh = other_thresh.pop()
+        unit = other_units.pop()
+    print "Total integration time: %.2g %s" % (length, unit)
+    unit = 'bytes'
+    other_units = ['TB', 'GB', 'MB', 'KB']
+    while size >= 1024.0 and len(other_units) > 1:
+        size /= 1024.0
+        unit = other_units.pop()
+    print "Total disk space used: %.2f %s" % (size, unit)
+
 
 def plot_rawfiles(rawfiles):
     # Set default parameters
