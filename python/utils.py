@@ -1534,6 +1534,24 @@ def load_toas(toainfo, process_id, template_id, rawfile_id, existdb=None):
     
     return toa_ids
 
+    
+def set_warning_mode(mode=None, reset=True):
+    """Add a simple warning filter.
+        
+        Inputs:
+            mode: The action to use for warnings.
+                (Default: take value of 'warnmode' configuration.
+            reset: Remove warning filters previously set.
+
+        Outputs:
+            None
+    """
+    if mode is None:
+        mode = config.cfg.warnmode
+    if reset:
+        warnings.resetwarnings()
+    warnings.simplefilter(mode)
+
 
 class DefaultArguments(argparse.ArgumentParser):
     def __init__(self, *args, **kwargs):
@@ -1546,14 +1564,18 @@ class DefaultArguments(argparse.ArgumentParser):
         # options displayed in help text
         self.add_standard_group()
         self.add_debug_group()
-        return argparse.ArgumentParser.parse_args(self, *args, **kwargs)
+        args = argparse.ArgumentParser.parse_args(self, *args, **kwargs)
+        set_warning_mode(args.warnmode)
+        return args
 
     def parse_known_args(self, *args, **kwargs):
         # Add default groups just before parsing so it is the last set of
         # options displayed in help text
         self.add_standard_group()
         self.add_debug_group()
-        return argparse.ArgumentParser.parse_known_args(self, *args, **kwargs)
+        args, leftovers = argparse.ArgumentParser.parse_known_args(self, *args, **kwargs)
+        set_warning_mode(args.warnmode)
+        return args, leftovers
 
     def add_standard_group(self):
         if self.added_std_group:
@@ -1573,6 +1595,15 @@ class DefaultArguments(argparse.ArgumentParser):
                             action=self.SetVerbosity, type=int, \
                             help="Set verbosity level. (Default: " \
                                  "verbosity level = %d)." % config.cfg.verbosity)
+        group.add_argument('-W', '--warning-mode', dest='warnmode', type=str, \
+                            help="Set a filter that applies to all warnings. " \
+                                "The behaviour of the filter is determined " \
+                                "by the action provided. 'error' turns " \
+                                "warnings into errors, 'ignore' causes " \
+                                "warnings to be not printed. 'always' " \
+                                "ensures all warnings are printed. " \
+                                "(Default: print the first occurence of " \
+                                "each warning.)")
         group.add_argument('--config-file', dest='cfg_file', \
                             action=self.LoadConfigFile, type=str, \
                             help="Configuration file to load. (Default: " \
@@ -1616,7 +1647,7 @@ class DefaultArguments(argparse.ArgumentParser):
     class TurnDownVerbosity(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
             config.cfg.verbosity -= 1
-
+ 
     class SetVerbosity(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
             config.cfg.verbosity = values[0]
