@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os.path
 import glob
 
@@ -38,3 +39,14 @@ class ToasterConfigs(dict):
 
 
 cfg = ToasterConfigs()
+
+
+def main():
+    print cfg
+
+
+if __name__=='__main__':
+    parser = utils.DefaultArguments(\
+                description="Print configurations to terminal.")
+    args = parser.parse_args()
+    main()
