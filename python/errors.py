@@ -6,6 +6,17 @@ Patrick Lazarus, Feb. 9, 2012
 
 import colour
 
+# Fatal class of TOASTER errors. These should not be caught.
+class FatalToasterError(Exception):
+    def __str__(self):
+       return colour.cstring(super(FatalToasterError, self).__str__(), 'error')
+
+
+# Regular TOASTER errors. These might be caught and dealt with.
+class NoConfigError(FatalToasterError):
+    pass
+
+
 class ToasterError(Exception):
     def __str__(self):
        return colour.cstring(super(ToasterError, self).__str__(), 'error')
@@ -49,6 +60,7 @@ class BadDebugMode(ToasterError):
 
 class ConflictingToasError(ToasterError):
     pass
+
 
 # Custom Warnings
 class ToasterWarning(Warning):
