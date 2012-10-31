@@ -50,6 +50,8 @@ class Database(object):
     def __init__(self, autocommit=True):
         """Set up a Toaster Database object using SQLAlchemy.
         """
+        self.conn = None # No connection is established 
+                         # until self.connect() is called
         self.engine = get_toaster_engine()
         if not self.is_created():
             raise errors.DatabaseError("The database (%s) does not appear " \
@@ -57,8 +59,6 @@ class Database(object):
                                     "'create_tables.py' before attempting " \
                                     "to connect to the database." % \
                                             self.engine.url.database)
-        self.conn = None # No connection is established 
-                         # until self.connect() is called
         sa.event.listen(self.engine, "before_cursor_execute", \
                             self.before_cursor_execute)
         self.autocommit = autocommit
