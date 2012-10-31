@@ -18,6 +18,9 @@ class ToasterConfigs(dict):
             self.load_configs(cfg_file)
         
     def __getattr__(self, key):
+        if key not in self:
+            raise errors.NoConfigError("There is no config param called '%s' " \
+                                        "defined!" % key) 
         return self[key]
 
     def __str__(self):
