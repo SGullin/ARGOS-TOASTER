@@ -6,6 +6,7 @@
 import database
 import utils
 import colour
+import errors
 
 def get_timfiles(psr='%', timfile_id=None):
     """Return a dictionary of information for each timfile
@@ -62,7 +63,9 @@ def get_timfiles(psr='%', timfile_id=None):
                 distinct=db.timfiles.c.timfile_id).\
                 where(whereclause)
     result = db.execute(select)
-    rows = result.fetchall()
+    # MySQL return a single row filled with Nones and 0s
+    # if no timfiles match. Weed out the bad row.
+    rows = [r for r in result.fetchall() if r['timfile_id'] is not None]
     result.close()
     db.close()
     return rows
