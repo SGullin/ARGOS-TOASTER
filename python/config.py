@@ -12,10 +12,10 @@ class ToasterConfigs(dict):
         fn = os.path.join(self.toaster_dir, "default.cfg") 
         self.load_configs(fn)
         
-        # Load configurations for current directory
-        cfg_files = glob.glob("*.cfg")
-        if cfg_files:
-            self.load_configs(cfg_files[0])
+        # Load configurations from TOASTER_CFG environment variable
+        cfg_files = os.getenv("TOASTER_CFG", "").split(':')
+        for cfg_file in reversed(cfg_files):
+            self.load_configs(cfg_file)
         
     def __getattr__(self, key):
         return self[key]
