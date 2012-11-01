@@ -244,6 +244,8 @@ def main():
         cmdline = " ".join(sys.argv)
         toa_getter = toa_getters[args.on_conflict]
         toas = toa_getter(args, db)
+        if not toas:
+            raise errors.ToasterError("No TOAs match criteria provided!") 
         timfile_id = add_timfile_entry(toas, cmdline, args.comments)
         utils.print_info("Created new timfile entry - timfile_id=%d (%s)" % \
                 (timfile_id, utils.Give_UTC_now()), 1)
