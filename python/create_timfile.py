@@ -99,6 +99,12 @@ def toa_select(args, existdb=None):
     if tmp:
         whereclause &= (tmp)
     
+    if args.manipulators:
+        tmp = db.process.c.manipulator.like(args.manipulators[0])
+        for manip in args.manipulators[1:]:
+            tmp |= (db.process.c.manipulator.like(manip))
+        whereclause &= (tmp)
+    
     if args.start_mjd is not None:
         whereclause &= ((db.toas.c.imjd+db.toas.c.fmjd) >= args.start_mjd)
     if args.end_mjd is not None:
@@ -279,6 +285,11 @@ if __name__=='__main__':
                         help='Get TOAs with MJD larger than this value.')
     parser.add_argument('--end-mjd', dest='end_mjd', type=float, \
                         help='Get TOAs with MJD smaller than this value.')
+    parser.add_argument('-m', '--manipulator', dest='manipulators', \
+                        type=str, default=[], action='append', \
+                        help="Name of manipulator to match. Multiple '-m/" \
+                            "--manipulator' arguments may be provided. " \
+                            "(Default: match all manipulators).")
     parser.add_argument('--on-conflict', dest='on_conflict', \
                         choices=toa_getters, default='raise', \
                         help="Determine what to do when conflicting " \
