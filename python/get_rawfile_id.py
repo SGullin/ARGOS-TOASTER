@@ -19,7 +19,7 @@ import utils
 import database
 import errors
 import colour
-
+import config
 
 def main():
     rawfiles = get_rawfiles(args)
@@ -329,8 +329,8 @@ def plot_rawfiles(rawfiles):
 
 
 def show_rawfiles(rawfiles):
+    print "--"*25
     for rawdict in rawfiles:
-        print "- "*25
         print colour.cstring("Rawfile ID:", underline=True, bold=True) + \
                 colour.cstring(" %d" % rawdict.rawfile_id, bold=True)
         fn = os.path.join(rawdict.filepath, rawdict.filename)
@@ -339,25 +339,58 @@ def show_rawfiles(rawfiles):
         print "Uploaded by: %s (%s)" % \
                     (rawdict.real_name, rawdict.email_address)
         print "Date and time rawfile was added: %s" % rawdict.add_time.isoformat(' ')
-        lines = ["Observing system ID: %d" % rawdict.obssystem_id, \
-                 "Observing system name: %s" % rawdict.obssystem, \
-                 "Observing band: %s" % rawdict.band_descriptor, \
-                 "Telescope: %s" % rawdict.telescope_name, \
-                 "Frontend: %s" % rawdict.frontend, \
-                 "Backend: %s" % rawdict.backend, \
-                 "Clock: %s" % rawdict.clock]
-        utils.print_info("\n".join(lines), 1)
-        lines = ["MJD: %.6f" % rawdict.mjd, \
-                 "Number of phase bins: %d" % rawdict.nbin, \
-                 "Number of channels: %d" % rawdict.nchan, \
-                 "Number of polarisations: %d" % rawdict.npol, \
-                 "Number of sub-integrations: %d" % rawdict.nsub, \
-                 "Centre frequency (MHz): %g" % rawdict.freq, \
-                 "Bandwidth (MHz): %g" % rawdict.bw, \
-                 "Dispersion measure (pc cm^-3): %g" % rawdict.dm, \
-                 "Integration time (s): %g" % rawdict.length]
-        utils.print_info("\n".join(lines), 2)
-        print " -"*25
+        if config.cfg.verbosity >= 1:
+            lines = ["Observing system ID: %d" % rawdict.obssystem_id, \
+                     "Observing system name: %s" % rawdict.obssystem, \
+                     "Observing band: %s" % rawdict.band_descriptor, \
+                     "Telescope: %s" % rawdict.telescope_name, \
+                     "Frontend: %s" % rawdict.frontend, \
+                    "Backend: %s" % rawdict.backend, \
+                    "Clock: %s" % rawdict.clock]
+            utils.print_info("\n".join(lines), 1)
+        if config.cfg.verbosity >= 2:
+            lines = ["MJD: %.6f" % rawdict.mjd, \
+                     "Number of phase bins: %d" % rawdict.nbin, \
+                     "Number of channels: %d" % rawdict.nchan, \
+                     "Number of polarisations: %d" % rawdict.npol, \
+                     "Number of sub-integrations: %d" % rawdict.nsub, \
+                     "Centre frequency (MHz): %g" % rawdict.freq, \
+                     "Bandwidth (MHz): %g" % rawdict.bw, \
+                     "Dispersion measure (pc cm^-3): %g" % rawdict.dm, \
+                     "Integration time (s): %g" % rawdict.length]
+            utils.print_info("\n".join(lines), 2)
+        if config.cfg.verbosity >= 3:
+            # Get diagnostics
+            db = database.Database()
+            db.connect()
+            select = db.select([db.raw_diagnostics.c.type, \
+                                db.raw_diagnostics.c.value]).\
+                        where(db.raw_diagnostics.c.rawfile_id == \
+                                    rawdict.rawfile_id)
+            result = db.execute(select)
+            diags = result.fetchall()
+            result.close()
+            select = db.select([db.raw_diagnostic_plots.c.plot_type, \
+                                db.raw_diagnostic_plots.c.filepath, \
+                                db.raw_diagnostic_plots.c.filename]).\
+                        where(db.raw_diagnostic_plots.c.rawfile_id == \
+                                    rawdict.rawfile_id)
+            result = db.execute(select)
+            diag_plots = result.fetchall()
+            result.close()
+            db.close()
+            lines = []
+            if diags:
+                lines.append("Diagnostics:")
+                for diag in diags:
+                    lines.append("    %s: %g" % (diag['type'], diag['value']))
+            if diag_plots:
+                lines.append("Diagnostic plots:")
+                for diag_plot in diag_plots:
+                    lines.append("    %s: %s" % (diag_plot['plot_type'], \
+                                os.path.join(diag_plot['filepath'], diag_plot['filename'])))
+            utils.print_info("\n".join(lines), 3)
+        print "--"*25
 
 
 if __name__=='__main__':
