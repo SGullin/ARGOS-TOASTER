@@ -111,6 +111,9 @@ def toa_select(args, existdb=None):
         whereclause &= ((db.toas.c.imjd+db.toas.c.fmjd) <= args.end_mjd)
     if args.toa_ids:
         whereclause &= (db.toas.c.toa_id.in_(args.toa_ids)) 
+    if args.process_ids:
+        whereclause &= (db.toas.c.process_id.in_(args.process_ids)) 
+    
     
     select = db.select([db.toas.c.toa_id.distinct(), \
                         db.toas.c.process_id, \
@@ -130,11 +133,13 @@ def toa_select(args, existdb=None):
                         db.obssystems.c.backend, \
                         db.obssystems.c.frontend, \
                         db.obssystems.c.band_descriptor, \
+                        db.telescopes.c.telescope_id, \
                         db.telescopes.c.telescope_name, \
                         db.telescopes.c.telescope_abbrev, \
                         db.telescopes.c.telescope_code, \
                         db.process.c.version_id, \
                         db.process.c.add_time, \
+                        db.process.c.manipulator, \
                         db.rawfiles.c.filename.label('rawfile'), \
                         db.templates.c.filename.label('template'), \
                         (db.toas.c.bw/db.rawfiles.c.bw * \
@@ -193,6 +198,35 @@ def get_toas(args, existdb=None):
     return rows
 
 
+def print_summary(toas, comments):
+    """Print a summary about the TOAs.
+
+        Inputs:
+            toas: A list of row objects each representing a TOA.
+            comments: User comments describing the timfile.
+        
+        Output:
+            None
+    """
+    telescopes = {}
+    obssystems = {}
+    manipulators = {}
+    for toa in toas:
+        # Telescopes
+        ntel = telescopes.get(toa['telescope_name'], 0) +1
+        telescopes[toa['telescope_name']] = ntel
+        # Observing systems
+        nobssys = obssystems.get(toa['obssystem'], 0) + 1
+        obssystems[toa['obssystem']] = nobssys
+        # Manpulators
+        nman = manipulators.get(toa['manipulator'], 0) + 1
+        manipulators[toa['manipulator']] = nman
+    print "Number of TOAs: %d" % len(toas)
+    print "Number of telescopes: %d" % len(telescopes)
+    print "Number of obssystems: %d" % len(obssystems)
+    print "Number of manipulators: %d" % len(manipulators)
+
+
 def add_timfile_entry(toas, cmdline, comments, existdb=None):
     """Insert a timfile entry in the DB, and associate
         TOAs with it.
@@ -236,6 +270,10 @@ def add_timfile_entry(toas, cmdline, comments, existdb=None):
 
 
 def main():
+    # Check to make sure user provided a comment
+    if not args.dry_run and args.comments is None:
+        raise errors.BadInputError("A comment describing the timfile is " \
+                                    "required!")
     db = database.Database()
     db.connect()
 
@@ -246,9 +284,12 @@ def main():
         toas = toa_getter(args, db)
         if not toas:
             raise errors.ToasterError("No TOAs match criteria provided!") 
-        timfile_id = add_timfile_entry(toas, cmdline, args.comments)
-        utils.print_info("Created new timfile entry - timfile_id=%d (%s)" % \
-                (timfile_id, utils.Give_UTC_now()), 1)
+        if args.dry_run:
+            print_summary(toas, args.comments)
+        else:
+            timfile_id = add_timfile_entry(toas, cmdline, args.comments)
+            utils.print_info("Created new timfile entry - timfile_id=%d (%s)" % \
+                    (timfile_id, utils.Give_UTC_now()), 1)
     except:
         db.rollback()
         db.close()
@@ -266,9 +307,13 @@ if __name__=='__main__':
                                 'from table, and creates a tim file for '
                                 'use with tempo2.')
     parser.add_argument('-p', '--psr', dest='pulsar_name', \
-                        required=True, type=str, \
+                        type=str, default='%', \
                         help='Pulsar name, or alias. NOTE: This option ' \
                             'must be provided.')
+    parser.add_argument('-P', '--process-id', dest='process_ids', \
+                        type=int, default=[], action='append', \
+                        help="A process ID. Multiple instances of " \
+                            "these criteria may be provided.")
     parser.add_argument('-t', '--telescope', dest='telescopes', type=str, \
                         default=[], action='append', \
                         help='Telescope name or alias. NOTE: To get TOAs '
@@ -297,8 +342,12 @@ if __name__=='__main__':
                         help="Determine what to do when conflicting " \
                             "TOAs are selected. (Default: raise an " \
                             "exception.)")
+    parser.add_argument('-n', '--dry-run', dest='dry_run', \
+                        action='store_true', default=False, \
+                        help="Print information about the timfile, but " \
+                            "don't actually create it.")
     parser.add_argument('--comments', dest='comments', \
-                        required=True, type=str, \
+                        type=str, \
                         help="Provide comments describing the template.")
     args=parser.parse_args()
     main()
