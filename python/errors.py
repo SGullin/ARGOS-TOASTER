@@ -12,11 +12,15 @@ class FatalToasterError(Exception):
        return colour.cstring(super(FatalToasterError, self).__str__(), 'error')
 
 
-# Regular TOASTER errors. These might be caught and dealt with.
 class NoConfigError(FatalToasterError):
     pass
 
 
+class BadColumnNameError(FatalToasterError):
+    pass
+
+
+# Regular TOASTER errors. These might be caught and dealt with.
 class ToasterError(Exception):
     def __str__(self):
        return colour.cstring(super(ToasterError, self).__str__(), 'error')
