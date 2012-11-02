@@ -53,7 +53,8 @@ def get_templates(args):
     if args.obssystem_name:
         whereclause &= (db.obssystems.c.name.like(args.obssystem_name))
     if args.telescope:
-        whereclause &= (db.telescope_aliases.c.telescope_name.like(args.telescope))
+        whereclause &= (db.telescope_aliases.c.telescope_alias.\
+                                like(args.telescope))
     if args.frontend:
         whereclause &= (db.obssystems.c.frontend.like(args.frontend))
     if args.backend:
