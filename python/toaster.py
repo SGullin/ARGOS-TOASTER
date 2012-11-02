@@ -110,7 +110,7 @@ def get_master_template_id(rawfile_id, existdb=None):
     elif len(rows) == 0:
         warnings.warn("There is no master template for the given " \
                         "raw file (ID: %d). Returning nothing..." % \
-                        rawfile_id, errors.ToasterError)
+                        rawfile_id, errors.ToasterWarning)
         return None
     else:
         return rows[0]['template_id']
