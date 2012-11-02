@@ -1,4 +1,6 @@
 import warnings
+import string
+
 import sqlalchemy as sa
 
 import errors
@@ -7,18 +9,30 @@ import config
 import schema
 import utils
 
+null = lambda x: x
     
 def fancy_getitem(self, key):
+    filterfunc = null
+    if (type(key) in (type('str'), type(u'str'))) and key.endswith("_L"):
+        filterfunc = string.lower
+        key = key[:-2]
+    elif (type(key) in (type('str'), type(u'str'))) and key.endswith("_U"):
+        filterfunc = string.upper
+        key = key[:-2]
     if self.has_key(key):
-        return super(self.__class__, self).__getitem__(key)
-    elif (type(key) is type('str') or type(u'str')) and key.endswith("_L"):
-        result = super(self.__class__, self).__getitem__(key[:-2])
-        return result.lower()
-    elif (type(key) is type('str') or type(u'str')) and key.endswith("_U"):
-        result = super(self.__class__, self).__getitem__(key[:-2])
-        return result.upper()
+        return filterfunc(super(self.__class__, self).__getitem__(key))
     else:
-        raise errors.UnrecognizedValueError("The column '%s' doesn't exist!" % key)
+        matches = [k for k in self.keys() if k.startswith(key)]
+        if len(matches) == 1:
+            return filterfunc(super(self.__class__, self).__getitem__(matches[0]))
+        elif len(matches) > 1:
+            raise errors.BadColumnNameError("The column abbreviation " \
+                                "'%s' is ambiguous. ('%s' all match)" % \
+                                (key, "', '".join(matches)))
+        else:
+            raise errors.BadColumnNameError("The column '%s' doesn't exist! " \
+                                "(Valid column names: '%s')" % \
+                                (key, "', '".join(sorted(self.keys()))))
 
 sa.engine.RowProxy.__getitem__ = fancy_getitem
 
