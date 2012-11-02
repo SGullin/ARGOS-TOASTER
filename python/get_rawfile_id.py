@@ -129,6 +129,7 @@ def custom_show_rawfiles(rawfiles, fmt="%(rawfile_id)d"):
     for rawfile in rawfiles:
         print fmt.decode('string-escape') % rawfile
 
+
 def summarize_rawfiles(rawfiles):
     numfiles = 0
     size = 0
@@ -345,8 +346,8 @@ def show_rawfiles(rawfiles):
                      "Observing band: %s" % rawdict.band_descriptor, \
                      "Telescope: %s" % rawdict.telescope_name, \
                      "Frontend: %s" % rawdict.frontend, \
-                    "Backend: %s" % rawdict.backend, \
-                    "Clock: %s" % rawdict.clock]
+                     "Backend: %s" % rawdict.backend, \
+                     "Clock: %s" % rawdict.clock]
             utils.print_info("\n".join(lines), 1)
         if config.cfg.verbosity >= 2:
             lines = ["MJD: %.6f" % rawdict.mjd, \
@@ -463,7 +464,9 @@ if __name__=='__main__':
                         "the matching rawfiles are presented. Recognized " \
                         "modes: 'text' - List information. Increase " \
                         "verbosity to get more info; 'plot' - display " \
-                        "a plot; Other styles are python-style format " \
+                        "a plot; 'summary' - Provide a short summary " \
+                        "of the matching rawfiles. Other styles are " \
+                        "python-style format " \
                         "strings interpolated using row-information for " \
                         "each matching rawfile (e.g. 'MJD %%(mjd)d'). " \
                         "(Default: text).")
