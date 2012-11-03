@@ -17,6 +17,7 @@ modes = [('syscalls', 'Print commands being executed as system calls.'), \
                         "un-committed changes."), \
          ('config', "Display what config files are loaded."), \
          ('dbconn', "Display when DB connections are opened/closed."), \
+         ('timfile', None), 
             ]
 
 modes.sort()
