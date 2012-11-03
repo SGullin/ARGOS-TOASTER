@@ -151,9 +151,9 @@ def write_timfile(toas, timfile, sortkeys=['freq', 'mjd'], flags="", outname="-"
         else:
             rev = False
             utils.print_info("Sorting TOAs by %s..." % sortkey, 2)
-        if sortkey not in toas[0].keys():
-            raise errors.UnrecognizedValueError("The sorting key (%s) " \
-                                    "is not recognized." % sortkey)
+        #if sortkey not in toas[0].keys():
+        #    raise errors.UnrecognizedValueError("The sorting key (%s) " \
+        #                            "is not recognized." % sortkey)
         if type(toas[0][sortkey]) is types.StringType:
             toas.sort(key=lambda x: x[sortkey].lower(), reverse=rev)
         else:
