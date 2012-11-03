@@ -170,7 +170,7 @@ def main():
                         "Please review error output.\n" \
                         "===================================\n" % numfails)
         else:
-            fn = customargs.rawfile
+            fn = args.rawfile
             rawfile_id = load_rawfile(fn, db)
             print "%s has been loaded to the DB. rawfile_id: %d" % \
                 (fn, rawfile_id)
