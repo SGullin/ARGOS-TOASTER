@@ -35,7 +35,7 @@ def strict_conflict_handler(toas):
                                 add(toa['parfile_id'])
     # Respond to any conflicts
     if len(pulsar_ids) > 1:
-        raise errors.ConflictingToasErrors("All TOAs must be for the same " \
+        raise errors.ConflictingToasError("All TOAs must be for the same " \
                                 "pulsar!")
     for procids in rawfile_ids.values():
         if len(procids) > 1:
@@ -79,7 +79,7 @@ def tolerant_conflict_handler(toas):
                                 add(toa['parfile_id'])
     # Respond to any conflicts
     if len(pulsar_ids) > 1:
-        raise errors.ConflictingToasErrors("All TOAs must be for the same " \
+        raise errors.ConflictingToasError("All TOAs must be for the same " \
                                 "pulsar!")
     for procids in rawfile_ids.values():
         if len(procids) > 1:
@@ -131,7 +131,7 @@ def get_newest_toas(toas):
                                 add(toa['parfile_id'])
     # Ensure all TOAs are from the same pulsar
     if len(pulsar_ids) > 1:
-        raise errors.ConflictingToasErrors("All TOAs must be for the same " \
+        raise errors.ConflictingToasError("All TOAs must be for the same " \
                                 "pulsar!")
     # Warn if other minor conflicts were found
     for tempids in obssystem_ids.values():
