@@ -431,7 +431,7 @@ if __name__ == "__main__":
                             "alias flags. (Default: load a single " \
                             "pulsar given on the cmd line.)")
     args, leftover_args = parser.parse_known_args()
-    if ((args.rawfile is None) or (args.rawfile == '-')) and \
+    if ((args.rawfile is None) and (args.rawfile_id is None)) and \
                 (args.from_file is None):
         warnings.warn("No input file or --from-file argument given " \
                         "will read from stdin.", \
