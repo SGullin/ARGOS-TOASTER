@@ -181,10 +181,11 @@ if __name__=='__main__':
                         "(Default: text).")
     parser.add_argument('--sort', dest='sortkeys', metavar='SORTKEY', \
                         action='append', default=['add_time', 'rawfile_id'], \
-                        help="DB column to sort TOAs by. Multiple " \
+                        help="DB column to sort processing jobs by. Multiple " \
                             "--sort options can be provided. Options " \
                             "provided later will take precedence " \
                             "over previous options. (Default: Sort " \
-                            "by MJD, then freq.)")
+                            "primarily by rawfile_id, then processing " \
+                            "date/time)")
     args = parser.parse_args()
     main()
