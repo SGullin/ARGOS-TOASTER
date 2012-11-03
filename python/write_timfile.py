@@ -146,22 +146,7 @@ def write_timfile(toas, timfile, sortkeys=['freq', 'mjd'], flags="", outname="-"
                                 "already exists. Doing nothing...")
     
     # Sort TOAs
-    for sortkey in sortkeys:
-        if sortkey.endswith("_r"):
-            sortkey = sortkey[:-2]
-            rev = True
-            utils.print_info("Reverse sorting TOAs by %s..." % sortkey, 2)
-        else:
-            rev = False
-            utils.print_info("Sorting TOAs by %s..." % sortkey, 2)
-        #if sortkey not in toas[0].keys():
-        #    raise errors.UnrecognizedValueError("The sorting key (%s) " \
-        #                            "is not recognized." % sortkey)
-        if type(toas[0][sortkey]) is types.StringType:
-            toas.sort(key=lambda x: x[sortkey].lower(), reverse=rev)
-        else:
-            toas.sort(key=lambda x: x[sortkey], reverse=rev)
-
+    utils.sort_by_keys(toas, args.sortkeys)
     if outname is '-':
         tim = sys.stdout
     else:
@@ -236,9 +221,11 @@ if __name__=='__main__':
                         help="Set flags appropriate for the IPTA exchange " \
                             "format.")
     parser.add_argument('--sort', dest='sortkeys', metavar='SORTKEY', \
-        action='append', default=['mjd', 'freq'], \
-        help="DB column to sort TOAs by. Multiple --sort options can " \
-            "be provided. Options provided later will take precedent " \
-            "over previous options. (Default: Sort by MJD, then freq.)")
+                        action='append', default=['mjd', 'freq'], \
+                        help="DB column to sort TOAs by. Multiple " \
+                            "--sort options can be provided. Options " \
+                            "provided later will take precedent " \
+                            "over previous options. (Default: Sort " \
+                            "by MJD, then freq.)")
     args=parser.parse_args()
     main()
