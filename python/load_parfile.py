@@ -160,7 +160,7 @@ def main():
                         "Please review error output.\n" \
                         "===================================\n" % numfails)
         else:
-            fn = customargs.parfile
+            fn = args.parfile
             parfile_id = load_parfile(fn)
             print "%s has been loaded to the DB. parfile_id: %d" % \
                 (fn, parfile_id)
