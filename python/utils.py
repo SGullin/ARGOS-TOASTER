@@ -1664,6 +1664,8 @@ class DefaultArguments(argparse.ArgumentParser):
         def __call__(self, parser, namespace, values, option_string):
             print "Available debugging modes:"
             for name, desc in config.debug.modes:
+                if desc is None:
+                    continue
                 print "    %s: %s" % (name, desc)
             sys.exit(1)
 
