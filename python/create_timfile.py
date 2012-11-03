@@ -4,73 +4,137 @@
 import sys
 import os.path
 import textwrap
+import warnings
 
 import utils
 import database
 import errors
 
 
-def check_toas(args, existdb=None):
+def strict_conflict_handler(toas):
     """Check to see if there are any conflicts between TOAs.
+        Raise an error if there is.
 
-        Inputs:
-            args: Arguments from argparser.
-            existdb: A (optional) existing database connection object.
-                (Default: Establish a db connection)
+        Input:
+            toas: The list of TOAs (ie rows returned from the DB)
 
-        Output:
-            rows: A list of dicts for each matching row.
+        Outputs:
+            toas: The input list of TOAs. (Only if no conflict is
+                found).
     """
-    db = existdb or database.Database()
-    db.connect()
+    # Collect information to see if there are any conflicts
+    rawfile_ids = {}
+    obssystem_ids = {}
+    pulsar_ids = {}
+    for toa in toas:
+        rawfile_ids.setdefault(toa['rawfile_id'], set()).\
+                                add(toa['process_id'])
+        obssystem_ids.setdefault(toa['obssystem_id'], set()).\
+                                add(toa['template_id'])
+        pulsar_ids.setdefault(toa['pulsar_id'], set()).\
+                                add(toa['parfile_id'])
+    # Respond to any conflicts
+    for procids in rawfile_ids.values():
+        if len(procids) > 1:
+            raise errors.ConflictingToasError("Some TOAs come from the same " \
+                                "data file, but different processing jobs!")
+    for tempids in obssystem_ids.values():
+        if len(tempids) > 1:
+            raise errors.ConflictingToasError("Some TOAs are from the same " \
+                                "observing system, but have been generated " \
+                                "with different templates!")
+    for parids in pulsar_ids.values():
+        if len(parids) > 1:
+            raise errors.ConflictingToasError("Some TOAs are from the same " \
+                                "pulsar, but have a different ephemeris " \
+                                "installed!")
+    return toas 
 
-    select = toa_select(args, db)
-    select.append_group_by(db.toas.c.rawfile_id)
-    select.append_having(database.sa.func.count(db.toas.c.process_id.\
-                                                distinct()) > 1)
-    result = db.execute(select)
-    rows = result.fetchall()
-    result.close()
-    if not existdb:
-        db.close()
 
-    if len(rows):
-        raise errors.ConflictingToasError("TOAs from the same raw file, " \
-                                    "but different processing runs match " \
-                                    "your selection criteria. This is not " \
-                                    "allowed. Be more specific, or use " \
-                                    "'--on-conflict=newest'.")
-    
+def tolerant_conflict_handler(toas):
+    """Check to see if there are any TOAs from the same data file,
+        but different processing runs.
+        Raise an error if there is.
 
-def get_newest_toas(args, existdb=None):
+        Input:
+            toas: The list of TOAs (ie rows returned from the DB)
+
+        Outputs:
+            toas: The input list of TOAs. (Only if no conflict is
+                found).
+    """
+    # Collect information to see if there are any conflicts
+    rawfile_ids = {}
+    obssystem_ids = {}
+    pulsar_ids = {}
+    for toa in toas:
+        rawfile_ids.setdefault(toa['rawfile_id'], set()).\
+                                add(toa['process_id'])
+        obssystem_ids.setdefault(toa['obssystem_id'], set()).\
+                                add(toa['template_id'])
+        pulsar_ids.setdefault(toa['pulsar_id'], set()).\
+                                add(toa['parfile_id'])
+    # Respond to any conflicts
+    for procids in rawfile_ids.values():
+        if len(procids) > 1:
+            raise errors.ConflictingToasError("Some TOAs come from the same " \
+                                "data file, but different processing jobs!")
+    for tempids in obssystem_ids.values():
+        if len(tempids) > 1:
+            warnings.warn("Some TOAs are from the same observing " \
+                          "system, but have been generated with " \
+                          "different templates!", errors.ToasterWarning)
+    for parids in pulsar_ids.values():
+        if len(parids) > 1:
+            warnings.warn("Some TOAs are from the same " \
+                          "pulsar, but have a different ephemeris " \
+                          "installed!", errors.ToasterWarning)
+    return toas 
+
+
+def get_newest_toas(toas):
     """Get TOAs. If there are conflicts take TOAs from the
         most recent processing job.
 
         Inputs:
-            args: Arguments from argparser.
-            existdb: A (optional) existing database connection object.
-                (Default: Establish a db connection)
+            toas: The list of TOAs (ie rows returned from the DB)
 
-        Output:
-            rows: A list of dicts for each matching row.
+        Outputs:
+            toas: The (*in-place*) modified list of input TOAs, 
+                using only those from the most recent processing 
+                run for each data file.
     """
-    db = existdb or database.Database()
-    db.connect()
-
-    select = db.select([db.process.c.rawfile_id, \
-                        database.sa.func.max(db.process.c.add_time).\
-                                    label('max_add')]).\
-                group_by(db.process.c.rawfile_id)
-    alias = database.sa.sql.subquery('newest', [select])
-    select = toa_select(args, db)
-    select.append_from(alias)
-    select.append_whereclause(alias.c.max_add==db.process.c.add_time)
-    result = db.execute(select)
-    rows = result.fetchall()
-    result.close()
-    if not existdb:
-        db.close()
-    return rows
+    # Sort TOAs by when they were produced
+    toas.sort(key=lambda x: x['add_time'], reverse=True)
+    rawfile_ids = {}
+    obssystem_ids = {}
+    pulsar_ids = {}
+    ii = 0
+    while ii < len(toas):
+        toa = toas[ii]
+        procids = rawfile_ids.setdefault(toa['rawfile_id'], set())
+        if len(procids) and toa['process_id'] not in procids:
+            toas.pop(ii)
+            continue
+        else:
+            procids.add(toa['process_id'])
+            ii += 1
+        obssystem_ids.setdefault(toa['obssystem_id'], set()).\
+                                add(toa['template_id'])
+        pulsar_ids.setdefault(toa['pulsar_id'], set()).\
+                                add(toa['parfile_id'])
+    # Warn if other minor conflicts were found
+    for tempids in obssystem_ids.values():
+        if len(tempids) > 1:
+            warnings.warn("Some TOAs are from the same observing " \
+                          "system, but have been generated with " \
+                          "different templates!", errors.ToasterWarning)
+    for parids in pulsar_ids.values():
+        if len(parids) > 1:
+            warnings.warn("Some TOAs are from the same " \
+                          "pulsar, but have a different ephemeris " \
+                          "installed!", errors.ToasterWarning)
+    return toas
 
 
 def toa_select(args, existdb=None):
@@ -138,6 +202,8 @@ def toa_select(args, existdb=None):
                         db.telescopes.c.telescope_abbrev, \
                         db.telescopes.c.telescope_code, \
                         db.process.c.version_id, \
+                        db.process.c.template_id, \
+                        db.process.c.parfile_id, \
                         db.process.c.add_time, \
                         db.process.c.manipulator, \
                         db.rawfiles.c.filename.label('rawfile'), \
@@ -188,7 +254,6 @@ def get_toas(args, existdb=None):
     db = existdb or database.Database()
     db.connect()
     
-    check_toas(args, db)
     select = toa_select(args, db)
     result = db.execute(select)
     rows = result.fetchall()
@@ -280,8 +345,10 @@ def main():
     trans = db.begin()
     try:
         cmdline = " ".join(sys.argv)
-        toa_getter = toa_getters[args.on_conflict]
-        toas = toa_getter(args, db)
+        toas = get_toas(args, db)
+        # Check for / handle conflicts
+        conflict_handler = conflict_handlers[args.on_conflict]
+        toas = conflict_handler(toas)
         if not toas:
             raise errors.ToasterError("No TOAs match criteria provided!") 
         if args.dry_run:
@@ -300,8 +367,9 @@ def main():
     
 
 if __name__=='__main__':
-    toa_getters = {'raise': get_toas, \
-                   'newest': get_newest_toas}
+    conflict_handlers = {'strict': strict_conflict_handler, \
+                         'tolerant': tolerant_conflict_handler, \
+                         'newest': get_newest_toas}
 
     parser = utils.DefaultArguments(description='Extracts TOA information ' \
                                 'from table, and creates a tim file for '
@@ -338,7 +406,7 @@ if __name__=='__main__':
                             "--manipulator' arguments may be provided. " \
                             "(Default: match all manipulators).")
     parser.add_argument('--on-conflict', dest='on_conflict', \
-                        choices=toa_getters, default='raise', \
+                        choices=conflict_handlers, default='strict', \
                         help="Determine what to do when conflicting " \
                             "TOAs are selected. (Default: raise an " \
                             "exception.)")
