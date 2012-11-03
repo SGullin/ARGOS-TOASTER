@@ -5,11 +5,13 @@ import sys
 import os.path
 import textwrap
 import warnings
+import argparse
 
 import utils
 import database
 import errors
-
+import write_timfile as wt
+import config
 
 def strict_conflict_handler(toas):
     """Check to see if there are any conflicts between TOAs.
@@ -196,6 +198,7 @@ def toa_select(args, existdb=None):
                         db.toas.c.obssystem_id, \
                         db.toas.c.imjd, \
                         db.toas.c.fmjd, \
+                        (db.toas.c.fmjd+db.toas.c.imjd).label('mjd'), \
                         db.toas.c.freq, \
                         db.toas.c.toa_unc_us, \
                         db.toas.c.bw, \
@@ -361,7 +364,12 @@ def main():
         toas = conflict_handler(toas)
         if not toas:
             raise errors.ToasterError("No TOAs match criteria provided!") 
-        if args.dry_run:
+        if config.debug.TIMFILE:
+            wt.write_timfile(toas, {'comments': args.comments, \
+                                    'user_id': utils.get_userid(), \
+                                    'add_time': "Not in DB!", \
+                                    'timfile_id': -1})
+        elif args.dry_run:
             print_summary(toas, args.comments)
         else:
             timfile_id = add_timfile_entry(toas, cmdline, args.comments)
