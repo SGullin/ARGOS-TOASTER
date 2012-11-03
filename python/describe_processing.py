@@ -42,9 +42,10 @@ def get_procjobs(args, existdb=None):
         whereclause &= (db.process.c.process_id.in_(args.process_ids))
 
     if args.manip_args:
-        tmp = db.process.c.manipulator.contains(args.manip_args[0])
+        print args.manip_args
+        tmp = db.process.c.manipulator_args.contains(args.manip_args[0])
         for maniparg in args.manip_args[1:]:
-            tmp &= (db.process.c.manipulator.contains(args.manip_args[0]))
+            tmp &= (db.process.c.manipulator_args.contains(args.manip_args[0]))
         whereclause &= (tmp)
 
     select = db.select([db.process.c.process_id.distinct(), \
