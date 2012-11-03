@@ -1534,7 +1534,35 @@ def load_toas(toainfo, process_id, template_id, rawfile_id, existdb=None):
     
     return toa_ids
 
+
+def sort_by_keys(tosort, keys):
+    """Sort a list of dictionaries, or database rows
+        by the list of keys provided. Keys provided 
+        later in the list take precedence over earlier
+        ones. If a key ends in '_r' sorting by that key
+        will happen in reverse.
+
+        Inputs:
+            tosort: The list to sort.
+            keys: The keys to use for sorting.
+
+        Outputs:
+            None - sorting is done in-place.
+    """
+    for sortkey in keys:
+        if sortkey.endswith("_r"):
+            sortkey = sortkey[:-2]
+            rev = True
+            print_info("Reverse sorting by %s..." % sortkey, 2)
+        else:
+            rev = False
+            print_info("Sorting by %s..." % sortkey, 2)
+        if type(tosort[0][sortkey]) is types.StringType:
+            tosort.sort(key=lambda x: x[sortkey].lower(), reverse=rev)
+        else:
+            tosort.sort(key=lambda x: x[sortkey], reverse=rev)
     
+
 def set_warning_mode(mode=None, reset=True):
     """Add a simple warning filter.
         
