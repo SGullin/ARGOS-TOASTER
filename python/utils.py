@@ -568,7 +568,7 @@ def prep_parfile(fn):
         params['pulsar_id'] = get_pulsarid(params['psrb'])
         params['name'] = params['psrb']
     else:
-        params['pulsar_id'] = get_pulsarids(params['psr'])
+        params['pulsar_id'] = get_pulsarid(params['psr'])
         params['name'] = params['psr']
     
     # Translate a few parameters
