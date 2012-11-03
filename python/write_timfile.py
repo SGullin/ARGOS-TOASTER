@@ -81,6 +81,9 @@ def get_toas(timfile_id, existdb=None):
                         db.telescopes.c.telescope_code, \
                         db.process.c.version_id, \
                         db.process.c.add_time, \
+                        db.process.c.parfile_id, \
+                        db.process.c.add_time, \
+                        db.process.c.manipulator, \
                         db.rawfiles.c.filename.label('rawfile'), \
                         db.templates.c.filename.label('template'), \
                         (db.toas.c.bw/db.rawfiles.c.bw * \
@@ -138,7 +141,7 @@ def write_timfile(toas, timfile, sortkeys=['freq', 'mjd'], flags="", outname="-"
         Outputs:
             None
     """
-    if os.path.exists(outname):
+    if outname != '-' and os.path.exists(outname):
         raise errors.FileError("The output timfile sepcified (%s) " \
                                 "already exists. Doing nothing...")
     
