@@ -134,6 +134,8 @@ def main():
     procjobs = get_procjobs(args)
     if not len(procjobs):
         raise errors.ToasterError("No processing jobs match parameters provided!")
+    # Sort procjobs
+    utils.sort_by_keys(procjobs, args.sortkeys) 
     if args.output_style=='text':
         show_procjobs(procjobs)
     else:
@@ -177,5 +179,12 @@ if __name__=='__main__':
                         "each matching rawfile (e.g. 'Manipulator = " \
                         "%%(manipulator)s'). " \
                         "(Default: text).")
+    parser.add_argument('--sort', dest='sortkeys', metavar='SORTKEY', \
+                        action='append', default=['add_time', 'rawfile_id'], \
+                        help="DB column to sort TOAs by. Multiple " \
+                            "--sort options can be provided. Options " \
+                            "provided later will take precedence " \
+                            "over previous options. (Default: Sort " \
+                            "by MJD, then freq.)")
     args = parser.parse_args()
     main()
