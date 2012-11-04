@@ -146,7 +146,7 @@ def write_timfile(toas, timfile, sortkeys=['freq', 'mjd'], flags="", outname="-"
                                 "already exists. Doing nothing...")
     
     # Sort TOAs
-    utils.sort_by_keys(toas, args.sortkeys)
+    utils.sort_by_keys(toas, sortkeys)
     if outname is '-':
         tim = sys.stdout
     else:
