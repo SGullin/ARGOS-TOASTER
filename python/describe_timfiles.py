@@ -61,7 +61,8 @@ def get_timfiles(psr='%', timfile_id=None):
                         onclause=db.toas.c.obssystem_id == \
                                 db.obssystems.c.obssystem_id)], \
                 distinct=db.timfiles.c.timfile_id).\
-                where(whereclause)
+                where(whereclause).\
+                group_by(db.timfiles.c.timfile_id)
     result = db.execute(select)
     # MySQL return a single row filled with Nones and 0s
     # if no timfiles match. Weed out the bad row.
@@ -73,8 +74,8 @@ def get_timfiles(psr='%', timfile_id=None):
 
 def show_timfiles(timfiles):
     if len(timfiles):
+        print "--"*25
         for timfile in timfiles:
-            print "- "*25
             print colour.cstring("Timfile ID:", underline=True, bold=True) + \
                     colour.cstring(" %d" % timfile['timfile_id'], bold=True)
             print "Pulsar name: %s" % timfile['pulsar_name']
@@ -91,7 +92,7 @@ def show_timfiles(timfiles):
                      "Number of telescopes used: %d" % timfile['numtelescopes'], \
                      "Number of observing systems used: %d" % timfile['numobsys']]
             utils.print_info("\n".join(lines), 1)
-            print " -"*25
+            print "--"*25
     else:
         raise errors.ToasterError("No timfiles match parameters provided!")
 
