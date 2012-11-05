@@ -125,6 +125,32 @@ def show_procjobs(procjobs):
         print "--"*25
 
 
+def summarize_procjobs(procjobs):
+    """Print a summary of the processing jobs.
+
+        Input:
+            procjobs: A list of row objects, each representing a 
+                processing job.
+
+        Output:
+            None
+    """
+    manipulators = {}
+    pulsars = {}
+    for procjob in procjobs:
+        # Manipulators
+        nman = manipulators.get(procjob['manipulator'], 0) + 1
+        manipulators[procjob['manipulator']] = nman
+        # Pulsars
+        npsr = pulsars.get(procjob['pulsar_id'], 0) + 1
+        pulsars[procjob['pulsar_id']] = npsr
+    print "Number of processing jobs: %d" % len(procjobs)
+    print "Number of manipulators: %d" % len(manipulators)
+    for manip in sorted(manipulators.keys()):
+        print "    Number of '%s' processing jobs: %d" % (manip, manipulators[manip])
+    print "Number of pulsars: %d" % len(pulsars)
+
+
 def custom_show_procjobs(procjobs, fmt="%(process_id)d"):
     for procjob in procjobs:
         print fmt.decode('string-escape') % procjob
@@ -138,6 +164,8 @@ def main():
     utils.sort_by_keys(procjobs, args.sortkeys) 
     if args.output_style=='text':
         show_procjobs(procjobs)
+    elif args.output_style=='summary':
+        summarize_procjobs(procjobs)
     else:
         custom_show_procjobs(procjobs, fmt=args.output_style)
 
