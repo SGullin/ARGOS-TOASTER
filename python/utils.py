@@ -53,6 +53,8 @@ pulsarname_cache = {}
 pulsaralias_cache = {}
 userid_cache = {}
 userinfo_cache = {}
+obssysid_cache = {}
+obssysinfo_cache = {}
 
 
 ##############################################################################
@@ -286,6 +288,7 @@ def get_prefname(alias):
     """
     return get_pulsarname(get_pulsarid(alias))
 
+
 def get_pulsarid(alias):
     """Given a pulsar name/alias return its pulsar_id number,
         or raise an error.
@@ -303,7 +306,7 @@ def get_pulsarid(alias):
     return cache[alias]
 
 
-def get_obssystemids(existdb=None):
+def get_obssystemid_cache(existdb=None, update=False):
     """Return a dictionary mapping fronend/backend combinations
         to obs system ids.
 
@@ -312,35 +315,111 @@ def get_obssystemids(existdb=None):
                 (Default: Establish a db connection)
 
         Output:
-            obssystemids: A dictionary with a (frontend, backend) tuple as keys
+            obssystemids: A dictionary with a \
+            (telescope, frontend, backend) tuple as keys
                     and obs system ids as values.
     """
-    # Use the exisitng DB connection, or open a new one if None was provided
-    db = existdb or database.Database()
-    db.connect()
-
-    select = db.select([db.telescopes.c.telescope_name, \
-                        db.obssystems.c.frontend, \
-                        db.obssystems.c.backend, \
-                        db.obssystems.c.obssystem_id], \
-                from_obj=[db.obssystems.\
-                    outerjoin(db.telescopes, \
-                        onclause=db.telescopes.c.telescope_id == \
-                                db.obssystems.c.telescope_id)])
-    result = db.execute(select)
-    rows = result.fetchall()
-    result.close()
-    if not existdb:
-        # Close the DB connection we opened
-        db.close()
-
-    # Create the mapping
-    obssystemids = {}
-    for row in rows:
-        obssystemids[(row['telescope_name'].lower(), \
-                      row['frontend'].lower(), \
-                      row['backend'].lower())] = row['obssystem_id']
+    global obssysid_cache
+    if update or not obssysid_cache:
+        # Use the exisitng DB connection, or open a new one if None was provided
+        db = existdb or database.Database()
+        db.connect()
+ 
+        select = db.select([db.telescope_aliases.c.telescope_alias, \
+                            db.obssystems.c.frontend, \
+                            db.obssystems.c.backend, \
+                            db.obssystems.c.name, \
+                            db.obssystems.c.obssystem_id], \
+                    from_obj=[db.telescope_aliases.\
+                        outerjoin(db.telescopes, \
+                            onclause=db.telescope.c.telescope_id == \
+                                    db.telescope_aliases.c.telescope_id).\
+                        outerjoin(db.telescopes, \
+                            onclause=db.telescopes.c.telescope_id == \
+                                    db.obssystems.c.telescope_id)])
+        result = db.execute(select)
+        rows = result.fetchall()
+        result.close()
+        if not existdb:
+            # Close the DB connection we opened
+            db.close()
+ 
+        # Create the mapping
+        for row in rows:
+            obssysid_cache[(row['telescope_alias'].lower(), \
+                          row['frontend'].lower(), \
+                          row['backend'].lower())] = row['obssystem_id']
+            obssysid_cache[row['name']] = row['obssystem_id']
     return obssystemids
+
+
+def get_obssysid(obssys_key):
+    """Given a telescope, frontend, backend return the
+        corresponding observing system ID.
+
+        Input:
+            obssys_key: The observing system's name, or 
+                telescope, frontend, backend combination.
+
+        Output:
+            obssys_id: The corresponding observing system's ID.
+    """
+    cache = get_obssysid_cache()
+    if obssys_key not in cache:
+        raise errors.UnrecognizedValueError("The observing system (%s) " \
+                                "does not appear in the obssysid_cache!" % \
+                                key)
+    return cache[key]
+
+
+def get_obssysinfo_cache(existdb=None, update=False):
+    """Return a dictionary mapping obssystem IDs to 
+        observing system info.
+
+        Inputs:
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+            update: If True, update the cache even if it already
+                exists. (Default: Don't update)
+
+        Output:
+            obssysinfo_cache: A dictionary with obssystem IDs as 
+                keys and observation info as values.
+    """
+    global obssysinfo_cache
+    if update or not obssysinfo_cache:
+        db = existdb or database.Database()
+        db.connect()
+
+        select = db.select([db.obssystems])
+        result = db.execute(select)
+        rows = result.fetchall()
+        result.close()
+        if not existdb:
+            db.close()
+        # Create the mapping
+        for row in rows:
+            obssysinfo_cache[row['obssystem_id']] = row
+    return obssysinfo_cache
+
+
+def get_obssysinfo(obssys_id):
+    """Given an obssystem ID return the observing system info
+        as a dictionary-like object.
+
+        Input:
+            obssys_id: The observing system ID.
+
+        Output:
+            obssys_info: A dictionary-like object of the observing
+                system's info.
+    """
+    cache = get_obssysinfo_cache()
+    if obssys_id not in cache:
+        raise errors.UnrecognizedValueError("The observing system ID (%d) " \
+                            "does not appear in the obssysinfo_cache!" % \
+                            obssys_id)
+    return cache[obssys_id]
 
 
 def get_telescope_info(alias, existdb=None):
