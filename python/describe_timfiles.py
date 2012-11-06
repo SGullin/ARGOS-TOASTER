@@ -8,6 +8,47 @@ import utils
 import colour
 import errors
 
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib
+
+
+def get_timfiles_toas(timfile_id):
+    """Return TOA information for each of the given timfile's
+        TOAs.
+
+        Input:
+            timfile_id: The ID number of the timfile to get
+                TOAs for.
+
+        Output:
+            toas: A list of row objects, each corresponding to
+                a TOA of the timfile.
+    """
+    db = database.Database()
+    db.connect()
+
+    select = db.select([db.toas.c.toa_id, \
+                        db.toas.c.toa_unc_us, \
+                        (db.toas.c.fmjd+db.toas.c.imjd).\
+                                label('mjd'), \
+                        db.obssystems.c.band_descriptor, \
+                        db.obssystems.c.name, \
+                        db.obssystems.c.obssystem_id], \
+                from_obj=[db.toa_tim.\
+                    outerjoin(db.toas, \
+                        onclause=db.toas.c.toa_id == \
+                                db.toa_tim.c.toa_id).\
+                    outerjoin(db.obssystems, \
+                        onclause=db.toas.c.obssystem_id == \
+                                db.obssystems.c.obssystem_id)]).\
+                where(db.toa_tim.c.timfile_id==timfile_id)
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
+    db.close()
+    return rows
+
 def get_timfiles(psr='%', timfile_id=None):
     """Return a dictionary of information for each timfile
         in the DB that matches the search criteria provided.
@@ -96,11 +137,80 @@ def show_timfiles(timfiles):
     else:
         raise errors.ToasterError("No timfiles match parameters provided!")
 
-            
+
+def plot_timfile(timfile):
+    """Make a plot summarizing a timfile.
+
+        Input:
+            timfile: A row of info of the timfile to summarize.
+
+        Output:
+            None
+    """
+    COLOURS = ['k', 'g', 'r', 'b', 'm', 'c']
+    ncolours = len(COLOURS)
+    BANDS = ['UHF', 'L-band', 'S-band']
+    numbands = len(BANDS)
+    toas = get_timfiles_toas(timfile['timfile_id'])
+    obssys_ids = set()
+    for toa in toas:
+        obssys_ids.add(toa['obssystem_id'])
+    obssys_ids = list(obssys_ids)
+    fig = plt.figure()
+    ax = plt.axes((0.1, 0.15, 0.85, 0.75))
+    lomjd = 70000
+    himjd = 10000
+    artists = []
+    for toa in toas:
+        ind = BANDS.index(toa['band_descriptor'])
+        ymin = float(ind)/numbands
+        ymax = float(ind+1)/numbands
+        colour = COLOURS[obssys_ids.index(toa['obssystem_id'])%ncolours]
+        artists.append(plt.axvline(toa['mjd'], ymin, ymax, c=colour))
+        himjd = max(himjd, toa['mjd'])
+        lomjd = min(lomjd, toa['mjd'])
+    plt.xlabel("MJD")
+    plt.yticks(np.arange(0.5/numbands, 1, 1.0/numbands), BANDS, \
+                rotation=30, va='top')
+    plt.xlim(lomjd, himjd)
+    patches = []
+    obssystems = []
+    for ii, obssys_id in enumerate(obssys_ids):
+        colour = COLOURS[ii%ncolours]
+        patches.append(matplotlib.patches.Patch(fc=colour))
+        obssystems.append(utils.get_obssysinfo(obssys_id)['name'])
+    plt.figlegend(patches, obssystems, 'lower center', ncol=4, \
+                    prop=dict(size='small'))
+
+    def change_thickness(event):
+        if event.key == '=':
+            for art in artists:
+                lw = art.get_linewidth()
+                art.set_linewidth(lw+1)
+        elif event.key == '-':
+            for art in artists:
+                lw = art.get_linewidth()
+                art.set_linewidth(max(1, lw-1))
+        plt.draw()
+    fig.canvas.mpl_connect('key_press_event', change_thickness)
+
 
 def main():
     timfiles = get_timfiles(args.pulsar_name, args.timfile_id)
-    show_timfiles(timfiles)
+    if args.output_style == 'text':
+        show_timfiles(timfiles)
+    elif args.output_style == 'plot':
+        if len(timfiles) == 1:
+            plot_timfile(timfiles[0])
+            plt.show()
+        else:
+            raise errors.BadInputError("Timfile summary plot only applies " \
+                                    "when a single timfile matches the " \
+                                    "criteria provided. (%d matches)" % \
+                                    len(timfiles))
+    else:
+        raise errors.UnrecognizedValue("The output-style (%s) isn't " \
+                                    "recognized." % args.output_style)
 
 
 if __name__=='__main__':
@@ -116,5 +226,14 @@ if __name__=='__main__':
                             "the details of a single timfile, identified " \
                             "by its ID number. NOTE: No other timfiles " \
                             "will match if this option is provided.")
+    parser.add_argument("--output-style", default='text', \
+                        dest='output_style', type=str, \
+                        help="The following options control how " \
+                        "the matching processing jobs are presented. " \
+                        "Recognized modes: 'text' - List information. " \
+                        "Increase verbosity to get more info; 'plot' - " \
+                        "Show a plot summarizing all TOAs in a timfile " \
+                        "NOTE: This only applies when a single timfile " \
+                        "matches the criteria provided. (Default: text).")
     args = parser.parse_args()
     main()
