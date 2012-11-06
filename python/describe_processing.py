@@ -201,8 +201,9 @@ if __name__=='__main__':
                         help="The following options control how " \
                         "the matching processing jobs are presented. " \
                         "Recognized modes: 'text' - List information. " \
-                        "Increase verbosity to get more info; Other " \
-                        "styles are python-style format " \
+                        "Increase verbosity to get more info; " \
+                        "'summary' - Summarize the matching processing " \
+                        "jobs. Other styles are python-style format " \
                         "strings interpolated using row-information for " \
                         "each matching rawfile (e.g. 'Manipulator = " \
                         "%%(manipulator)s'). " \
