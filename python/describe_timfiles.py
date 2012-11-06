@@ -147,7 +147,7 @@ def plot_timfile(timfile):
         Output:
             None
     """
-    COLOURS = ['k', 'g', 'r', 'b', 'm', 'c']
+    COLOURS = ['k', 'g', 'r', 'b', 'm', 'c', 'y']
     ncolours = len(COLOURS)
     BANDS = ['UHF', 'L-band', 'S-band']
     numbands = len(BANDS)
@@ -186,11 +186,11 @@ def plot_timfile(timfile):
         if event.key == '=':
             for art in artists:
                 lw = art.get_linewidth()
-                art.set_linewidth(lw+1)
+                art.set_linewidth(lw+0.5)
         elif event.key == '-':
             for art in artists:
                 lw = art.get_linewidth()
-                art.set_linewidth(max(1, lw-1))
+                art.set_linewidth(max(1, lw-0.5))
         plt.draw()
     fig.canvas.mpl_connect('key_press_event', change_thickness)
 
