@@ -31,7 +31,6 @@ def main():
                 continue
             print "    %s" % alias
         print "--"*25
-    
 
 
 if __name__=='__main__':
