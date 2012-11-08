@@ -12,8 +12,6 @@ import os.path
 import warnings
 
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib
 
 import utils
 import database
@@ -158,6 +156,9 @@ def summarize_rawfiles(rawfiles):
 
 
 def plot_rawfiles(rawfiles):
+    import matplotlib.pyplot as plt
+    import matplotlib
+
     # Set default parameters
     plt.rc('xtick', labelsize='x-small')
     plt.rc('ytick', labelsize='x-small')

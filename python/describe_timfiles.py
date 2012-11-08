@@ -9,8 +9,6 @@ import colour
 import errors
 
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib
 
 
 def get_timfiles_toas(timfile_id):
@@ -147,6 +145,9 @@ def plot_timfile(timfile):
         Output:
             None
     """
+    import matplotlib.pyplot as plt
+    import matplotlib
+    
     COLOURS = ['k', 'g', 'r', 'b', 'm', 'c', 'y']
     ncolours = len(COLOURS)
     BANDS = ['UHF', 'L-band', 'S-band']
