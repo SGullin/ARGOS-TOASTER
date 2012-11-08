@@ -97,7 +97,7 @@ def main():
     while args.passwd_hash is None:
         # No password (or hash) provided on command line
         # Ask user for password
-        hash1 = utils.hash_password(getpass.getpass("Password for %s: " % \
+        hash1 = utils.hash_password(getpass.getpass("TOASTER Password for %s: " % \
                                             args.user_name))
         hash2 = utils.hash_password(getpass.getpass("Re-type password: "))
         if hash1 == hash2:
