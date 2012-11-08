@@ -332,9 +332,9 @@ def get_obssystemid_cache(existdb=None, update=False):
                             db.obssystems.c.obssystem_id], \
                     from_obj=[db.telescope_aliases.\
                         outerjoin(db.telescopes, \
-                            onclause=db.telescope.c.telescope_id == \
+                            onclause=db.telescopes.c.telescope_id == \
                                     db.telescope_aliases.c.telescope_id).\
-                        outerjoin(db.telescopes, \
+                        outerjoin(db.obssystems, \
                             onclause=db.telescopes.c.telescope_id == \
                                     db.obssystems.c.telescope_id)])
         result = db.execute(select)
@@ -350,7 +350,7 @@ def get_obssystemid_cache(existdb=None, update=False):
                           row['frontend'].lower(), \
                           row['backend'].lower())] = row['obssystem_id']
             obssysid_cache[row['name']] = row['obssystem_id']
-    return obssystemids
+    return obssysid_cache
 
 
 def get_obssysid(obssys_key):
@@ -707,7 +707,7 @@ def prep_file(fn):
     # Check if obssystem_id, pulsar_id, user_id can be found
     obssys_key = (params['telescop'].lower(), params['rcvr'].lower(), \
                                 params['backend'].lower())
-    obssys_ids = get_obssystemids()
+    obssys_ids = get_obssystemid_cache()
     if obssys_key not in obssys_ids:
         t, r, b = obssys_key
         raise errors.FileError("The observing system combination in the file " \
