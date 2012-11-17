@@ -156,6 +156,21 @@ def main():
                         "Please review error output.\n" \
                         "===================================\n" % numfails)
         else:
+            if args.telescope is None or args.backend is None or \
+                    args.frontend is None or args.band is None or \
+                    args.clock is None:
+                raise errors.BadInputError("Observing systems " \
+                        "must have a telescope, backend, frontend, " \
+                        "band descriptor, and clock file! At least " \
+                        "one of these is missing.")
+            tinfo = utils.get_telescope_info(args.telescope, db)
+            telescope_id = tinfo['telescope_id']
+
+            if args.name is None:
+                args.name = "%s_%s_%s" % \
+                            (tinfo['telescope_abbrev'].upper(), \
+                             args.backend.upper(), \
+                             args.frontend.upper())
             obssystem_id = add_obssystem(db, args.name, telescope_id, \
                         args.frontend, args.backend, args.band, args.clock)
             print "Successfully inserted new observing system. " \
