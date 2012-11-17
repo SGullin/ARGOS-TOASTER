@@ -184,10 +184,17 @@ def main():
                         "Please review error output.\n" \
                         "===================================\n" % numfails)
         else:
-            telescope_id = add_telescope(db, customargs.name, \
-                                customargs.itrf_x, customargs.itrf_y, \
-                                customargs.itrf_x, customargs.abbrev, \
-                                customargs.code, customargs.aliases)
+            if args.name is None or args.itrf_x is None or \
+                    args.itrf_y is None or args.itrf_z is None or \
+                    args.abbrev is None or args.code is None:
+                raise errors.BadInputError("Telescopes " \
+                        "must have a name, IRTF coordinates (X,Y,Z), " \
+                        "an abbreviation, and a site code. " \
+                        "One of these is missing.")
+            telescope_id = add_telescope(db, args.name, \
+                                args.itrf_x, args.itrf_y, \
+                                args.itrf_x, args.abbrev, \
+                                args.code, args.aliases)
             print "Successfully inserted new telescope. " \
                        "Returned telescope_id: %d" % telescope_id
     finally:
