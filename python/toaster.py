@@ -365,7 +365,7 @@ def main():
                     continue
                 try:
                     customargs = copy.deepcopy(args)
-                    arglist = shlex.split(line.strip())
+                    arglist = leftover_args+shlex.split(line.strip())
                     customargs, custom_leftover_args = \
                             parser.parse_known_args(arglist, namespace=customargs)
                     reduce_rawfile(customargs, custom_leftover_args, db)
