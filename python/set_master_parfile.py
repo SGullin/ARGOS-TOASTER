@@ -28,7 +28,7 @@ def set_as_master_parfile(db, parfile_id):
         if row['mparid']==parfile_id:
             warnings.warn("Parfile (ID: %d) is already the master parfile " \
                             "for this pulsar (ID: %d). Doing nothing..." % \
-                            (row['parfile_id'], row['pulsar_id']), \
+                            (row['mparid'], row['pulsar_id']), \
                             errors.ToasterWarning)
             db.commit()
             return
