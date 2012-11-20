@@ -17,7 +17,7 @@ def set_as_master_template(db, template_id):
     db.begin()
     # Check if this pulsar/obssystem combiation already has a
     # Master template in the DB
-    select = db.select([db.templates.c.template_id, \
+    select = db.select([db.master_templates.c.template_id.label('mtempid'), \
                         db.templates.c.pulsar_id, \
                         db.templates.c.obssystem_id]).\
                 where((db.master_templates.c.obssystem_id == \
@@ -29,11 +29,11 @@ def set_as_master_template(db, template_id):
     row = result.fetchone()
     result.close()
     if row:
-        if row['template_id'] == template_id:
+        if row['mtempid'] == template_id:
             warnings.warn("Template (ID: %d) is already the master " \
                             "template for this pulsar (ID: %d), " \
                             "observing system (ID: %d) combination. " \
-                            "Doing nothing..." % (row['template_id'], \
+                            "Doing nothing..." % (row['mtempid'], \
                             row['pulsar_id'], row['obssystem_id']), \
                             errors.ToasterWarning)
             db.commit()
