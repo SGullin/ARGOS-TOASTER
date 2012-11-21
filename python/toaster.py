@@ -150,9 +150,9 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
 
         Inputs:
             manip: A manipulator instance.
-            rawfile_id: The ID number of the raw file to generate TOAs from.
-            parfile_id: The ID number of the par file to install into the
-                raw file.
+            rawfile_id: The ID number of the raw data file to generate TOAs from.
+            parfile_id: The ID number of the parfile to install into the
+                raw file. If this is None, then no new parfile will be installed.
             tempalte_id: The ID number of the template to use.
             existdb: An existing database connection object.
                 (Default: establish a new DB connection)
@@ -176,19 +176,22 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         version_id = utils.get_version_id(db)
         # Get raw data from rawfile_id and verify MD5SUM
         rawfile = utils.get_rawfile_from_id(rawfile_id, db, verify_md5=True)
-        # Get ephemeris from parfile_id and verify MD5SUM
-        parfile = utils.get_parfile_from_id(parfile_id, db, verify_md5=True)
- 
+        
         # Manipulate the raw file
-        utils.print_info("Manipulating file", 0)
+        utils.print_info("Manipulating file", 1)
         # Create a temporary file for the adjusted results
         tmpfile, adjustfn = tempfile.mkstemp(prefix='toaster_tmp', \
                             suffix='_newephem.ar', dir=config.cfg.base_tmp_dir)
         os.close(tmpfile)
-        # Re-install ephemeris
         shutil.copy(rawfile, adjustfn)
-        cmd = "pam -m -E %s --update_dm %s" % (parfile, adjustfn)
-        utils.execute(cmd)
+        
+        if parfile_id is not None:
+            # Re-install ephemeris
+            # Get ephemeris from parfile_id and verify MD5SUM
+            parfile = utils.get_parfile_from_id(parfile_id, db, verify_md5=True)
+  
+            cmd = "pam -m -E %s --update_dm %s" % (parfile, adjustfn)
+            utils.execute(cmd)
         
         # Create a temporary file for the manipulated results
         tmpfile, manipfn = tempfile.mkstemp(prefix='toaster_tmp', \
@@ -314,12 +317,15 @@ def reduce_rawfile(args, leftover_args=[], existdb=None):
         args.template_id = load_template.load_template(args.template, \
                                                         existdb=existdb)
  
-    if args.parfile_id is None:
-        args.parfile_id = get_master_parfile_id(args.rawfile_id, existdb=existdb)
+    if args.use_parfile:
         if args.parfile_id is None:
-            raise errors.NoMasterError("A master parfile is required " \
-                                    "in the database if no parfile is " \
-                                    "provided on the command line.")
+            args.parfile_id = get_master_parfile_id(args.rawfile_id, existdb=existdb)
+            if args.parfile_id is None:
+                raise errors.NoMasterError("A master parfile is required " \
+                                        "in the database if no parfile is " \
+                                        "provided on the command line.")
+    else:
+        args.parfile_id = None
  
     if args.template_id is None:
         args.template_id = get_master_template_id(args.rawfile_id, existdb=existdb)
@@ -329,9 +335,9 @@ def reduce_rawfile(args, leftover_args=[], existdb=None):
                                     "provided on the command line.")
  
     utils.print_info("Using the following IDs:\n" \
-                     "    rawfile_id: %d\n" \
-                     "    parfile_id: %d\n" \
-                     "    template_id: %d" % \
+                     "    rawfile_id: %s\n" \
+                     "    parfile_id: %s\n" \
+                     "    template_id: %s" % \
                      (args.rawfile_id, args.parfile_id, args.template_id), 1)
     
     # Load manipulator
@@ -414,6 +420,11 @@ if __name__ == "__main__":
                         default=None,
                         help="A parfile to archive/load to DB and " \
                             "use when generating TOAs.")
+    pargroup.add_argument('--no-parfile', dest="use_parfile", \
+                        default=True, action="store_false", \
+                        help="Do not install a new ephemeris before " \
+                            "generating TOAs. This is useful when solving " \
+                            "a pulsar.")
     # Template profile
     tmpgroup = parser.add_mutually_exclusive_group(required=False)
     tmpgroup.add_argument('-t', '--template-id', dest='template_id',
