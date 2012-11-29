@@ -240,7 +240,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         toa_ids = utils.load_toas(toainfo, process_id, template_id, rawfile_id, db)
                  
         # Create processing diagnostics
-        utils.print_info("Generating proessing diagnostics", 0)
+        utils.print_info("Generating processing diagnostics", 0)
         diagdir = utils.make_proc_diagnostics_dir(manipfn, process_id)
         suffix = "_procid%d.%s" % (process_id, manip.name)
         diagfns = utils.create_rawfile_diagnostic_plots(manipfn, diagdir, suffix)
