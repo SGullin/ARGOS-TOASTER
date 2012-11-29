@@ -359,8 +359,8 @@ def main():
                 argfile = sys.stdin
             else:
                 if not os.path.exists(args.from_file):
-                    raise errors.FileError("The pulsar list (%s) does " \
-                                "not appear to exist." % args.from_file)
+                    raise errors.FileError("The list of cmd line args (%s) " \
+                                "does not exist." % args.from_file)
                 argfile = open(args.from_file, 'r')
             numfails = 0
             for line in argfile:
