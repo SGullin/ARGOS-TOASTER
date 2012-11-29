@@ -17,7 +17,7 @@ def set_as_master_parfile(db, parfile_id):
     db.begin()
     # Check if this pulsar already has a master parfile in the DB
     select = db.select([db.parfiles.c.pulsar_id, \
-                        db.parfiles.c.parfile_id]).\
+                        db.master_parfiles.c.parfile_id.label('mparid')]).\
                 where((db.master_parfiles.c.pulsar_id == \
                             db.parfiles.c.pulsar_id) & \
                       (db.parfiles.c.parfile_id == parfile_id))
@@ -25,10 +25,10 @@ def set_as_master_parfile(db, parfile_id):
     row = result.fetchone()
     result.close()
     if row:
-        if row['parfile_id']==parfile_id:
+        if row['mparid']==parfile_id:
             warnings.warn("Parfile (ID: %d) is already the master parfile " \
                             "for this pulsar (ID: %d). Doing nothing..." % \
-                            (row['parfile_id'], row['pulsar_id']), \
+                            (row['mparid'], row['pulsar_id']), \
                             errors.ToasterWarning)
             db.commit()
             return

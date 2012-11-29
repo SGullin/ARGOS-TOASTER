@@ -74,7 +74,7 @@ sa.Table('process', metadata, \
                     nullable=False), \
         sa.Column('parfile_id', sa.Integer, \
                     sa.ForeignKey("parfiles.parfile_id", name="fk_proc_par"), \
-                    nullable=False), \
+                    nullable=True), \
         sa.Column('user_id', sa.Integer, \
                     sa.ForeignKey("users.user_id", name="fk_proc_user"), \
                     nullable=False), \

@@ -42,7 +42,6 @@ def get_procjobs(args, existdb=None):
         whereclause &= (db.process.c.process_id.in_(args.process_ids))
 
     if args.manip_args:
-        print args.manip_args
         tmp = db.process.c.manipulator_args.contains(args.manip_args[0])
         for maniparg in args.manip_args[1:]:
             tmp &= (db.process.c.manipulator_args.contains(args.manip_args[0]))
@@ -118,9 +117,12 @@ def show_procjobs(procjobs):
         print "Date and time job completed: %s" % procjob.add_time.isoformat(' ')
         if config.cfg.verbosity >= 1:
             lines = ["Template (ID=%d): %s" % \
-                            (procjob.template_id, procjob.tempfn), \
-                     "Parfile (ID=%d): %s" % \
-                            (procjob.parfile_id, procjob.parfn)]
+                            (procjob.template_id, procjob.tempfn)]
+            if procjob.parfile_id is not None:
+                lines.append("Parfile (ID=%d): %s" % \
+                            (procjob.parfile_id, procjob.parfn))
+            else:
+                lines.append("No parfile installed during processing.")
             utils.print_info("\n".join(lines), 1)
         print "--"*25
 
