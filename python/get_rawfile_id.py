@@ -87,6 +87,7 @@ def get_rawfiles(args):
                         db.rawfiles.c.dm, \
                         db.rawfiles.c.length, \
                         db.rawfiles.c.mjd, \
+                        db.replacement_rawfiles.c.replacement_rawfile_id, \
                         db.users.c.real_name, \
                         db.users.c.email_address, \
                         db.pulsars.c.pulsar_name, \
@@ -98,7 +99,10 @@ def get_rawfiles(args):
                         db.obssystems.c.band_descriptor, \
                         db.obssystems.c.clock], \
                 from_obj=[db.rawfiles.\
-                   join(db.pulsar_aliases, \
+                    outerjoin(db.replacement_rawfiles, \
+                        onclause=db.rawfiles.c.rawfile_id == \
+                                db.replacement_rawfiles.c.obsolete_rawfile_id).\
+                    join(db.pulsar_aliases, \
                         onclause=db.rawfiles.c.pulsar_id == \
                                 db.pulsar_aliases.c.pulsar_id).\
                     outerjoin(db.pulsars, \
@@ -343,6 +347,9 @@ def show_rawfiles(rawfiles):
         print "Uploaded by: %s (%s)" % \
                     (rawdict.real_name, rawdict.email_address)
         print "Date and time rawfile was added: %s" % rawdict.add_time.isoformat(' ')
+        if rawdict.replacement_rawfile_id is not None:
+            colour.cprint("Rawfile has been superseded by rawfile_id=%d" % \
+                    rawdict.replacement_rawfile_id, 'warning')
         if config.cfg.verbosity >= 1:
             lines = ["Observing system ID: %d" % rawdict.obssystem_id, \
                      "Observing system name: %s" % rawdict.obssystem, \
