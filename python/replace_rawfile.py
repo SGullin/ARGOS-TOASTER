@@ -7,6 +7,7 @@ Patrick Lazarus, Nov. 17, 2012
 """
 
 import utils
+import errors
 import database
 import load_rawfile
 
@@ -47,7 +48,7 @@ def verify_replacement(obsolete_id, replacement, db):
                     "for rawfile_id (%d)! This should not happen..." % \
                     (len(rows), obsolete_id))
     elif len(rows) < 1:
-        raise BadInputError("The rawfile_id provided (%d) does not " \
+        raise errors.BadInputError("The rawfile_id provided (%d) does not " \
                     "exist!" % obsolete_id)
     else:
         obsoleteparams = rows[0]
@@ -117,7 +118,7 @@ def replace_rawfile(obsolete_id, replace_id, comments, existdb=None):
 
     # Check if obsolete_id is already replaced. If so, list replacement and fail.
     if row['existing_replace_id'] is not None:
-        raise RawfileSuperseded("The rawfile (ID=%d) has already been " \
+        raise errors.RawfileSuperseded("The rawfile (ID=%d) has already been " \
                                 "replaced by ID=%d. Perhaps it is the " \
                                 "latter file that should be replaced, or " \
                                 "perhaps no additional replacement is " \
