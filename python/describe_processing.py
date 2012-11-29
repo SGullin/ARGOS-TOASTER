@@ -5,6 +5,8 @@ Show an overview of data reduction.
 
 Patrick Lazarus, Nov 2, 2012
 """
+import sys
+import shlex
 
 import database
 import utils
@@ -159,6 +161,24 @@ def custom_show_procjobs(procjobs, fmt="%(process_id)d"):
 
 
 def main():
+    global args
+    if args.from_file is not None:
+        if args.from_file == '-':
+            argfile = sys.stdin
+        else:
+            if not os.path.exists(args.from_file):
+                raise errors.FileError("The list of cmd line args (%s) " \
+                            "does not exist." % args.from_file)
+            argfile = open(args.from_file, 'r')
+        for line in argfile:
+            # Strip comments
+            line = line.partition('#')[0].strip()
+            if not line:
+                # Skip empty line
+                continue
+            arglist = shlex.split(line.strip())
+            args = parser.parse_args(arglist, namespace=args)
+
     procjobs = get_procjobs(args)
     if not len(procjobs):
         raise errors.ToasterError("No processing jobs match parameters provided!")
@@ -198,6 +218,10 @@ if __name__=='__main__':
                             "provided to the manipulator. Multiple " \
                             "instances of these criteria may be provided. " \
                             "All such criteria must be provided.")
+    parser.add_argument("--from-file", dest='from_file', \
+                        type=str, default=None, \
+                        help="A file containing a list of command line " \
+                            "arguments use.")
     parser.add_argument("--output-style", default='text', \
                         dest='output_style', type=str, \
                         help="The following options control how " \
