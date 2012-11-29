@@ -2,6 +2,7 @@
 """Create a timfile entry in the database.
 """
 import sys
+import shlex
 import os.path
 import textwrap
 import warnings
@@ -360,10 +361,30 @@ def add_timfile_entry(toas, cmdline, comments, existdb=None):
 
 
 def main():
+    global args
     # Check to make sure user provided a comment
     if not args.dry_run and args.comments is None:
         raise errors.BadInputError("A comment describing the timfile is " \
                                     "required!")
+    
+    if args.from_file is not None:
+        if args.from_file == '-':
+            argfile = sys.stdin
+        else:
+            if not os.path.exists(args.from_file):
+                raise errors.FileError("The list of cmd line args (%s) " \
+                            "does not exist." % args.from_file)
+            argfile = open(args.from_file, 'r')
+        for line in argfile:
+            # Strip comments
+            line = line.partition('#')[0].strip()
+            if not line:
+                # Skip empty line
+                continue
+            arglist = shlex.split(line.strip())
+            args = parser.parse_args(arglist, namespace=args)
+
+    # Establish a database connection
     db = database.Database()
     db.connect()
 
@@ -447,5 +468,9 @@ if __name__=='__main__':
     parser.add_argument('--comments', dest='comments', \
                         type=str, \
                         help="Provide comments describing the template.")
+    parser.add_argument("--from-file", dest='from_file', \
+                        type=str, default=None, \
+                        help="A file containing a list of command line " \
+                            "arguments use.")
     args=parser.parse_args()
     main()
