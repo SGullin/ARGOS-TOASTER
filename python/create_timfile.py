@@ -29,6 +29,10 @@ def strict_conflict_handler(toas):
     obssystem_ids = {}
     pulsar_ids = {}
     for toa in toas:
+        if toa['replacement_rawfile_id'] is not None:
+            raise errors.ConflictingToasError("Rawfile (ID: %d) has been " \
+                    "replaced (by rawfile_id=%d)!" % \
+                    (toa['rawfile_id'], toa['replacement_rawfile_id']))
         rawfile_ids.setdefault(toa['rawfile_id'], set()).\
                                 add(toa['process_id'])
         obssystem_ids.setdefault(toa['obssystem_id'], set()).\
@@ -73,6 +77,10 @@ def tolerant_conflict_handler(toas):
     obssystem_ids = {}
     pulsar_ids = {}
     for toa in toas:
+        if toa['replacement_rawfile_id'] is not None:
+            warnings.warn("Rawfile (ID: %d) has been replaced (by " \
+                    "rawfile_id=%d)!" % toa['replacement_rawfile_id'], \
+                    errors.ToasterWarning)
         rawfile_ids.setdefault(toa['rawfile_id'], set()).\
                                 add(toa['process_id'])
         obssystem_ids.setdefault(toa['obssystem_id'], set()).\
@@ -220,6 +228,7 @@ def toa_select(args, existdb=None):
                         db.process.c.add_time, \
                         db.process.c.manipulator, \
                         db.rawfiles.c.filename.label('rawfile'), \
+                        db.replacement_rawfiles.c.replacement_rawfile_id, \
                         db.templates.c.filename.label('template'), \
                         (db.toas.c.bw/db.rawfiles.c.bw * \
                                 db.rawfiles.c.nchan).label('nchan')], \
@@ -236,6 +245,9 @@ def toa_select(args, existdb=None):
                     outerjoin(db.rawfiles, \
                         onclause=db.rawfiles.c.rawfile_id == \
                                 db.toas.c.rawfile_id).\
+                    outerjoin(db.replacement_rawfiles, \
+                        onclause=db.rawfiles.c.rawfile_id == \
+                                db.replacement_rawfiles.c.obsolete_rawfile_id).\
                     outerjoin(db.templates, \
                         onclause=db.templates.c.template_id == \
                                 db.toas.c.template_id).\
