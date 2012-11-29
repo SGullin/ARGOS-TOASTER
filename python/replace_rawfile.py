@@ -41,6 +41,7 @@ def verify_replacement(obsolete_id, replacement, db):
                 where(db.rawfiles.c.rawfile_id==obsolete_id)
     result = db.execute(select)
     rows = result.fetchall()
+    result.close()
     if len(rows) > 1:
         raise errors.InconsistentDatabaseError("Multiple matches (%s) " \
                     "for rawfile_id (%d)! This should not happen..." % \
@@ -136,14 +137,24 @@ def replace_rawfile(obsolete_id, replace_id, comments, existdb=None):
     # Check if obsolete_id is itself a replacement for other files
     # If so, mark all with newest replacement and
     # append comment (tag with date/time)?
-    user = utils.get_userinfo()
-    update = db.replacement_rawfiles.update().\
+    select = db.select([db.replacement_rawfiles.c.obsolete_rawfile_id, \
+                        db.replacement_rawfiles.c.comments]).\
                 where(db.replacement_rawfiles.c.replacement_rawfile_id == \
                             obsolete_id)
-    values = {'replacement_rawfile_id':replace_id, \
-              'comments':db.replacement_rawfiles.c.comments}
-    results = db.execute(update, values)
-    results.close()
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
+    user = utils.get_userinfo()
+    for row in rows:
+        newcomments = row['comments']+"\n%s (%d -> %d at %s): %s" % \
+            (user, obsolete_id, replace_id, utils.Give_UTC_now(), comments)
+        values = {'replacement_rawfile_id':replace_id, \
+                  'comments':newcomments}
+        update = db.replacement_rawfiles.c.update().\
+                where(db.replacement_rawfiles.c.replacement_rawfile_id == \
+                            obsolete_id)
+        results = db.execute(update, values)
+        results.close()
 
 
 def main():
