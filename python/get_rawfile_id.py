@@ -26,6 +26,7 @@ def main():
     if args.output_style=='text':
         show_rawfiles(rawfiles)
     elif args.output_style=='plot':
+        import matplotlib.pyplot as plt
         plot_rawfiles(rawfiles)
         plt.show()
     elif args.output_style=='summary':
