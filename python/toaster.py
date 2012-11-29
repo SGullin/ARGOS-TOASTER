@@ -437,10 +437,13 @@ if __name__ == "__main__":
                             "when generating TOAs.")
     parser.add_argument('--from-file', dest='from_file', \
                         type=str, default=None, \
-                        help="A list of pulsars (one per line) to " \
-                            "add. Note: each line can also include " \
-                            "alias flags. (Default: load a single " \
-                            "pulsar given on the cmd line.)")
+                        help="A list of command line arguments. " \
+                            "Each line of the file refers to a single " \
+                            "processing job. Arguments on a single line " \
+                            "should not conflict with eachother or " \
+                            "arguments provided explicitly on the cmd line. "
+                            "(Default: perform a single processing job " \
+                            "defined by the arguments on the cmd line.)")
     args, leftover_args = parser.parse_known_args()
     if ((args.rawfile is None) and (args.rawfile_id is None)) and \
                 (args.from_file is None):
