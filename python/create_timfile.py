@@ -80,7 +80,8 @@ def tolerant_conflict_handler(toas):
     for toa in toas:
         if toa['replacement_rawfile_id'] is not None:
             warnings.warn("Rawfile (ID: %d) has been replaced (by " \
-                    "rawfile_id=%d)!" % toa['replacement_rawfile_id'], \
+                    "rawfile_id=%d)!" % \
+                    (toa['rawfile_id'], toa['replacement_rawfile_id']), \
                     errors.ToasterWarning)
         rawfile_ids.setdefault(toa['rawfile_id'], set()).\
                                 add(toa['process_id'])
