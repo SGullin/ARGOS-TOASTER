@@ -199,6 +199,7 @@ class Database(object):
                            errors.ToasterWarning) 
         trans = self.conn.begin()
         self.open_transactions.append(trans)
+        return trans
 
     def commit(self):
         """Commit the most recently opened transaction.
