@@ -1361,7 +1361,7 @@ def get_parfile_from_id(parfile_id, existdb=None, verify_md5=True):
         filepath = rows[0]['filepath']
         md5sum_DB = rows[0]['md5sum']
     else:
-        raise errors.IncosistentDatabaseError("Bad number of files (%d) " \
+        raise errors.InconsistentDatabaseError("Bad number of files (%d) " \
                             "with parfile_id=%d" % (len(rows), parfile_id))
         
     fullpath = os.path.join(filepath,filename)
