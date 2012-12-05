@@ -3,8 +3,8 @@ import string
 
 import sqlalchemy as sa
 
-import errors
 import config
+import errors
 
 import schema
 import utils

@@ -12,8 +12,8 @@ import sys
 import pygraphviz as pgv
 import sadisplay.describe
 
-import database
 import config
+import database
 
 
 

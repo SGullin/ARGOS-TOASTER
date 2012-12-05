@@ -3,9 +3,9 @@ import argparse
 import sys
 import glob
 
+import config
 import utils
 import errors
-import config
 
 
 def main():

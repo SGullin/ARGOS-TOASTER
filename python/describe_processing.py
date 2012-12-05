@@ -8,11 +8,11 @@ Patrick Lazarus, Nov 2, 2012
 import sys
 import shlex
 
+import config
 import database
 import utils
 import errors
 import colour
-import config
 
 def get_procjobs(args, existdb=None):
     """Return a dictionary of information for each 

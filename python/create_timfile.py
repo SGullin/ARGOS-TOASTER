@@ -8,11 +8,11 @@ import textwrap
 import warnings
 import argparse
 
+import config
 import utils
 import database
 import errors
 import write_timfile as wt
-import config
 
 def strict_conflict_handler(toas):
     """Check to see if there are any conflicts between TOAs.

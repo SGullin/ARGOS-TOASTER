@@ -13,11 +13,11 @@ import warnings
 
 import numpy as np
 
+import config
 import utils
 import database
 import errors
 import colour
-import config
 
 def main():
     rawfiles = get_rawfiles(args)

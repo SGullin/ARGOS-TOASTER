@@ -13,12 +13,11 @@ import os.path
 import datetime
 import warnings
 
+import config
 import utils
 import database
 import errors
 import colour
-import config
-
 
 
 def main():

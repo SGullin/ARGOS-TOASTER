@@ -11,8 +11,8 @@ import traceback
 import sys
 import shlex
 
-import database
 import config
+import database
 
 import errors
 import utils
