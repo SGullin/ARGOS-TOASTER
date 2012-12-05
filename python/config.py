@@ -8,15 +8,22 @@ import utils
 
 class ToasterConfigs(dict):
     def __init__(self):
-        # Load default configurations
-        self['toaster_dir'] = os.path.split(os.path.abspath(__file__))[0]
-        fn = os.path.join(self.toaster_dir, "default.cfg") 
-        self.load_configs(fn)
+        #self['toaster_dir'] = os.path.split(os.path.abspath(__file__))[0]
+        #fn = os.path.join(self.toaster_dir, "default.cfg") 
+        #self.load_config_file(fn)
+        self.loaded_configs = False
         
-        # Load configurations from TOASTER_CFG environment variable
+    def load_configs(self):
+        """Load configurations from TOASTER_CFG environment variable
+        """
         cfg_files = os.getenv("TOASTER_CFG", "").split(':')
         for cfg_file in reversed(cfg_files):
-            self.load_configs(cfg_file)
+            self.load_config_file(cfg_file)
+
+        if not self.loaded_configs:
+            raise errors.FatalToasterError("No configuration files loaded. " \
+                        "Please set environment variable 'TOASTER_CFG' and " \
+                        "ensure at least one file listed is accessible.")
         
     def __getattr__(self, key):
         if key not in self:
@@ -30,15 +37,18 @@ class ToasterConfigs(dict):
             lines.append("%s: %r" % (key, self[key]))
         return "\n".join(lines)
     
-    def load_configs(self, fn):
+    def load_config_file(self, fn):
+        #print "Loading configs from %s" % fn
         if os.path.isfile(fn):
             if not fn.endswith('.cfg'):
                 raise ValueError("TOASTER configuration files must " \
                                         "end with the extention '.cfg'.")
             execfile(fn, {}, self)
+            self.loaded_configs = True
 
 
 cfg = ToasterConfigs()
+cfg.load_configs()
 
 
 def main():

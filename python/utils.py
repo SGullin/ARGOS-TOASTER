@@ -15,9 +15,9 @@ import warnings
 import re
 import pwd
 
+import config
 import errors
 import colour
-import config
 
 import database
 

@@ -123,7 +123,7 @@ def cstring(s, *override, **kwoverride):
     Keyword is optional. It will override the current
     colour code.
     """
-    if not config.cfg.colour:
+    if not hasattr(config.cfg, 'colour') or not config.cfg.colour:
         return s
 
     global current_code, DEFAULT_CODE

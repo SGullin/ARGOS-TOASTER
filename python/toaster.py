@@ -14,6 +14,7 @@ import shutil
 import traceback
 import shlex
 
+import config
 import colour
 import errors
 import manipulators
@@ -22,7 +23,6 @@ import load_rawfile
 import load_parfile
 import load_template
 import utils
-import config
 
 
 ###############################################################################
