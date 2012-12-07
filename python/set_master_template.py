@@ -21,12 +21,12 @@ def main():
             utils.print_info("Getting template ID for %s using filename and md5" % \
                             args.template, 1)
             # template filename provided. Get template_id
-            template_id = get_template_id(args.template, db)
+            template_id = utils.get_template_id(args.template, db)
         else:
             template_id = args.template_id
         utils.print_info("Template ID to set as master: %d" % template_id, 1)
         if not args.dry_run:
-            set_as_master_template(template_id, db)
+            utils.set_as_master_template(template_id, db)
     finally:
         # Close DB connection
         db.close()
