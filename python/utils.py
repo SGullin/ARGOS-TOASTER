@@ -1379,6 +1379,51 @@ def get_parfile_from_id(parfile_id, existdb=None, verify_md5=True):
     return fullpath
 
 
+def get_template_id(template, existdb=None):
+    """Given a template file path find its template_id number.
+        
+        Inputs:
+            template: the path to a template file.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Output:
+            template_id: the corresponding template_id value.
+    """
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existdb or database.Database()
+    db.connect()
+    
+    # Make sure we can read the result regardless which cursor class
+    # is being used
+    path, fn = os.path.split(os.path.abspath(template))
+    md5sum = Get_md5sum(template)
+    select = db.select([db.templates.c.template_id, \
+                        db.templates.c.md5sum]).\
+                where(db.templates.c.filename==fn)
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
+    if not existdb:
+        db.close()
+    if rows == 1:
+        row = rows[0]
+        if row['md5sum'] != md5sum:
+            raise errors.FileError("Template (%s) found in database but " \
+                                    "MD5sum in DB (%s) doesn't match MD5sum" \
+                                    "of the file provided (%s)!" % \
+                                    (filename, row[0].md5sum, md5sum))
+        else:
+            return row['template_id']
+    elif rows == 0:
+        raise errors.ToasterError("No matching template found! " \
+                                        "Use 'load_template.py' to add " \
+                                        "a new template to the DB.")
+    else:
+        raise errors.InconsistentDatabaseError("Multiple templates have " \
+                                                "the same file path/name!")
+
+
 def get_template_from_id(template_id, existdb=None, verify_md5=True):
     """Return the path to the raw file that has the given ID number.
         Optionally double check the file's MD5 sum, to make sure
@@ -1433,6 +1478,84 @@ def get_template_from_id(template_id, existdb=None, verify_md5=True):
                                 "DB (%s) != MD5 from file (%s)" % \
                                 (fullpath, md5sum_DB, md5sum_file))
     return fullpath
+
+
+def set_as_master_template(template_id, existdb=None):
+    """Set a template, specified by its ID number, as the 
+        master template for its pulsar/observing system 
+        combination.
+
+        Inputs:
+            template_id: The ID of the template to set as
+                a master template.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Ouputs:
+            None
+    """
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existdb or database.Database()
+    db.connect()
+    
+    trans = db.begin()
+    # Check if this pulsar/obssystem combiation already has a
+    # Master template in the DB
+    select = db.select([db.master_templates.c.template_id.label('mtempid'), \
+                        db.templates.c.pulsar_id, \
+                        db.templates.c.obssystem_id]).\
+                where((db.master_templates.c.obssystem_id == \
+                                db.templates.c.obssystem_id) & \
+                        (db.master_templates.c.pulsar_id == \
+                                db.templates.c.pulsar_id) & \
+                        (db.templates.c.template_id==template_id))
+    result = db.execute(select)
+    row = result.fetchone()
+    result.close()
+    if row:
+        if row['mtempid'] == template_id:
+            warnings.warn("Template (ID: %d) is already the master " \
+                            "template for this pulsar (ID: %d), " \
+                            "observing system (ID: %d) combination. " \
+                            "Doing nothing..." % (row['mtempid'], \
+                            row['pulsar_id'], row['obssystem_id']), \
+                            errors.ToasterWarning)
+            trans.commit()
+            if not existdb:
+                db.close()
+            return
+        else:
+            # Update the existing entry
+            query = db.master_templates.update().\
+                        where((db.master_templates.c.pulsar_id == \
+                                    row['pulsar_id']) & \
+                              (db.master_templates.c.obssystem_id == \
+                                    row['obssystem_id']))
+            values = {'template_id':template_id}
+    else:
+        # Insert a new entry
+        query = db.master_templates.insert()
+        select = db.select([db.templates.c.pulsar_id, \
+                            db.templates.c.obssystem_id]).\
+                    where(db.templates.c.template_id==template_id)
+        result = db.execute(select)
+        row = result.fetchone()
+        result.close()
+
+        values = {'template_id':template_id, \
+                  'pulsar_id':row['pulsar_id'], \
+                  'obssystem_id':row['obssystem_id']}
+    try:
+        result = db.execute(query, values)
+    except:
+        trans.rollback()
+        raise
+    else:
+        trans.commit()
+        result.close()
+    finally:
+        if not existdb:
+            db.close()
 
 
 def get_rawfile_from_id(rawfile_id, existdb=None, verify_md5=True):
@@ -1667,21 +1790,25 @@ class DefaultArguments(argparse.ArgumentParser):
         argparse.ArgumentParser.__init__(self, *args, **kwargs)
 
     def parse_args(self, *args, **kwargs):
-        # Add default groups just before parsing so it is the last set of
-        # options displayed in help text
-        self.add_standard_group()
-        self.add_debug_group()
+        if not self._subparsers:
+            # Add default groups just before parsing so it is the last set of
+            # options displayed in help text
+            self.add_standard_group()
+            self.add_debug_group()
         args = argparse.ArgumentParser.parse_args(self, *args, **kwargs)
-        set_warning_mode(args.warnmode)
+        if not self._subparsers:
+            set_warning_mode(args.warnmode)
         return args
 
     def parse_known_args(self, *args, **kwargs):
-        # Add default groups just before parsing so it is the last set of
-        # options displayed in help text
-        self.add_standard_group()
-        self.add_debug_group()
+        if not self._subparsers:
+            # Add default groups just before parsing so it is the last set of
+            # options displayed in help text
+            self.add_standard_group()
+            self.add_debug_group()
         args, leftovers = argparse.ArgumentParser.parse_known_args(self, *args, **kwargs)
-        set_warning_mode(args.warnmode)
+        if not self._subparsers:
+            set_warning_mode(args.warnmode)
         return args, leftovers
 
     def add_standard_group(self):
