@@ -9,12 +9,11 @@ import traceback
 import sys
 import shlex
 
-import config
 import database
 import errors
 import utils
-import set_master_template as smt
-    
+   
+
 def populate_templates_table(db, fn, params, comments):
     if comments is None:
         raise errors.BadInputError("A comment is required for every " \
@@ -118,7 +117,7 @@ def load_template(fn, is_master=False, existdb=None):
         if is_master:
             utils.print_info("Setting %s as master template (%s)" % \
                             (newfn, utils.Give_UTC_now()), 1)
-            smt.set_as_master_template(db, template_id)
+            utils.set_as_master_template(template_id, db)
         utils.print_info("Finished with %s - template_id=%d (%s)" % \
                         (fn, template_id, utils.Give_UTC_now()), 1)
     finally:
