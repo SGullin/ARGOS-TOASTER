@@ -12,7 +12,31 @@ import shlex
 import database
 import errors
 import utils
-   
+
+
+SHORTNAME = 'load'
+DESCRIPTION = "Upload a standard template " \
+              "into the database."
+
+
+def add_arguments(parser):
+    parser.add_argument('--master', dest='is_master', \
+                         action = 'store_true', default=False, \
+                         help = "Whether or not the provided file is to be " \
+                                "set as the master template.")
+    parser.add_argument('--comments', dest='comments', type=str, \
+                        help="Provide comments describing the template.")
+    parser.add_argument('--from-file', dest='from_file', \
+                        type=str, default=None, \
+                        help="A list of templates (one per line) to " \
+                            "load. Note: each line can also include " \
+                            "flags to override what was provided on " \
+                            "the cmd line for that template. (Default: " \
+                            "load a single template provided on the " \
+                            "cmd line.)")
+    parser.add_argument('template', nargs='?', type=str, \
+                        help="File name of the template to upload.")
+
 
 def populate_templates_table(db, fn, params, comments):
     if comments is None:
@@ -127,7 +151,16 @@ def load_template(fn, is_master=False, existdb=None):
     return template_id
 
 
-def main():
+def main(args):
+    # Allow reading input from stdin
+    if ((args.template is None) or (args.template == '-')) and \
+                (args.from_file is None):
+        warnings.warn("No input file or --from-file argument given " \
+                        "will read from stdin.", \
+                        errors.ToasterWarning)
+        args.template = None # In case it was set to '-'
+        args.from_file = '-'
+    
     # Connect to the database
     db = database.Database()
     db.connect()
@@ -192,30 +225,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = utils.DefaultArguments(description="Upload a standard template " \
-                                              "into the database.")
-    parser.add_argument('--master', dest='is_master', \
-                         action = 'store_true', default=False, \
-                         help = "Whether or not the provided file is to be " \
-                                "set as the master template.")
-    parser.add_argument('--comments', dest='comments', type=str, \
-                        help="Provide comments describing the template.")
-    parser.add_argument('--from-file', dest='from_file', \
-                        type=str, default=None, \
-                        help="A list of templates (one per line) to " \
-                            "load. Note: each line can also include " \
-                            "flags to override what was provided on " \
-                            "the cmd line for that template. (Default: " \
-                            "load a single template provided on the " \
-                            "cmd line.)")
-    parser.add_argument('template', nargs='?', type=str, \
-                        help="File name of the template to upload.")
+    parser = utils.DefaultArguments(description=DESCRIPTION)
+    add_arguments(parser)
     args = parser.parse_args()
-    if ((args.template is None) or (args.template == '-')) and \
-                (args.from_file is None):
-        warnings.warn("No input file or --from-file argument given " \
-                        "will read from stdin.", \
-                        errors.ToasterWarning)
-        args.template = None # In case it was set to '-'
-        args.from_file = '-'
-    main()
+    main(args)

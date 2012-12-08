@@ -21,7 +21,7 @@ import manipulators
 import database
 import load_rawfile
 import load_parfile
-import load_template
+from toolkit.templates import load_template
 import utils
 
 

@@ -12,7 +12,11 @@ import utils
 import database
 import errors
 
-toolkit = ['set_master_template', 'get_template_id', 'remove_template']
+toolkit = ['set_master_template', \
+           'get_template_id', \
+           'remove_template', \
+           'load_template', \
+          ]
 
 
 def main():
