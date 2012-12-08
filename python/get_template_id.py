@@ -179,8 +179,8 @@ def get_templates(args):
 
 def show_templates(templates):
     if len(templates):
+        print "--"*25
         for tdict in templates:
-            print "- "*25
             print colour.cstring("Template ID:", underline=True, bold=True) + \
                     colour.cstring(" %d" % tdict['template_id'], bold=True)
             fn = os.path.join(tdict['filepath'], tdict['filename'])
@@ -223,7 +223,7 @@ def show_templates(templates):
                          """ % (tdict.nbin-1, psrtxtout)
             plot, stderr = utils.execute("gnuplot", stdinstr=gnuplotcode)
             utils.print_info(plot, 2)
-            print " -"*25
+            print "--"*25
     else:
         raise errors.ToasterError("No templates match parameters provided!")
 
