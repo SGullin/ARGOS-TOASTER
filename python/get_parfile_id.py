@@ -83,8 +83,8 @@ def get_parfiles(psr, start=None, end=None, parid=None):
 
 def show_parfiles(parfiles):
     if len(parfiles):
+        print "--"*25
         for parfile in parfiles:
-            print "- "*25
             print colour.cstring("Parfile ID:", underline=True, bold=True) + \
                     colour.cstring(" %d" % parfile['parfile_id'], bold=True)
             fn = os.path.join(parfile['filepath'], parfile['filename'])
@@ -98,7 +98,7 @@ def show_parfiles(parfiles):
             for line in open(fn, 'r'):
                 msg += "%s\n" % line.strip()
             utils.print_info(msg, 1)
-            print " -"*25
+            print "--"*25
     else:
         raise errors.ToasterError("No parfiles match parameters provided!")
 
