@@ -11,7 +11,23 @@ import errors
 import utils
 
 
-def main():
+SHORTNAME = 'setmaster'
+DESCRIPTION = "Set a standard template already uploaded " \
+              "into the database to be a master."
+
+
+def add_arguments(parser):
+    parser.add_argument('-n', '--dry-run', dest='dry_run', \
+                        action='store_true', \
+                        help="Do not modify database.")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--template-id', dest='template_id', type=int, \
+                        help="template_id value of template to set as master.")
+    group.add_argument('--template', dest='template', type=int, \
+                        help="Template file to set as master.")
+
+
+def main(args):
     # Connect to the database
     db = database.Database()
     db.connect()
@@ -33,16 +49,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = utils.DefaultArguments(description="Set a standard template " \
-                                              "already uploaded into the " \
-                                              "database to be a master.")
-    parser.add_argument('-n', '--dry-run', dest='dry_run', \
-                        action='store_true', \
-                        help="Do not modify database.")
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('--template-id', dest='template_id', type=int, \
-                        help="template_id value of template to set as master.")
-    group.add_argument('--template', dest='template', type=int, \
-                        help="Template file to set as master.")
+    parser = utils.DefaultArguments(description=DESCRIPTION)
+    add_arguments(parser)
     args = parser.parse_args()
-    main()
+    main(args)
