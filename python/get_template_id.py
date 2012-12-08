@@ -20,7 +20,74 @@ import errors
 import colour
 
 
-def main():
+SHORTNAME = 'query'
+DESCRIPTION = "Query the database for template information." \
+
+
+def add_arguments(parser):
+    parser.add_argument('--template-id', dest='template_id', \
+                        type=int, default=None, \
+                        help="A template ID. This is useful for checking " \
+                            "the details of a single template, identified " \
+                            "by its ID number. NOTE: No other templates " \
+                            "will match if this option is provided.")
+    parser.add_argument('-p', '--psr', dest='pulsar_name', \
+                        type=str, default='%', \
+                        help="The pulsar to grab templates for. " \
+                            "NOTE: SQL regular expression syntax may be used")
+    parser.add_argument('-s', '--start-date', dest='start_date', \
+                        type=str, default=None, \
+                        help="Do not return templates added to the DB " \
+                            "before this date.")
+    parser.add_argument('-e', '--end-date', dest='end_date', \
+                        type=str, default=None, \
+                        help="Do not return templates added to the DB " \
+                            "after this date.")
+    parser.add_argument('-i', '--id', dest='ids', type=int, \
+                        default=[], action='append', \
+                        help="Specific template_id numbers to describe.")
+    parser.add_argument('-n', '--nbin', dest='nbin', \
+                        type=int, default=None, \
+                        help="Only show templates with a specific number " \
+                            "of bins. NOTE: this will exclude analytic " \
+                            "templates.")
+    parser.add_argument('--obssystem-id', dest='obssys_id', \
+                        type=int, default=None, \
+                        help="Grab templates from a specific observing system. " \
+                            "NOTE: the argument should be the obssystem_id " \
+                            "from the database. " \
+                            "(Default: No constraint on obssystem_id.)")
+    parser.add_argument('--obssystem-name', dest='obssystem_name', \
+                        type=int, default=None, \
+                        help="Grab templates from a specific observing system. " \
+                            "NOTE: the argument should be the name of the " \
+                            "observing system as recorded in the database. " \
+                            "NOTE: SQL regular expression syntax may be used " \
+                            "(Default: No constraint on obs system's name.)")
+    parser.add_argument('-t', '--telescope', dest='telescope', \
+                        type=str, default=None, \
+                        help="Grab templates from specific telescopes. " \
+                            "The telescope's _name_ must be used here. " \
+                            "NOTE: SQL regular expression syntax may be used " \
+                            "(Default: No constraint on telescope name.)")
+    parser.add_argument('-f', '--frontend', dest='frontend', \
+                        type=str, default=None, \
+                        help="Grab templates from specific frontends. " \
+                            "NOTE: SQL regular expression syntax may be used " \
+                            "(Default: No constraint on frontend name.)")
+    parser.add_argument('-b', '--backend', dest='backend', \
+                        type=str, default=None, \
+                        help="Grab templates from specific backends. " \
+                            "NOTE: SQL regular expression syntax may be used " \
+                            "(Default: No constraint on backend name.)")
+    parser.add_argument('-c', '--clock', dest='clock', \
+                        type=str, default=None, \
+                        help="Grab templates from specific clocks. " \
+                            "NOTE: SQL regular expression syntax may be used " \
+                            "(Default: No constraint on clock name.)") 
+
+
+def main(args):
     templates = get_templates(args)
     show_templates(templates)
 
@@ -162,68 +229,7 @@ def show_templates(templates):
 
 
 if __name__=='__main__':
-    parser = utils.DefaultArguments(description="Get a listing of tempalte_id " \
-                                        "values from the DB to help the user" \
-                                        "find the appropriate one to use.")
-    parser.add_argument('--template-id', dest='template_id', \
-                        type=int, default=None, \
-                        help="A template ID. This is useful for checking " \
-                            "the details of a single template, identified " \
-                            "by its ID number. NOTE: No other templates " \
-                            "will match if this option is provided.")
-    parser.add_argument('-p', '--psr', dest='pulsar_name', \
-                        type=str, default='%', \
-                        help="The pulsar to grab templates for. " \
-                            "NOTE: SQL regular expression syntax may be used")
-    parser.add_argument('-s', '--start-date', dest='start_date', \
-                        type=str, default=None, \
-                        help="Do not return templates added to the DB " \
-                            "before this date.")
-    parser.add_argument('-e', '--end-date', dest='end_date', \
-                        type=str, default=None, \
-                        help="Do not return templates added to the DB " \
-                            "after this date.")
-    parser.add_argument('-i', '--id', dest='ids', type=int, \
-                        default=[], action='append', \
-                        help="Specific template_id numbers to describe.")
-    parser.add_argument('-n', '--nbin', dest='nbin', \
-                        type=int, default=None, \
-                        help="Only show templates with a specific number " \
-                            "of bins. NOTE: this will exclude analytic " \
-                            "templates.")
-    parser.add_argument('--obssystem-id', dest='obssys_id', \
-                        type=int, default=None, \
-                        help="Grab templates from a specific observing system. " \
-                            "NOTE: the argument should be the obssystem_id " \
-                            "from the database. " \
-                            "(Default: No constraint on obssystem_id.)")
-    parser.add_argument('--obssystem-name', dest='obssystem_name', \
-                        type=int, default=None, \
-                        help="Grab templates from a specific observing system. " \
-                            "NOTE: the argument should be the name of the " \
-                            "observing system as recorded in the database. " \
-                            "NOTE: SQL regular expression syntax may be used " \
-                            "(Default: No constraint on obs system's name.)")
-    parser.add_argument('-t', '--telescope', dest='telescope', \
-                        type=str, default=None, \
-                        help="Grab templates from specific telescopes. " \
-                            "The telescope's _name_ must be used here. " \
-                            "NOTE: SQL regular expression syntax may be used " \
-                            "(Default: No constraint on telescope name.)")
-    parser.add_argument('-f', '--frontend', dest='frontend', \
-                        type=str, default=None, \
-                        help="Grab templates from specific frontends. " \
-                            "NOTE: SQL regular expression syntax may be used " \
-                            "(Default: No constraint on frontend name.)")
-    parser.add_argument('-b', '--backend', dest='backend', \
-                        type=str, default=None, \
-                        help="Grab templates from specific backends. " \
-                            "NOTE: SQL regular expression syntax may be used " \
-                            "(Default: No constraint on backend name.)")
-    parser.add_argument('-c', '--clock', dest='clock', \
-                        type=str, default=None, \
-                        help="Grab templates from specific clocks. " \
-                            "NOTE: SQL regular expression syntax may be used " \
-                            "(Default: No constraint on clock name.)") 
+    parser = utils.DefaultArguments(description=DESCRIPTION)
+    add_arguments(parser)
     args = parser.parse_args()
-    main()
+    main(args)
