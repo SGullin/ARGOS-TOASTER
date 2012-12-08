@@ -20,7 +20,7 @@ import errors
 import manipulators
 import database
 import load_rawfile
-import load_parfile
+from toolkit.parfiles import load_parfile
 from toolkit.templates import load_template
 import utils
 

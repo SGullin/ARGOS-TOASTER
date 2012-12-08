@@ -1394,34 +1394,47 @@ def get_template_id(template, existdb=None):
     db = existdb or database.Database()
     db.connect()
     
-    # Make sure we can read the result regardless which cursor class
-    # is being used
+    utils.print_info("Getting template ID for %s using "
+                    "filename and md5sum" % args.parfile, 2)
     path, fn = os.path.split(os.path.abspath(template))
     md5sum = Get_md5sum(template)
     select = db.select([db.templates.c.template_id, \
+                        db.templates.c.filename, \
                         db.templates.c.md5sum]).\
-                where(db.templates.c.filename==fn)
+                where((db.template.c.md5sum==md5sum) | (
+                        db.templates.c.filename==fn))
     result = db.execute(select)
     rows = result.fetchall()
     result.close()
     if not existdb:
         db.close()
-    if rows == 1:
+    if len(rows) == 1:
         row = rows[0]
-        if row['md5sum'] != md5sum:
-            raise errors.FileError("Template (%s) found in database but " \
-                                    "MD5sum in DB (%s) doesn't match MD5sum" \
-                                    "of the file provided (%s)!" % \
-                                    (filename, row[0].md5sum, md5sum))
-        else:
+        if row['md5sum']==md5sum and row['filename']==fn:
             return row['template_id']
-    elif rows == 0:
-        raise errors.ToasterError("No matching template found! " \
-                                        "Use 'load_template.py' to add " \
-                                        "a new template to the DB.")
+        elif row['md5sum']==md5sum:
+            raise errors.FileError("A template (template_id=%d) with " \
+                            "this md5sum, but a different filename " \
+                            "exists in the DB." % row['template_id'])
+        elif row['filename']==fn:
+            raise errors.FileError("A template (template_id=%d) with " \
+                            "this filename, but a different md5sum " \
+                            "exists in the DB." % row['template_id'])
+        else:
+            raise errors.InconsistentDatabaseError("A template (template_id=%d) " \
+                            "matches our query, but neither its md5sum (%s), " \
+                            "nor its filename (%s) appears to match! " \
+                            "This should never happen!" % 
+                            (row['template_id'], row['md5sum'], row['fn']))
+    elif len(rows) == 0:
+        raise errors.ToasterError("Input template (%s) does not appear " \
+                                        "to be registered in the DB! " \
+                                        "Use 'load_template.py' to load " \
+                                        "it into the DB." % template)
     else:
-        raise errors.InconsistentDatabaseError("Multiple templates have " \
-                                                "the same file path/name!")
+        raise errors.InconsistentDatabaseError("Multiple (%s) templates " \
+                                    "match the given file name or md5sum!" % \
+                                    len(rows))
 
 
 def get_template_from_id(template_id, existdb=None, verify_md5=True):
@@ -1478,6 +1491,133 @@ def get_template_from_id(template_id, existdb=None, verify_md5=True):
                                 "DB (%s) != MD5 from file (%s)" % \
                                 (fullpath, md5sum_DB, md5sum_file))
     return fullpath
+
+
+def set_as_master_parfile(parfile_id, existdb=None):
+    """Set a parfile, specified by its ID number, as the 
+        master parfile for its pulsar/observing system 
+        combination.
+
+        Inputs:
+            parfile_id: The ID of the parfile to set as
+                a master parfile.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Ouputs:
+            None
+    """
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existdb or database.Database()
+    db.connect()
+
+    trans = db.begin()
+    # Check if this pulsar already has a master parfile in the DB
+    select = db.select([db.parfiles.c.pulsar_id, \
+                        db.master_parfiles.c.parfile_id.label('mparid')]).\
+                where((db.master_parfiles.c.pulsar_id == \
+                            db.parfiles.c.pulsar_id) & \
+                      (db.parfiles.c.parfile_id == parfile_id))
+    result = db.execute(select)
+    row = result.fetchone()
+    result.close()
+    if row:
+        if row['mparid']==parfile_id:
+            warnings.warn("Parfile (ID: %d) is already the master parfile " \
+                            "for this pulsar (ID: %d). Doing nothing..." % \
+                            (row['mparid'], row['pulsar_id']), \
+                            errors.ToasterWarning)
+            trans.commit()
+            if not existdb:
+                db.close()
+            return
+        else:
+            # Update the existing entry
+            query = db.master_parfiles.update().\
+                        where(db.master_parfiles.c.pulsar_id==row['pulsar_id'])
+            values = {'parfile_id':parfile_id}
+    else:
+        # Insert a new entry
+        query = db.master_parfiles.insert()
+        select = db.select([db.parfiles.c.pulsar_id]).\
+                    where(db.parfiles.c.parfile_id==parfile_id)
+        result = db.execute(select)
+        row = result.fetchone()
+        result.close()
+        
+        values = {'parfile_id':parfile_id, \
+                  'pulsar_id':row['pulsar_id']}
+    try:
+        result = db.execute(query, values)
+    except:
+        trans.rollback()
+        raise
+    else:
+        trans.commit()
+        result.close()
+    finally:
+        if not existdb:
+            db.close()
+
+
+def get_parfile_id(parfile, existdb=None):
+    """Given a parfile path find its parfile_id number.
+        
+        Inputs:
+            parfile: the path to a parfile.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Output:
+            parfile_id: the corresponding parfile_id value.
+    """
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existdb or database.Database()
+    db.connect()
+    
+    utils.print_info("Getting parfile ID for %s using "
+                    "filename and md5sum" % args.parfile, 2)
+    path, fn = os.path.split(os.path.abspath(parfile))
+    md5sum = utils.Get_md5sum(parfile)
+    select = db.select([db.parfiles.c.md5sum, \
+                        db.parfiles.c.filename, \
+                        db.parfiles.c.parfile_id]).\
+                where((db.parfiles.c.md5sum==md5sum) | \
+                            (db.parfiles.c.filename==fn))
+    
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
+    if not existdb:
+        db.close()
+    if len(rows) == 1:
+        row = rows[0]
+        if row['md5sum']==md5sum and row['filename']==fn:
+            return row['parfile_id']
+        elif row['md5sum']==md5sum:
+            raise errors.FileError("A parfile (parfile_id=%d) with " \
+                            "this md5sum, but a different filename " \
+                            "exists in the DB." % row['parfile_id'])
+        elif row['filename']==fn:
+            raise errors.FileError("A parfile (parfile_id=%d) with " \
+                            "this filename, but a different md5sum " \
+                            "exists in the DB." % row['parfile_id'])
+        else:
+            raise errors.InconsistentDatabaseError("A parfile (parfile_id=%d) " \
+                            "matches our query, but neither its md5sum (%s), " \
+                            "nor its filename (%s) appears to match! " \
+                            "This should never happen!" % 
+                            (row['parfile_id'], row['md5sum'], row['fn']))
+    elif len(rows) == 0:
+        raise errors.ToasterError("Input parfile (%s) does not appear " \
+                                        "to be registered in the DB! " \
+                                        "Use 'load_parfile.py' to load " \
+                                        "it into the DB." % parfile)
+    else:
+        raise errors.InconsistentDatabaseError("Multiple (%s) parfiles " \
+                                    "match the given file name or md5sum!" % \
+                                    len(rows))
+
 
 
 def set_as_master_template(template_id, existdb=None):

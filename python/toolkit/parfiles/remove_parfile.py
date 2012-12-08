@@ -14,6 +14,39 @@ import database
 import errors
 
 
+SHORTNAME = 'remove'
+DESCRIPTION = 'Remove a parfile from the database. ' \
+              'NOTE: Only parfiles that have not yet been ' \
+              'used for processing may be removed.'
+
+
+def add_arguments(parser):
+    parser.add_argument('-p', '--parfile-id', dest='parfile_id', \
+                        type=int, required=True, \
+                        help="ID of ephemeris to remove.")
+    actiongroup = parser.add_mutually_exclusive_group(required=False)
+    actiongroup.add_argument("--move-to", dest='action', action='store_const', \
+                        const='move', default='leave', \
+                        help="Move the parfile to after removal " \
+                            "from the database. The '--dest' argument " \
+                            "providing the destination, is required. " \
+                            "(Default: Leave the parfile in the archive.)")
+    actiongroup.add_argument("--delete", dest='action', action='store_const', \
+                        const='delete', default='leave', \
+                        help="Delete the parfile after removal from the " \
+                            "database. (Default: Leave the parfile in the " \
+                            "archive.)")
+    actiongroup.add_argument("--leave", dest='action', action='store_const', \
+                        const='leave', default='leave', \
+                        help="Leave the parfile in the archive after " \
+                            "removal from the database. (Default: This " \
+                            "is the default.)")
+    parser.add_argument("--dest", dest='dest', type=str, \
+                        help="Where parfile will be moved to. NOTE: " \
+                            "this arg only gets used if '--move-to' is " \
+                            "being used.")
+
+
 def remove_parfile_entry(parfile_id, existdb=None):
     """Remove parfile entry from the database if it has 
         not yet been used for any processing.
@@ -95,32 +128,7 @@ def main():
 
 if __name__ == "__main__":
     parser = utils.DefaultArguments(prog='remove_parfile.py', \
-                            description='Remove a parfile from the database. ' \
-                                'NOTE: Only parfiles that have not yet been ' \
-                                'used for processing may be removed.')
-    parser.add_argument('-p', '--parfile-id', dest='parfile_id', \
-                        type=int, required=True, \
-                        help="ID of ephemeris to remove.")
-    actiongroup = parser.add_mutually_exclusive_group(required=False)
-    actiongroup.add_argument("--move-to", dest='action', action='store_const', \
-                        const='move', default='leave', \
-                        help="Move the parfile to after removal " \
-                            "from the database. The '--dest' argument " \
-                            "providing the destination, is required. " \
-                            "(Default: Leave the parfile in the archive.)")
-    actiongroup.add_argument("--delete", dest='action', action='store_const', \
-                        const='delete', default='leave', \
-                        help="Delete the parfile after removal from the " \
-                            "database. (Default: Leave the parfile in the " \
-                            "archive.)")
-    actiongroup.add_argument("--leave", dest='action', action='store_const', \
-                        const='leave', default='leave', \
-                        help="Leave the parfile in the archive after " \
-                            "removal from the database. (Default: This " \
-                            "is the default.)")
-    parser.add_argument("--dest", dest='dest', type=str, \
-                        help="Where parfile will be moved to. NOTE: " \
-                            "this arg only gets used if '--move-to' is " \
-                            "being used.")
+                            description=DESCRIPTION)
+    add_arguments(parser)
     args = parser.parse_args()
-    main()
+    main(args)

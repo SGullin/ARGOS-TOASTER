@@ -16,7 +16,35 @@ import database
 import errors
 import colour
 
-def main():
+
+SHORTNAME = 'query'
+DESCRIPTION = "Get a listing of parfile_id " \
+              "values from the DB to help the user" \
+              "find the appropriate one to use."
+
+
+def add_arguments(parser):
+    parser.add_argument('-p', '--psr', dest='pulsar_name', \
+                        type=str, default='%', \
+                        help="The pulsar to grab parfiles for. " \
+                            "NOTE: SQL regular expression syntax may be used")
+    parser.add_argument('--parfile-id', dest='parfile_id', \
+                        type=int, default=None, \
+                        help="A parfile ID. This is useful for checking " \
+                            "the details of a single parfile, identified " \
+                            "by its ID number. NOTE: No other parfiles " \
+                            "will match if this option is provided.")
+    parser.add_argument('-s', '--start-date', dest='start_date', \
+                        type=str, default=None, \
+                        help="Do not return parfiles added to the DB " \
+                            "before this date. (Format: YYYY-MM-DD)")
+    parser.add_argument('-e', '--end-date', dest='end_date', \
+                        type=str, default=None, \
+                        help="Do not return parfiles added to the DB " \
+                            "after this date. (Format: YYYY-MM-DD)")
+
+
+def main(args):
     parfiles = get_parfiles(args.pulsar_name, args.start_date, args.end_date, \
                             args.parfile_id)
     show_parfiles(parfiles)
@@ -104,26 +132,7 @@ def show_parfiles(parfiles):
 
 
 if __name__=='__main__':
-    parser = utils.DefaultArguments(description="Get a listing of parfile_id " \
-                                        "values from the DB to help the user" \
-                                        "find the appropriate one to use.")
-    parser.add_argument('-p', '--psr', dest='pulsar_name', \
-                        type=str, default='%', \
-                        help="The pulsar to grab parfiles for. " \
-                            "NOTE: SQL regular expression syntax may be used")
-    parser.add_argument('--parfile-id', dest='parfile_id', \
-                        type=int, default=None, \
-                        help="A parfile ID. This is useful for checking " \
-                            "the details of a single parfile, identified " \
-                            "by its ID number. NOTE: No other parfiles " \
-                            "will match if this option is provided.")
-    parser.add_argument('-s', '--start-date', dest='start_date', \
-                        type=str, default=None, \
-                        help="Do not return parfiles added to the DB " \
-                            "before this date. (Format: YYYY-MM-DD)")
-    parser.add_argument('-e', '--end-date', dest='end_date', \
-                        type=str, default=None, \
-                        help="Do not return parfiles added to the DB " \
-                            "after this date. (Format: YYYY-MM-DD)")
+    parser = utils.DefaultArguments(description=DESCRIPTION)
+    add_arguments(parser)
     args = parser.parse_args()
-    main()
+    main(args)

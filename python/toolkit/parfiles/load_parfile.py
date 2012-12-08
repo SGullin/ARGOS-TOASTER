@@ -16,7 +16,32 @@ import database
 
 import errors
 import utils
-import set_master_parfile as smp
+from toolkit.parfiles import set_master_parfile as smp
+
+
+SHORTNAME = 'load'
+DESCRIPTION = "Upload a parfile into the database."
+
+
+def add_arguments(parser):
+    parser.add_argument('--master', dest='is_master', \
+                         action='store_true', default=False, \
+                         help="Whether or not the provided file is to be " \
+                                "set as the master parfile.")
+    #parser.add_argument( '--comments', dest='comments', required=True,
+    #                     type = str,
+    #                     help='Provide comments describing the par files.')
+    parser.add_argument('--from-file', dest='from_file', \
+                        type=str, default=None, \
+                        help="A list of parfiles (one per line) to " \
+                            "load. Note: each line can also include " \
+                            "flags to override what was provided on " \
+                            "the cmd line for that parfile. (Default: " \
+                            "load a single parfile provided on the " \
+                            "cmd line.)")
+    parser.add_argument('parfile', nargs='?', type=str, \
+                         help="Parameter file to upload.")
+
 
 def populate_parfiles_table(db, fn, params):
     # md5sum helper function in utils 
@@ -95,7 +120,7 @@ def load_parfile(fn, is_master=False, existdb=None):
         if is_master:
             utils.print_info("Setting %s as master parfile (%s)" % \
                             (newfn, utils.Give_UTC_now()), 1)
-            smp.set_as_master_parfile(db, parfile_id)
+            utils.set_as_master_parfile(parfile_id, db)
         utils.print_info("Finished with %s - parfile_id=%d (%s)" % \
                         (fn, parfile_id, utils.Give_UTC_now()), 1)
     finally:
@@ -106,6 +131,15 @@ def load_parfile(fn, is_master=False, existdb=None):
 
 
 def main():
+    # Allow reading arguments from stdin
+    if ((args.parfile is None) or (args.parfile == '-')) and \
+                (args.from_file is None):
+        warnings.warn("No input file or --from-file argument given " \
+                        "will read from stdin.", \
+                        errors.ToasterWarning)
+        args.parfile = None # In case it was set to '-'
+        args.from_file = '-'
+    
     # Connect to the database
     db = database.Database()
     db.connect()
@@ -170,31 +204,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = utils.DefaultArguments(description="Upoad a parfile into " \
-                                                 "the database.")
-    parser.add_argument('--master', dest='is_master', \
-                         action='store_true', default=False, \
-                         help="Whether or not the provided file is to be " \
-                                "set as the master parfile.")
-    #parser.add_argument( '--comments', dest='comments', required=True,
-    #                     type = str,
-    #                     help='Provide comments describing the par files.')
-    parser.add_argument('--from-file', dest='from_file', \
-                        type=str, default=None, \
-                        help="A list of parfiles (one per line) to " \
-                            "load. Note: each line can also include " \
-                            "flags to override what was provided on " \
-                            "the cmd line for that parfile. (Default: " \
-                            "load a single parfile provided on the " \
-                            "cmd line.)")
-    parser.add_argument('parfile', nargs='?', type=str, \
-                         help="Parameter file to upload.")
+    parser = utils.DefaultArguments(description=DESCRIPTION)
+    add_arguments(parser)
     args = parser.parse_args()
-    if ((args.parfile is None) or (args.parfile == '-')) and \
-                (args.from_file is None):
-        warnings.warn("No input file or --from-file argument given " \
-                        "will read from stdin.", \
-                        errors.ToasterWarning)
-        args.parfile = None # In case it was set to '-'
-        args.from_file = '-'
-    main()
+    main(args)
