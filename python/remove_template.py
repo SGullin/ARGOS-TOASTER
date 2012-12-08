@@ -13,6 +13,37 @@ import utils
 import database
 import errors
 
+SHORTNAME = 'remove'
+DESCRIPTION = 'Remove a template from the database. ' \
+                'NOTE: Only templates that have not yet been ' \
+                'used for processing may be removed.'
+
+
+def add_arguments(parser):
+    parser.add_argument('-t', '--template-id', dest='template_id', \
+                        type=int, required=True, \
+                        help="ID of ephemeris to remove.")
+    actiongroup = parser.add_mutually_exclusive_group(required=False)
+    actiongroup.add_argument("--move-to", dest='action', action='store_const', \
+                        const='move', default='leave', \
+                        help="Move the template to after removal " \
+                            "from the database. The '--dest' argument " \
+                            "providing the destination, is required. " \
+                            "(Default: Leave the template in the archive.)")
+    actiongroup.add_argument("--delete", dest='action', action='store_const', \
+                        const='delete', default='leave', \
+                        help="Delete the template after removal from the " \
+                            "database. (Default: Leave the template in the " \
+                            "archive.)")
+    actiongroup.add_argument("--leave", dest='action', action='store_const', \
+                        const='leave', default='leave', \
+                        help="Leave the template in the archive after " \
+                            "removal from the database. (Default: This " \
+                            "is the default.)")
+    parser.add_argument("--dest", dest='dest', type=str, \
+                        help="Where template will be moved to. NOTE: " \
+                            "this arg only gets used if '--move-to' is " \
+                            "being used.")
 
 def remove_template_entry(template_id, existdb=None):
     """Remove template entry from the database if it has 
@@ -57,7 +88,7 @@ def remove_template_entry(template_id, existdb=None):
             db.close()
 
 
-def main():
+def main(args):
     # Establish a DB connection
     db = database.Database()
     db.connect()
@@ -94,32 +125,7 @@ def main():
 
 if __name__ == "__main__":
     parser = utils.DefaultArguments(prog='remove_template.py', \
-                            description='Remove a template from the database. ' \
-                                'NOTE: Only templates that have not yet been ' \
-                                'used for processing may be removed.')
-    parser.add_argument('-t', '--template-id', dest='template_id', \
-                        type=int, required=True, \
-                        help="ID of ephemeris to remove.")
-    actiongroup = parser.add_mutually_exclusive_group(required=False)
-    actiongroup.add_argument("--move-to", dest='action', action='store_const', \
-                        const='move', default='leave', \
-                        help="Move the template to after removal " \
-                            "from the database. The '--dest' argument " \
-                            "providing the destination, is required. " \
-                            "(Default: Leave the template in the archive.)")
-    actiongroup.add_argument("--delete", dest='action', action='store_const', \
-                        const='delete', default='leave', \
-                        help="Delete the template after removal from the " \
-                            "database. (Default: Leave the template in the " \
-                            "archive.)")
-    actiongroup.add_argument("--leave", dest='action', action='store_const', \
-                        const='leave', default='leave', \
-                        help="Leave the template in the archive after " \
-                            "removal from the database. (Default: This " \
-                            "is the default.)")
-    parser.add_argument("--dest", dest='dest', type=str, \
-                        help="Where template will be moved to. NOTE: " \
-                            "this arg only gets used if '--move-to' is " \
-                            "being used.")
+                            description=DESCRIPTION)
+    add_arguments(parser)
     args = parser.parse_args()
-    main()
+    main(args)
