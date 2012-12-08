@@ -27,8 +27,9 @@ if __name__ == '__main__':
                             'To get more detailed help for each function ' \
                             'provide the "-h/--help" argument following the ' \
                             'function.')
+    mod = __import__('toolkit.templates', globals(), locals(), toolkit)
     for tool_name in toolkit:
-        tool = __import__(tool_name, globals())
+        tool = getattr(mod, tool_name)
         toolparser = subparsers.add_parser(tool.SHORTNAME, 
                         help=tool.DESCRIPTION)
         toolparser.set_defaults(func=tool.main)
