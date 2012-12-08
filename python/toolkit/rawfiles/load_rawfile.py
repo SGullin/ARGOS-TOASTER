@@ -13,6 +13,21 @@ import errors
 import database
 
 
+SHORTNAME = 'load'
+DESCRIPTION = "Archive a single raw file, " \
+              "and load its info into the database."
+
+
+def add_arguments(parser):
+    parser.add_argument('--from-file', dest='from_file', \
+                        type=str, default=None, \
+                        help="A list of rawfiles (one per line) to " \
+                            "load. (Default: load a raw file provided " \
+                            "on the cmd line.)")
+    parser.add_argument("rawfile", nargs='?', type=str, \
+                        help="File name of the raw file to upload.")
+
+
 def populate_rawfiles_table(db, archivefn, params):
     # md5sum helper function in utils 
     md5 = utils.Get_md5sum(archivefn)
@@ -114,6 +129,14 @@ def load_rawfile(fn, existdb=None):
     
 
 def main():
+    # Allow arguments to be read from stdin
+    if ((args.rawfile is None) or (args.rawfile == '-')) and \
+                (args.from_file is None):
+        warnings.warn("No input file or --from-file argument given " \
+                        "will read from stdin.", \
+                        errors.ToasterWarning)
+        args.rawfile = None # In case it was set to '-'
+        args.from_file = '-'
     # Connect to the database
     db = database.Database()
     db.connect()
@@ -180,22 +203,8 @@ def main():
 
 
 if __name__=='__main__':
-    parser = utils.DefaultArguments(description="Archive a single raw file, " \
-                                        "and load its info into the database.")
-    parser.add_argument('--from-file', dest='from_file', \
-                        type=str, default=None, \
-                        help="A list of rawfiles (one per line) to " \
-                            "load. (Default: load a raw file provided " \
-                            "on the cmd line.)")
-    parser.add_argument("rawfile", nargs='?', type=str, \
-                        help="File name of the raw file to upload.")
+    parser = utils.DefaultArguments(description=DESCRIPTION)
+    add_arguments(parser)
     args = parser.parse_args()
-    if ((args.rawfile is None) or (args.rawfile == '-')) and \
-                (args.from_file is None):
-        warnings.warn("No input file or --from-file argument given " \
-                        "will read from stdin.", \
-                        errors.ToasterWarning)
-        args.rawfile = None # In case it was set to '-'
-        args.from_file = '-'
-    main()
+    main(args)
 

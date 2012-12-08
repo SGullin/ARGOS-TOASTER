@@ -19,7 +19,88 @@ import database
 import errors
 import colour
 
-def main():
+SHORTNAME = 'query'
+DESCRIPTION = "Get a listing of rawfile_id " \
+              "values from the DB to help the user " \
+              "find the appropriate one to use."
+
+
+def add_arguments(parser):
+    parser.add_argument('-r', '--rawfile-id', dest='rawfile_id', \
+                        type=int, default=None, \
+                        help="A raw file ID. This is useful for checking " \
+                            "the details of a single raw file, identified " \
+                            "by its ID number. NOTE: No other raw files " \
+                            "will match if this option is provided.")
+    parser.add_argument('-p', '--psr', dest='pulsar_name', \
+                        type=str, default='%', \
+                        help="The pulsar to grab rawfiles for. " \
+                            "NOTE: SQL regular expression syntax may be used")
+    parser.add_argument('-s', '--start-date', dest='start_date', \
+                        type=str, default=None, \
+                        help="Do not return rawfiles added to the DB " \
+                            "before this date.")
+    parser.add_argument('-e', '--end-date', dest='end_date', \
+                        type=str, default=None, \
+                        help="Do not return rawfiles added to the DB " \
+                            "after this date.")
+    parser.add_argument('--start-mjd', dest='start_mjd', \
+                        type=float, default=None, \
+                        help="Do not return rawfiles from observations " \
+                            "before this MJD.")
+    parser.add_argument('--end-mjd', dest='end_mjd', \
+                        type=float, default=None, \
+                        help="Do not return rawfiles from observations " \
+                            "after this MJD.")
+    parser.add_argument('--obssystem-id', dest='obssys_id', \
+                        type=int, default=None, \
+                        help="Grab rawfiles from a specific observing system. " \
+                            "NOTE: the argument should be the obssystem_id " \
+                            "from the database. " \
+                            "(Default: No constraint on obssystem_id.)")
+    parser.add_argument('--obssystem-name', dest='obssystem_name', \
+                        type=int, default=None, \
+                        help="Grab rawfiles from a specific observing system. " \
+                            "NOTE: the argument should be the name of the " \
+                            "observing system as recorded in the database. " \
+                            "NOTE: SQL regular expression syntax may be used " \
+                            "(Default: No constraint on obs system's name.)")
+    parser.add_argument('-t', '--telescope', dest='telescope', \
+                        type=str, default=None, \
+                        help="Grab rawfiles from specific telescopes. " \
+                            "The telescope's _name_ must be used here. " \
+                            "NOTE: SQL regular expression syntax may be used " \
+                            "(Default: No constraint on telescope name.)")
+    parser.add_argument('-f', '--frontend', dest='frontend', \
+                        type=str, default=None, \
+                        help="Grab rawfiles from specific frontends. " \
+                            "NOTE: SQL regular expression syntax may be used " \
+                            "(Default: No constraint on frontend name.)")
+    parser.add_argument('-b', '--backend', dest='backend', \
+                        type=str, default=None, \
+                        help="Grab rawfiles from specific backends. " \
+                            "NOTE: SQL regular expression syntax may be used " \
+                            "(Default: No constraint on backend name.)")
+    parser.add_argument('-c', '--clock', dest='clock', \
+                        type=str, default=None, \
+                        help="Grab rawfiles from specific clocks. " \
+                            "NOTE: SQL regular expression syntax may be used " \
+                            "(Default: No constraint on clock name.)")
+    parser.add_argument("--output-style", default='text', \
+                        dest='output_style', type=str, \
+                        help="The following options control how " \
+                        "the matching rawfiles are presented. Recognized " \
+                        "modes: 'text' - List information. Increase " \
+                        "verbosity to get more info; 'plot' - display " \
+                        "a plot; 'summary' - Provide a short summary " \
+                        "of the matching rawfiles. Other styles are " \
+                        "python-style format " \
+                        "strings interpolated using row-information for " \
+                        "each matching rawfile (e.g. 'MJD %%(mjd)d'). " \
+                        "(Default: text).")
+
+
+def main(args):
     rawfiles = get_rawfiles(args)
     if not len(rawfiles):
         raise errors.ToasterError("No rawfiles match parameters provided!")
@@ -398,80 +479,7 @@ def show_rawfiles(rawfiles):
 
 
 if __name__=='__main__':
-    parser = utils.DefaultArguments(description="Get a listing of rawfile_id " \
-                                        "values from the DB to help the user " \
-                                        "find the appropriate one to use.")
-    parser.add_argument('-r', '--rawfile-id', dest='rawfile_id', \
-                        type=int, default=None, \
-                        help="A raw file ID. This is useful for checking " \
-                            "the details of a single raw file, identified " \
-                            "by its ID number. NOTE: No other raw files " \
-                            "will match if this option is provided.")
-    parser.add_argument('-p', '--psr', dest='pulsar_name', \
-                        type=str, default='%', \
-                        help="The pulsar to grab rawfiles for. " \
-                            "NOTE: SQL regular expression syntax may be used")
-    parser.add_argument('-s', '--start-date', dest='start_date', \
-                        type=str, default=None, \
-                        help="Do not return rawfiles added to the DB " \
-                            "before this date.")
-    parser.add_argument('-e', '--end-date', dest='end_date', \
-                        type=str, default=None, \
-                        help="Do not return rawfiles added to the DB " \
-                            "after this date.")
-    parser.add_argument('--start-mjd', dest='start_mjd', \
-                        type=float, default=None, \
-                        help="Do not return rawfiles from observations " \
-                            "before this MJD.")
-    parser.add_argument('--end-mjd', dest='end_mjd', \
-                        type=float, default=None, \
-                        help="Do not return rawfiles from observations " \
-                            "after this MJD.")
-    parser.add_argument('--obssystem-id', dest='obssys_id', \
-                        type=int, default=None, \
-                        help="Grab rawfiles from a specific observing system. " \
-                            "NOTE: the argument should be the obssystem_id " \
-                            "from the database. " \
-                            "(Default: No constraint on obssystem_id.)")
-    parser.add_argument('--obssystem-name', dest='obssystem_name', \
-                        type=int, default=None, \
-                        help="Grab rawfiles from a specific observing system. " \
-                            "NOTE: the argument should be the name of the " \
-                            "observing system as recorded in the database. " \
-                            "NOTE: SQL regular expression syntax may be used " \
-                            "(Default: No constraint on obs system's name.)")
-    parser.add_argument('-t', '--telescope', dest='telescope', \
-                        type=str, default=None, \
-                        help="Grab rawfiles from specific telescopes. " \
-                            "The telescope's _name_ must be used here. " \
-                            "NOTE: SQL regular expression syntax may be used " \
-                            "(Default: No constraint on telescope name.)")
-    parser.add_argument('-f', '--frontend', dest='frontend', \
-                        type=str, default=None, \
-                        help="Grab rawfiles from specific frontends. " \
-                            "NOTE: SQL regular expression syntax may be used " \
-                            "(Default: No constraint on frontend name.)")
-    parser.add_argument('-b', '--backend', dest='backend', \
-                        type=str, default=None, \
-                        help="Grab rawfiles from specific backends. " \
-                            "NOTE: SQL regular expression syntax may be used " \
-                            "(Default: No constraint on backend name.)")
-    parser.add_argument('-c', '--clock', dest='clock', \
-                        type=str, default=None, \
-                        help="Grab rawfiles from specific clocks. " \
-                            "NOTE: SQL regular expression syntax may be used " \
-                            "(Default: No constraint on clock name.)")
-    parser.add_argument("--output-style", default='text', \
-                        dest='output_style', type=str, \
-                        help="The following options control how " \
-                        "the matching rawfiles are presented. Recognized " \
-                        "modes: 'text' - List information. Increase " \
-                        "verbosity to get more info; 'plot' - display " \
-                        "a plot; 'summary' - Provide a short summary " \
-                        "of the matching rawfiles. Other styles are " \
-                        "python-style format " \
-                        "strings interpolated using row-information for " \
-                        "each matching rawfile (e.g. 'MJD %%(mjd)d'). " \
-                        "(Default: text).")
+    parser = utils.DefaultArguments(description=DESCRIPTION)
+    add_arguments(parser)
     args = parser.parse_args()
-    main()
+    main(args)
