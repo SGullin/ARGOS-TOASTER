@@ -1722,7 +1722,12 @@ def get_rawfile_from_id(rawfile_id, existdb=None, verify_md5=True):
     
     select = db.select([db.rawfiles.c.filename, \
                         db.rawfiles.c.filepath, \
-                        db.rawfiles.c.md5sum]).\
+                        db.rawfiles.c.md5sum, \
+                        db.replacement_rawfiles.c.replacement_rawfile_id], \
+                from_obj=[db.rawfiles.\
+                    outerjoin(db.replacement_rawfiles, \
+                        onclause=db.rawfiles.c.rawfile_id == \
+                                db.replacement_rawfiles.c.obsolete_rawfile_id)]).\
                 where(db.rawfiles.c.rawfile_id==rawfile_id)
     result = db.execute(select)
     rows = result.fetchall()
@@ -1732,6 +1737,11 @@ def get_rawfile_from_id(rawfile_id, existdb=None, verify_md5=True):
         db.close()
 
     if len(rows) == 1:
+        if rows[0]['replacement_rawfile_id'] is not None:
+            warnings.warn("The rawfile (ID: %d) has been superseded by " \
+                        "another data file (rawfile ID: %d)." % \
+                        (rawfile_id, rows[0]['replacement_rawfile_id']), \
+                        errors.ToasterWarning)
         filename = rows[0]['filename']
         filepath = rows[0]['filepath']
         md5sum_DB = rows[0]['md5sum']

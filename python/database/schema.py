@@ -243,6 +243,22 @@ sa.Table('rawfiles', metadata, \
         sa.Column('backend', sa.String(16), nullable=True), \
         mysql_engine='InnoDB', mysql_charset='ascii')
 
+# Definte replacement_rawfiles
+sa.Table('replacement_rawfiles', metadata, \
+        sa.Column('obsolete_rawfile_id', sa.Integer, \
+                    sa.ForeignKey("rawfiles.rawfile_id", name="fk_obsolete"), \
+                    nullable=False, unique=True), \
+        sa.Column('replacement_rawfile_id', sa.Integer, \
+                    sa.ForeignKey("rawfiles.rawfile_id", name="fk_replacement"), \
+                    nullable=False), \
+        sa.Column('add_time', sa.DateTime, nullable=False, \
+                    default=sa.func.now()), \
+        sa.Column('user_id', sa.Integer, \
+                    sa.ForeignKey('users.user_id', name="fk_raw_user"), \
+                    nullable=False), \
+        sa.Column('comments', sa.Text, nullable=False), \
+        mysql_engine='InnoDB', mysql_charset='ascii')
+
 # Define raw_diagnostics table
 sa.Table('raw_diagnostics', metadata, \
         sa.Column('raw_diagnostic_id', sa.Integer, primary_key=True, \

@@ -67,6 +67,7 @@ def get_procjobs(args, existdb=None):
                         db.rawfiles.c.filename.\
                                 label("rawfn"), \
                         db.rawfiles.c.pulsar_id, \
+                        db.replacement_rawfiles.c.replacement_rawfile_id, \
                         db.templates.c.filepath.\
                                 label("temppath"), \
                         db.templates.c.filename.\
@@ -82,6 +83,9 @@ def get_procjobs(args, existdb=None):
                     outerjoin(db.rawfiles, \
                         onclause=db.rawfiles.c.rawfile_id == \
                                 db.process.c.rawfile_id).\
+                    outerjoin(db.replacement_rawfiles, \
+                        onclause=db.rawfiles.c.rawfile_id == \
+                                db.replacement_rawfiles.c.obsolete_rawfile_id).\
                     join(db.pulsar_aliases, \
                         onclause=db.rawfiles.c.pulsar_id == \
                                 db.pulsar_aliases.c.pulsar_id).\
@@ -110,6 +114,9 @@ def show_procjobs(procjobs):
                 colour.cstring(" %d" % procjob.process_id, bold=True)
         print "\nPulsar name: %s" % utils.get_pulsarname(procjob.pulsar_id)
         print "Rawfile (ID=%d): %s" % (procjob.rawfile_id, procjob.rawfn)
+        if procjob.replacement_rawfile_id is not None:
+            colour.cprint("Rawfile has been superseded by rawfile_id=%d" % \
+                    procjob.replacement_rawfile_id, 'warning')
         print "Manipulator: %s" % procjob.manipulator
         print "       Args: %s" % procjob.manipulator_args
         print "Number of freq. chunks: %d" % procjob.nchan

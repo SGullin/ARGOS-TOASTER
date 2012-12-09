@@ -66,6 +66,10 @@ class ConflictingToasError(ToasterError):
     pass
 
 
+class RawfileSuperseded(ToasterError):
+    pass
+
+
 # Custom Warnings
 class ToasterWarning(Warning):
     def __str__(self):

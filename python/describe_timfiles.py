@@ -30,6 +30,7 @@ def get_timfiles_toas(timfile_id):
                         db.toas.c.toa_unc_us, \
                         (db.toas.c.fmjd+db.toas.c.imjd).\
                                 label('mjd'), \
+                        db.replacement_rawfiles.c.replacement_rawfile_id, \
                         db.obssystems.c.band_descriptor, \
                         db.obssystems.c.name, \
                         db.obssystems.c.obssystem_id], \
@@ -37,6 +38,9 @@ def get_timfiles_toas(timfile_id):
                     outerjoin(db.toas, \
                         onclause=db.toas.c.toa_id == \
                                 db.toa_tim.c.toa_id).\
+                    outerjoin(db.replacement_rawfiles, \
+                        onclause=db.toas.c.rawfile_id == \
+                                db.replacement_rawfiles.c.obsolete_rawfile_id).\
                     outerjoin(db.obssystems, \
                         onclause=db.toas.c.obssystem_id == \
                                 db.obssystems.c.obssystem_id)]).\
@@ -79,7 +83,9 @@ def get_timfiles(psr='%', timfile_id=None):
                         database.sa.func.count(db.obssystems.c.telescope_id.distinct()).\
                                     label('numtelescopes'), \
                         database.sa.func.count(db.toas.c.obssystem_id.distinct()).\
-                                    label('numobsys')], \
+                                    label('numobsys'), \
+                        database.sa.func.max(db.replacement_rawfiles.c.replacement_rawfile_id).\
+                                    label('any_replaced')], \
                 from_obj=[db.timfiles.\
                     join(db.pulsar_aliases, \
                         onclause=db.timfiles.c.pulsar_id == \
@@ -96,6 +102,9 @@ def get_timfiles(psr='%', timfile_id=None):
                     outerjoin(db.toas, \
                         onclause=db.toa_tim.c.toa_id == \
                                 db.toas.c.toa_id).\
+                    outerjoin(db.replacement_rawfiles, \
+                        onclause=db.toas.c.rawfile_id == \
+                                db.replacement_rawfiles.c.obsolete_rawfile_id).\
                     outerjoin(db.obssystems, \
                         onclause=db.toas.c.obssystem_id == \
                                 db.obssystems.c.obssystem_id)], \
@@ -124,6 +133,9 @@ def show_timfiles(timfiles):
             print "Date and time timfile was created: %s" % \
                         timfile['add_time'].isoformat(' ')
             print "Number of TOAs: %d" % timfile['numtoas']
+            if timfile['any_replaced'] is not None:
+                colour.cprint("Some TOAs are from rawfiles that been " \
+                            "superseded", 'warning')
 
             # Show extra information if verbosity is >= 1
             lines = ["First TOA (MJD): %s" % timfile['startmjd'], \

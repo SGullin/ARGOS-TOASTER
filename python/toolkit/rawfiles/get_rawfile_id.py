@@ -86,6 +86,11 @@ def add_arguments(parser):
                         help="Grab rawfiles from specific clocks. " \
                             "NOTE: SQL regular expression syntax may be used " \
                             "(Default: No constraint on clock name.)")
+    parser.add_argument('--no-obsolete', dest='match_obsolete', \
+                        action='store_false', default=True, \
+                        help="Don't match files that have been replaced. " \
+                            "NOTE: The replacement file will only be " \
+                            "included if it matches the search criteria.")
     parser.add_argument("--output-style", default='text', \
                         dest='output_style', type=str, \
                         help="The following options control how " \
@@ -153,7 +158,8 @@ def get_rawfiles(args):
         whereclause &= (db.obssystems.c.backend.like(args.backend))
     if args.clock:
         whereclause &= (db.obssystems.c.clock.like(args.clock))
-    
+    if not args.match_obsolete:
+        whereclause &= (db.replacement_rawfiles.c.replacement_rawfile_id==None)
     select = db.select([db.rawfiles.c.rawfile_id, \
                         db.rawfiles.c.add_time, \
                         db.rawfiles.c.filename, \
@@ -168,6 +174,7 @@ def get_rawfiles(args):
                         db.rawfiles.c.dm, \
                         db.rawfiles.c.length, \
                         db.rawfiles.c.mjd, \
+                        db.replacement_rawfiles.c.replacement_rawfile_id, \
                         db.users.c.real_name, \
                         db.users.c.email_address, \
                         db.pulsars.c.pulsar_name, \
@@ -179,7 +186,10 @@ def get_rawfiles(args):
                         db.obssystems.c.band_descriptor, \
                         db.obssystems.c.clock], \
                 from_obj=[db.rawfiles.\
-                   join(db.pulsar_aliases, \
+                    outerjoin(db.replacement_rawfiles, \
+                        onclause=db.rawfiles.c.rawfile_id == \
+                                db.replacement_rawfiles.c.obsolete_rawfile_id).\
+                    join(db.pulsar_aliases, \
                         onclause=db.rawfiles.c.pulsar_id == \
                                 db.pulsar_aliases.c.pulsar_id).\
                     outerjoin(db.pulsars, \
@@ -424,6 +434,9 @@ def show_rawfiles(rawfiles):
         print "Uploaded by: %s (%s)" % \
                     (rawdict.real_name, rawdict.email_address)
         print "Date and time rawfile was added: %s" % rawdict.add_time.isoformat(' ')
+        if rawdict.replacement_rawfile_id is not None:
+            colour.cprint("Rawfile has been superseded by rawfile_id=%d" % \
+                    rawdict.replacement_rawfile_id, 'warning')
         if config.cfg.verbosity >= 1:
             lines = ["Observing system ID: %d" % rawdict.obssystem_id, \
                      "Observing system name: %s" % rawdict.obssystem, \

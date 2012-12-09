@@ -35,6 +35,23 @@ def fancy_getitem(self, key):
                                 (key, "', '".join(sorted(self.keys()))))
 
 sa.engine.RowProxy.__getitem__ = fancy_getitem
+    
+
+def before_cursor_execute(conn, cursor, statement, parameters, \
+                            context, executemany):
+    """An event to be executed before execution of SQL queries.
+
+        See SQLAlchemy for details about event triggers.
+    """
+    # Step back 7 levels through the call stack to find
+    # the function that called 'execute'
+    msg = str(statement)
+    if executemany and len(parameters) > 1:
+        msg += "\n    Executing %d statements" % len(parameters)
+    elif parameters:
+        msg += "\n    Params: %s" % str(parameters)
+    utils.print_debug(msg, "queries", stepsback=7)
+
 
 # Cache of database engines
 engines = {}
@@ -56,6 +73,8 @@ def get_toaster_engine(url=None):
     if url not in engines:
         # Create the database engine
         engine = sa.create_engine(config.cfg.dburl)
+        sa.event.listen(engine, "before_cursor_execute", \
+                            before_cursor_execute)
         engines[url] = engine
     return engines[url]
 
@@ -73,8 +92,6 @@ class Database(object):
                                     "'create_tables.py' before attempting " \
                                     "to connect to the database." % \
                                             self.engine.url.database)
-        sa.event.listen(self.engine, "before_cursor_execute", \
-                            self.before_cursor_execute)
         self.autocommit = autocommit
 
         # The database description (metadata)
@@ -142,21 +159,6 @@ class Database(object):
             utils.print_debug("Database connection established.", 'dbconn', \
                                 stepsback=2)
         return self.conn
-
-    def before_cursor_execute(self, conn, cursor, statement, parameters, \
-                                context, executemany):
-        """An event to be executed before execution of SQL queries.
-
-            See SQLAlchemy for details about event triggers.
-        """
-        # Step back 7 levels through the call stack to find
-        # the function that called 'execute'
-        msg = str(statement)
-        if executemany and len(parameters) > 1:
-            msg += "\n    Executing %d statements" % len(parameters)
-        elif parameters:
-            msg += "\n    Params: %s" % str(parameters)
-        utils.print_debug(msg, "queries", stepsback=7)
 
     def execute(self, *args, **kwargs):
         """Execute a query.
