@@ -11,6 +11,28 @@ import colour
 import utils
 
 
+SHORTNAME = 'show'
+DESCRIPTION = "Get a listing of pulsars " \
+              "from the DB to help the user."
+
+
+def add_arguments(parser):
+    parser.add_argument('-p', '--psr', dest='psrnames', \
+                        type=str, default=[], action='append', \
+                        help="The pulsar to grab info for.")
+    parser.add_argument('--pulsar-id', dest='pulsar_ids', \
+                        type=int, default=[], action='append', \
+                        help="IDs of pulsars to grab info for.")
+    parser.add_argument("--output-style", default='text', \
+                        dest='output_style', type=str, \
+                        help="The following options control how " \
+                        "pulsars are displayed. Recognized " \
+                        "modes: 'text' - List pulsars and aliases in a " \
+                        "human-readable format; 'dump' - Dump all " \
+                        "pulsar names and aliases to screen. " \
+                        "(Default: text).")
+
+
 def show_pulsars(pulsar_ids):
     """Print pulsars and aliases to screen in a human-readable
         format.
@@ -58,7 +80,7 @@ def dump_pulsars(pulsar_ids):
 
 
 
-def main():
+def main(args):
     # Build caches
     utils.get_pulsarname_cache()
     pulsar_ids = args.pulsar_ids + \
@@ -77,21 +99,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = utils.DefaultArguments(description="Get a listing of pulsars " \
-                                        "from the DB to help the user.")
-    parser.add_argument('-p', '--psr', dest='psrnames', \
-                        type=str, default=[], action='append', \
-                        help="The pulsar to grab info for.")
-    parser.add_argument('--pulsar-id', dest='pulsar_ids', \
-                        type=int, default=[], action='append', \
-                        help="IDs of pulsars to grab info for.")
-    parser.add_argument("--output-style", default='text', \
-                        dest='output_style', type=str, \
-                        help="The following options control how " \
-                        "pulsars are displayed. Recognized " \
-                        "modes: 'text' - List pulsars and aliases in a " \
-                        "human-readable format; 'dump' - Dump all " \
-                        "pulsar names and aliases to screen. " \
-                        "(Default: text).")
+    parser = utils.DefaultArguments(description=DESCRIPTION)
+    add_arguments(parser)
     args = parser.parse_args()
-    main()
+    main(args)
