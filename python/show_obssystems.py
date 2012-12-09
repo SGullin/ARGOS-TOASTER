@@ -20,7 +20,7 @@ def main():
     print "--"*25
     for id in sorted(obssys_ids):
         obssysinfo = utils.get_obssysinfo(id)
-        print colour.cstring("Obsering System ID:", underline=True, bold=True) + \
+        print colour.cstring("Observing System ID:", underline=True, bold=True) + \
                 colour.cstring(" %d" % id, bold=True)
         print "Observing System Name: %s" % obssysinfo['name']
         print "Telescope: %d" % obssysinfo['telescope_id']
