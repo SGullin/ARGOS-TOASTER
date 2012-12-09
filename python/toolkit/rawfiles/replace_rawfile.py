@@ -12,6 +12,22 @@ import database
 import load_rawfile
 
 
+SHORTNAME = 'replace'
+DESCRIPTION = "Replace a data file with another. The obsolete file " \
+              "is not removed from the database or archive."
+
+
+def add_arguments(parser):
+    parser.add_argument("replacement", nargs='?', type=str, \
+                        help="File name of the new raw file to upload.")
+    parser.add_argument("--obsolete-id", dest='obsolete_id', type=int, \
+                        help="Rawfile ID number of the data file that " \
+                            "is being replaced.")
+    parser.add_argument('--comments', dest='comments', type=str, \
+                        help="Provide comments describing why the replacement " \
+                            "is being done.")
+
+
 def verify_replacement(obsolete_id, replacement, db):
     """Verify that the replacement file is a suitable replacement
         for the obsolete file. The following conditions must be
@@ -187,16 +203,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = utils.DefaultArguments(description="Replace a data file with " \
-                                        "another. The obsolete file is not " \
-                                        "removed from the database or archive.")
-    parser.add_argument("replacement", nargs='?', type=str, \
-                        help="File name of the new raw file to upload.")
-    parser.add_argument("--obsolete-id", dest='obsolete_id', type=int, \
-                        help="Rawfile ID number of the data file that " \
-                            "is being replaced.")
-    parser.add_argument('--comments', dest='comments', type=str, \
-                        help="Provide comments describing why the replacement " \
-                            "is being done.")
+    parser = utils.DefaultArguments(description=DESCRIPTION)
+    add_arguments(parser)
     args = parser.parse_args()
-    main()
+    main(args)

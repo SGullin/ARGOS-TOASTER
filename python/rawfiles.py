@@ -14,6 +14,7 @@ import errors
 
 toolkit = ['get_rawfile_id', \
            'load_rawfile', \
+           'replace_rawfile', \
           ]
 
 
