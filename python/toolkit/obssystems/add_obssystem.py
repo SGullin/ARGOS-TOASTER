@@ -10,6 +10,39 @@ import database
 import errors
 
 
+SHORTNAME = 'add'
+DESCRIPTION = "Add a new observing system to the DB"
+
+
+def add_arguments(parser):
+    parser.add_argument('-o', '--obssys-name', dest='name', type=str, \
+                        help="The name of the new observing system. " \
+                            "(Default: Generate a name from the telescope, " \
+                            "frontend and backend).")
+    parser.add_argument('-t', '--telescope', dest='telescope', \
+                        type=str, \
+                        help="The name of the telescope. This can be " \
+                            "an alias.")
+    parser.add_argument('-f', '--frontend', dest='frontend', \
+                        type=str, \
+                        help="The name of the frontend.")
+    parser.add_argument('-b', '--backend', dest='backend', \
+                        type=str, \
+                        help="The name of the backend.")
+    parser.add_argument('-B', '--band-descriptor', dest='band', \
+                        type=str, \
+                        help="The name of the observing band.")
+    parser.add_argument('-c', '--clock', dest='clock', \
+                        type=str, \
+                        help="The name of the clock file.")
+    parser.add_argument('--from-file', dest='from_file', \
+                        type=str, default=None, \
+                        help="A list of obssystems (one per line) to " \
+                            "add. Note: each line can also include " \
+                            "alias flags. (Default: load a single " \
+                            "obssystem given on the cmd line.)") 
+
+
 def validate_obssystem(db, name, telescope_id, frontend, backend, clock):
     """Check if the given observing system is already in use.
         If so, raise errors.BadInputError.
@@ -92,13 +125,16 @@ def add_obssystem(db, name, telescope_id, frontend, backend, band, clock):
     return obssystem_id
 
 
-def main():
+def main(args):
     # Connect to the database
     db = database.Database()
     db.connect()
 
     try:
         if args.from_file is not None:
+            # Re-create parser, so we can read arguments from file
+            parser = utils.DefaultArguments()
+            add_arguments(parser)
             if args.from_file == '-':
                 obssyslist = sys.stdin
             else:
@@ -181,33 +217,7 @@ def main():
 
 
 if __name__ =='__main__':
-    parser = utils.DefaultArguments(description="Add a new observing system " \
-                                                "to the DB")
-    parser.add_argument('-o', '--obssys-name', dest='name', type=str, \
-                        help="The name of the new observing system. " \
-                            "(Default: Generate a name from the telescope, " \
-                            "frontend and backend).")
-    parser.add_argument('-t', '--telescope', dest='telescope', \
-                        type=str, \
-                        help="The name of the telescope. This can be " \
-                            "an alias.")
-    parser.add_argument('-f', '--frontend', dest='frontend', \
-                        type=str, \
-                        help="The name of the frontend.")
-    parser.add_argument('-b', '--backend', dest='backend', \
-                        type=str, \
-                        help="The name of the backend.")
-    parser.add_argument('-B', '--band-descriptor', dest='band', \
-                        type=str, \
-                        help="The name of the observing band.")
-    parser.add_argument('-c', '--clock', dest='clock', \
-                        type=str, \
-                        help="The name of the clock file.")
-    parser.add_argument('--from-file', dest='from_file', \
-                        type=str, default=None, \
-                        help="A list of obssystems (one per line) to " \
-                            "add. Note: each line can also include " \
-                            "alias flags. (Default: load a single " \
-                            "obssystem given on the cmd line.)") 
+    parser = utils.DefaultArguments(description=DESCRIPTION)
+    add_arguments(parser)
     args = parser.parse_args()
-    main()
+    main(args)

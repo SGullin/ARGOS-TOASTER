@@ -11,7 +11,15 @@ import colour
 import utils
 
 
-def main():
+SHORTNAME = 'show'
+DESCRIPTION = "Get a listing of observing " \
+              "systems from the DB to help the user."
+
+def add_arguments(parser):
+    pass
+
+
+def main(args):
     # Build cache
     obssysinfo_cache = utils.get_obssysinfo_cache()
 
@@ -31,7 +39,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = utils.DefaultArguments(description="Get a listing of observing " \
-                                    "systems from the DB to help the user.")
+    parser = utils.DefaultArguments(description=DESCRIPTION)
+    add_arguments(parser)
     args = parser.parse_args()
-    main()
+    main(args)
