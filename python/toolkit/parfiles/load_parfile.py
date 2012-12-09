@@ -130,7 +130,7 @@ def load_parfile(fn, is_master=False, existdb=None):
     return parfile_id
 
 
-def main():
+def main(args):
     # Allow reading arguments from stdin
     if ((args.parfile is None) or (args.parfile == '-')) and \
                 (args.from_file is None):
@@ -146,6 +146,9 @@ def main():
    
     try:
         if args.from_file is not None:
+            # Re-create parser, so we can read arguments from file
+            parser = utils.DefaultArguments()
+            add_arguments(parser)
             if args.parfile is not None:
                 raise errors.BadInputError("When loading parfiles from " \
                                 "a file, a parfile value should _not_ be " \

@@ -167,6 +167,9 @@ def main(args):
    
     try:
         if args.from_file is not None:
+            # Re-create parser, so we can read arguments from file
+            parser = utils.DefaultArguments()
+            add_arguments(parser)
             if args.template is not None:
                 raise errors.BadInputError("When loading templates from " \
                                 "a file, a template value should _not_ be " \

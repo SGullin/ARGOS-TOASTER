@@ -128,7 +128,7 @@ def load_rawfile(fn, existdb=None):
     return rawfile_id
     
 
-def main():
+def main(args):
     # Allow arguments to be read from stdin
     if ((args.rawfile is None) or (args.rawfile == '-')) and \
                 (args.from_file is None):
@@ -143,6 +143,9 @@ def main():
    
     try:
         if args.from_file is not None:
+            # Re-create parser, so we can read arguments from file
+            parser = utils.DefaultArguments()
+            add_arguments(parser)
             if args.rawfile is not None:
                 raise errors.BadInputError("When loading rawfiles from " \
                                 "a file, a rawfile value should _not_ be " \
