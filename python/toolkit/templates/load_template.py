@@ -109,7 +109,7 @@ def populate_templates_table(db, fn, params, comments):
     return template_id 
 
 
-def load_template(fn, is_master=False, existdb=None):
+def load_template(fn, comments, is_master=False, existdb=None):
     # Connect to the database
     db = existdb or database.Database()
     db.connect()
@@ -129,7 +129,7 @@ def load_template(fn, is_master=False, existdb=None):
  
         # Register the template into the database
         template_id = populate_templates_table(db, newfn, params, \
-                        comments=args.comments)
+                        comments=comments)
 
         mastertemp_id, tempfn = utils.get_master_template(params['pulsar_id'], \
                                                         params['obssystem_id'])
@@ -197,7 +197,7 @@ def main(args):
                     parser.parse_args(arglist, namespace=customargs)
                  
                     fn = customargs.template
-                    template_id = load_template(fn, \
+                    template_id = load_template(fn, customargs.comments, \
                                             customargs.is_master, db)
                     print "%s has been loaded to the DB. template_id: %d" % \
                         (fn, template_id)
@@ -219,7 +219,7 @@ def main(args):
                         "===================================\n" % numfails)
         else:
             fn = args.template
-            template_id = load_template(fn, args.is_master, db)
+            template_id = load_template(fn, args.comments, args.is_master, db)
             print "%s has been loaded to the DB. template_id: %d" % \
                     (fn, template_id)
     finally:
