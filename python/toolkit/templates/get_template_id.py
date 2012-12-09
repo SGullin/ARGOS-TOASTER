@@ -20,7 +20,7 @@ import errors
 import colour
 
 
-SHORTNAME = 'query'
+SHORTNAME = 'show'
 DESCRIPTION = "Query the database for template information." \
 
 

@@ -17,7 +17,7 @@ import errors
 import colour
 
 
-SHORTNAME = 'query'
+SHORTNAME = 'show'
 DESCRIPTION = "Get a listing of parfile_id " \
               "values from the DB to help the user" \
               "find the appropriate one to use."
