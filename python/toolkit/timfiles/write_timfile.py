@@ -9,49 +9,62 @@ import types
 import database
 import errors
 import utils
+from toolkit.timfiles import formatters
 
-def princeton_formatter(toas, flags=""):
-    """Return timfile lines in princeton format.
-        
-        Inputs:
-            toas: A list of TOAs.
-            flags: A single string containing flags to add to each TOA.
-                NOTE: These are ignored! The princeton TOA format
-                does _not_ support flags.
+SHORTNAME = 'write'
+DESCRIPTION = 'Writes out a tim file ' \
+              'already defined in the DB. The output ' \
+              'format is suitable for TEMPO2.'
 
-        Output:
-            timlines: A list of lines to be written into the timfile.
-    """
-    timlines = []
-    for toa in toas:
-        fmjdstr = "%.13f" % toa['fmjd']
-        mjd = ("%5d" % toa['imjd']) + (fmjdstr[fmjdstr.index('.'):])
-        timlines.append("%s               %8.3f %s %8.2f" % \
-                            (toa['telescope_code'], toa['freq'], \
-                                mjd, toa['toa_unc_us']))
-    return timlines
-        
+# Formatter functions
+FORMATTERS = {'tempo2': formatters.tempo2_formatter, \
+              'princeton': formatters.princeton_formatter}
 
-def tempo2_formatter(toas, flags=""):
-    """Return timfile lines in TEMPO2 format.
-        
-        Inputs:
-            toas: A list of TOAs.
-            flags: A single string of flags to add to each TOA.
 
-        Output:
-            timlines: A list of lines to be written into the timfile.
-    """
-    timlines = ["FORMAT 1"]
-    for toa in toas:
-        fmjdstr = str(toa['fmjd'])
-        mjd = "%5d%s" % (toa['imjd'], fmjdstr[fmjdstr.index('.'):])
-        toastr = "%s %.3f %s %.3f %s" % \
-                    (toa['rawfile'], toa['freq'], mjd, \
-                        toa['toa_unc_us'], toa['telescope_code'])
-        flagstr = flags % toa
-        timlines.append("%s %s" % (toastr, flagstr))
-    return timlines
+def add_arguments(parser):
+    parser.add_argument('-t', '--timfile-id', dest='timfile_id', \
+                        required=True, type=int, \
+                        help="The ID of the timefile entry in the DB to " \
+                            "write out. NOTE: This is required.")
+    parser.add_argument('-o', '--outname', dest='outname', \
+                        default='-', type=str, \
+                        help="Output timfile's name. NOTE: This is "
+                            "required.")
+    parser.add_argument('--format', dest='format', \
+                        default='tempo2', type=str, \
+                        help="Output format for the timfile. " \
+                            "Available formats: '%s'. (Default: " \
+                            "tempo2)" % "', '".join(sorted(FORMATTERS)))
+    flags = parser.add_mutually_exclusive_group(required=False)
+    flags.add_argument('--flags', dest='flags', type=str, \
+                        default='', \
+                        help="Flags to include for each TOA. Both the " \
+                            "flag and value-tag should be included in a " \
+                            "quoted string. Value-tags should be in " \
+                            "%%(<tag-name>)<fmt> format. Where <tag-name> " \
+                            "is the name of the column in the DB, and " \
+                            "<fmt> is a C/python-style format code " \
+                            "(without the leading '%%'). NOTE: If multiple " \
+                            "flags are desired they should all be included " \
+                            "in the same quoted string. (Default: no flags)")
+    flags.add_argument('--ipta-exchange', dest='flags', action='store_const', \
+                        default='', \
+                        const="-fe %(frontend)s -be %(backend)s " \
+                            "-B %(band_descriptor)s -bw %(bw).1f " \
+                            "-tobs %(length).1f " \
+                            "-proc TOASTER_verID%(version_id)d " \
+                            "-tmplt %(template)s -gof %(goodness_of_fit).3f " \
+                            "-nbin %(nbin)d -nch %(nchan)d " \
+                            "-f %(frontend)s_%(backend)s", \
+                        help="Set flags appropriate for the IPTA exchange " \
+                            "format.")
+    parser.add_argument('--sort', dest='sortkeys', metavar='SORTKEY', \
+                        action='append', default=['mjd', 'freq'], \
+                        help="DB column to sort TOAs by. Multiple " \
+                            "--sort options can be provided. Options " \
+                            "provided later will take precedent " \
+                            "over previous options. (Default: Sort " \
+                            "by MJD, then freq.)")
 
 
 def get_timfile(timfile_id, existdb=None):
@@ -172,7 +185,7 @@ def get_toas(timfile_id, existdb=None):
 
 
 def write_timfile(toas, timfile, sortkeys=['freq', 'mjd'], flags="", \
-                    outname="-", formatter=tempo2_formatter):
+                    outname="-", formatter=formatters.tempo2_formatter):
     """Write TOAs to a timfile.
         
         Inputs:
@@ -215,69 +228,20 @@ def write_timfile(toas, timfile, sortkeys=['freq', 'mjd'], flags="", \
                         (len(toas), outname), 1)
 
 
-def main():
-    if args.format not in formatters:
+def main(args):
+    if args.format not in FORMATTERS:
         raise errors.UnrecognizedValueError("The requested timfile format " \
                         "'%s' is not recognized. Available formats: '%s'." % \
-                        (args.format, "', '".join(sorted(formatters.keys()))))
-    formatter = formatters[args.format]
+                        (args.format, "', '".join(sorted(FORMATTERS.keys()))))
+    formatter = FORMATTERS[args.format]
     toas, timfile = get_timfile(args.timfile_id)
     # Write TOAs
     write_timfile(toas, timfile, args.sortkeys, args.flags, args.outname, \
                     formatter)
 
 
-# Formatter functions
-formatters = {'tempo2': tempo2_formatter, \
-              'princeton': princeton_formatter}
-
-
 if __name__=='__main__':
-    parser = utils.DefaultArguments(description='Writes out a tim file ' \
-                                'already defined in the DB. The output ' \
-                                'format is suitable for TEMPO2.')
-    parser.add_argument('-t', '--timfile-id', dest='timfile_id', \
-                        required=True, type=int, \
-                        help="The ID of the timefile entry in the DB to " \
-                            "write out. NOTE: This is required.")
-    parser.add_argument('-o', '--outname', dest='outname', \
-                        default='-', type=str, \
-                        help="Output timfile's name. NOTE: This is "
-                            "required.")
-    parser.add_argument('--format', dest='format', \
-                        default='tempo2', type=str, \
-                        help="Output format for the timfile. " \
-                            "Available formats: '%s'. (Default: " \
-                            "tempo2)" % "', '".join(sorted(formatters)))
-    flags = parser.add_mutually_exclusive_group(required=False)
-    flags.add_argument('--flags', dest='flags', type=str, \
-                        default='', \
-                        help="Flags to include for each TOA. Both the " \
-                            "flag and value-tag should be included in a " \
-                            "quoted string. Value-tags should be in " \
-                            "%%(<tag-name>)<fmt> format. Where <tag-name> " \
-                            "is the name of the column in the DB, and " \
-                            "<fmt> is a C/python-style format code " \
-                            "(without the leading '%%'). NOTE: If multiple " \
-                            "flags are desired they should all be included " \
-                            "in the same quoted string. (Default: no flags)")
-    flags.add_argument('--ipta-exchange', dest='flags', action='store_const', \
-                        default='', \
-                        const="-fe %(frontend)s -be %(backend)s " \
-                            "-B %(band_descriptor)s -bw %(bw).1f " \
-                            "-tobs %(length).1f " \
-                            "-proc TOASTER_verID%(version_id)d " \
-                            "-tmplt %(template)s -gof %(goodness_of_fit).3f " \
-                            "-nbin %(nbin)d -nch %(nchan)d " \
-                            "-f %(frontend)s_%(backend)s", \
-                        help="Set flags appropriate for the IPTA exchange " \
-                            "format.")
-    parser.add_argument('--sort', dest='sortkeys', metavar='SORTKEY', \
-                        action='append', default=['mjd', 'freq'], \
-                        help="DB column to sort TOAs by. Multiple " \
-                            "--sort options can be provided. Options " \
-                            "provided later will take precedent " \
-                            "over previous options. (Default: Sort " \
-                            "by MJD, then freq.)")
+    parser = utils.DefaultArguments(description=DESCRIPTION)
+    add_arguments(parser)
     args=parser.parse_args()
-    main()
+    main(args)

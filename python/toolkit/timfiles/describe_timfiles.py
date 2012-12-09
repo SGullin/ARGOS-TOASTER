@@ -11,6 +11,32 @@ import errors
 import numpy as np
 
 
+SHORTNAME = 'show'
+DESCRIPTION = "Print an overview of info about timfiles."
+
+
+def add_arguments(parser):
+    parser.add_argument('-p', '--psr', dest='pulsar_name', \
+                        type=str, default='%', \
+                        help="The pulsar to grab timfiles for. " \
+                            "NOTE: SQL regular expression syntax may be used")
+    parser.add_argument('--timfile-id', dest='timfile_id', \
+                        type=int, default=None, \
+                        help="A timfile ID. This is useful for checking " \
+                            "the details of a single timfile, identified " \
+                            "by its ID number. NOTE: No other timfiles " \
+                            "will match if this option is provided.")
+    parser.add_argument("--output-style", default='text', \
+                        dest='output_style', type=str, \
+                        help="The following options control how " \
+                        "the matching processing jobs are presented. " \
+                        "Recognized modes: 'text' - List information. " \
+                        "Increase verbosity to get more info; 'plot' - " \
+                        "Show a plot summarizing all TOAs in a timfile " \
+                        "NOTE: This only applies when a single timfile " \
+                        "matches the criteria provided. (Default: text).")
+
+
 def get_timfiles_toas(timfile_id):
     """Return TOA information for each of the given timfile's
         TOAs.
@@ -208,7 +234,7 @@ def plot_timfile(timfile):
     fig.canvas.mpl_connect('key_press_event', change_thickness)
 
 
-def main():
+def main(args):
     timfiles = get_timfiles(args.pulsar_name, args.timfile_id)
     if args.output_style == 'text':
         show_timfiles(timfiles)
@@ -227,26 +253,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = utils.DefaultArguments(description="Print an overview of info " \
-                                            "about timfiles.")
-    parser.add_argument('-p', '--psr', dest='pulsar_name', \
-                        type=str, default='%', \
-                        help="The pulsar to grab timfiles for. " \
-                            "NOTE: SQL regular expression syntax may be used")
-    parser.add_argument('--timfile-id', dest='timfile_id', \
-                        type=int, default=None, \
-                        help="A timfile ID. This is useful for checking " \
-                            "the details of a single timfile, identified " \
-                            "by its ID number. NOTE: No other timfiles " \
-                            "will match if this option is provided.")
-    parser.add_argument("--output-style", default='text', \
-                        dest='output_style', type=str, \
-                        help="The following options control how " \
-                        "the matching processing jobs are presented. " \
-                        "Recognized modes: 'text' - List information. " \
-                        "Increase verbosity to get more info; 'plot' - " \
-                        "Show a plot summarizing all TOAs in a timfile " \
-                        "NOTE: This only applies when a single timfile " \
-                        "matches the criteria provided. (Default: text).")
+    parser = utils.DefaultArguments(description=DESCRIPTION)
+    add_arguments(parser)
     args = parser.parse_args()
-    main()
+    main(args)
