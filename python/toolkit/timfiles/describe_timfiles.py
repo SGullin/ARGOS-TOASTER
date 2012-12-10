@@ -240,6 +240,7 @@ def main(args):
         show_timfiles(timfiles)
     elif args.output_style == 'plot':
         if len(timfiles) == 1:
+            import matplotlib.pyplot as plt
             plot_timfile(timfiles[0])
             plt.show()
         else:
