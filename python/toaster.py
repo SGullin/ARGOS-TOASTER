@@ -19,7 +19,7 @@ import colour
 import errors
 import manipulators
 import database
-import load_rawfile
+from toolkit.rawfiles import load_rawfile
 from toolkit.parfiles import load_parfile
 from toolkit.templates import load_template
 import utils
