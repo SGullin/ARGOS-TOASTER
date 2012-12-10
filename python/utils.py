@@ -807,7 +807,7 @@ def get_version_id(existdb=None):
     # Check to make sure the repositories are clean
     check_repos()
     # Get git hashes
-    pipeline_githash = get_githash(config.cfg.toaster_dir)
+    pipeline_githash = get_githash(os.path.dirname(__file__))
     if is_gitrepo(config.cfg.psrchive_dir):
         psrchive_githash = get_githash(config.cfg.psrchive_dir)
     else:
@@ -869,7 +869,7 @@ def check_repos():
         Outputs:
             None
     """
-    if is_gitrepo_dirty(config.cfg.toaster_dir):
+    if is_gitrepo_dirty(os.path.dirname(__file__)):
         if config.debug.GITTEST:
             warnings.warn("Git repository is dirty! Will tolerate because " \
                             "pipeline debugging is on.", \
