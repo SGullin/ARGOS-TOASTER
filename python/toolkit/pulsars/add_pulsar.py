@@ -54,17 +54,21 @@ def validate_pulsar_name(db, pulsar_name):
                                     pulsar_name)
 
 
-def validate_aliases(db, aliases):
+def validate_aliases(aliases, existdb=None):
     """Check if any of the given pulsar aliases are already in use.
         If so, raise errors.BadInputError.
 
         Inputs:
-            db: A connected Database object.
             aliases: A list of pulsar aliases.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
 
         Outputs:
             None
     """
+    # Connect to the database
+    db = existdb or database.Database()
+    db.connect()
     select = db.select([db.pulsar_aliases], \
                         db.pulsar_aliases.c.pulsar_alias.in_(aliases))
     result = db.execute(select)
@@ -72,6 +76,8 @@ def validate_aliases(db, aliases):
     for row in result:
         aliases_in_use.append(row['pulsar_alias'])
     result.close()
+    if existdb is None:
+        db.close()
     if aliases_in_use:
         raise errors.BadInputError("The following proposed pulsar aliases " \
                                     "are already in use (each alias must be " \
@@ -79,17 +85,22 @@ def validate_aliases(db, aliases):
                                     "', '".join(aliases_in_use))
 
 
-def add_pulsar(db, pulsar_name, aliases=[]):
+def add_pulsar(pulsar_name, aliases=[], existdb=None):
     """Add a new pulsar and its aliases to the database.
 
         Inputs:
-            db: A connected Database object.
             pulsar_name: The name of the pulsar.
             aliases: A list of aliases for this pulsar.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
 
         Output:
             pulsar_id: The ID number of the newly inserted pulsar.
     """
+    # Connect to the database
+    db = existdb or database.Database()
+    db.connect()
+
     # Add the pulsar's name itself as an alias
     aliases.append(pulsar_name)
     # Make sure no aliases are duplicated in the list
@@ -100,27 +111,58 @@ def add_pulsar(db, pulsar_name, aliases=[]):
     trans = db.begin() # Open a transaction
     try:
         validate_pulsar_name(db, pulsar_name)
-        validate_aliases(db, aliases)
-    except errors.BadInputError:
-        db.rollback()
+        # Insert new pulsar into the database
+        ins = db.pulsars.insert()
+        result = db.execute(ins, pulsar_name=pulsar_name)
+        pulsar_id = result.inserted_primary_key[0]
+        result.close()
+        add_pulsar_aliases(pulsar_id, aliases, db)
+    except:
+        trans.rollback()
         raise
-    # Insert new pulsar into the database
-    ins = db.pulsars.insert()
-    result = db.execute(ins, pulsar_name=pulsar_name)
-    pulsar_id = result.inserted_primary_key[0]
-    result.close()
-
-    # Insert new aliases into the database
-    ins = db.pulsar_aliases.insert()
-    values = []
-    for alias in aliases:
-        values.append({'pulsar_id':pulsar_id, \
-                        'pulsar_alias':alias})
-    result = db.execute(ins, values)
-    result.close()
-
-    db.commit()
+    else:
+        trans.commit()
+    finally:
+        if existdb is None:
+            db.close()
     return pulsar_id
+
+
+def add_pulsar_aliases(pulsar_id, aliases, existdb=None):
+    """Add pulsar aliases to DB.
+
+        Inputs:
+            pulsar_id: The ID number of the pulsar to add aliases for.
+            aliases: A list of aliases for the pulsar.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Outputs:
+            None
+    """
+    # Connect to the database
+    db = existdb or database.Database()
+    db.connect()
+
+    trans = db.begin()
+    try:
+        validate_aliases(aliases, db)
+        # Insert new aliases into the database
+        ins = db.pulsar_aliases.insert()
+        values = []
+        for alias in aliases:
+            values.append({'pulsar_id':pulsar_id, \
+                            'pulsar_alias':alias})
+        result = db.execute(ins, values)
+        result.close()
+    except:
+        trans.rollback()
+        raise
+    else:
+        trans.commit()
+    finally:
+        if existdb is None:
+            db.close()
 
 
 def main(args):
@@ -158,8 +200,8 @@ def main(args):
                     customargs = copy.deepcopy(args)
                     arglist = shlex.split(line.strip())
                     parser.parse_args(arglist, namespace=customargs)
-                    pulsar_id = add_pulsar(db, customargs.pulsar_name, \
-                                            customargs.aliases)
+                    pulsar_id = add_pulsar(customargs.pulsar_name, \
+                                            customargs.aliases, db)
                     print "Successfully inserted new pulsar. " \
                         "Returned pulsar_id: %d" % pulsar_id
                     numadded += 1
@@ -179,7 +221,7 @@ def main(args):
                         "Please review error output.\n" \
                         "===================================\n" % numfails)
         else:
-            pulsar_id = add_pulsar(db, args.pulsar_name, args.aliases)
+            pulsar_id = add_pulsar(args.pulsar_name, args.aliases, db)
             print "Successfully inserted new pulsar. " \
                         "Returned pulsar_id: %d" % pulsar_id
     finally:
