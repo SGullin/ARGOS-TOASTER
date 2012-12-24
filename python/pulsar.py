@@ -14,6 +14,7 @@ import errors
 
 toolkit = ['add_pulsar', \
            'show_pulsars', \
+           'rename_pulsar', \
           ]
 
 
