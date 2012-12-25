@@ -59,6 +59,21 @@ sa.Table('toas', metadata, \
         sa.Column('goodness_of_fit', sa.Float(24), nullable=True), \
         mysql_engine='InnoDB', mysql_charset='ascii')
 
+# Define toa_comments table
+sa.Table('toa_comments', metadata, \
+        sa.Column('toa_comment_id', sa.Integer, primary_key=True, \
+                    autoincrement=True, nullable=False), \
+        sa.Column('toa_id', sa.Integer, \
+                    sa.ForeignKey("toas.toa_id", name="fk_toatim_toa"), \
+                    nullable=False), \
+        sa.Column('user_id', sa.Integer, \
+                    sa.ForeignKey("users.user_id", name="fk_tim_user"), \
+                    nullable=False), \
+        sa.Column('comments', sa.Text, nullable=False), \
+        sa.Column('is_bad', sa.Boolean, nullable=False, \
+                    default=False), \
+        sa.Column('add_time', sa.DateTime, nullable=False, \
+                    default=sa.func.now()), \
 # Define process table
 sa.Table('process', metadata, \
         sa.Column('process_id', sa.Integer, primary_key=True, \
