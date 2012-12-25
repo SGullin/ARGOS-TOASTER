@@ -74,6 +74,9 @@ sa.Table('toa_comments', metadata, \
                     default=False), \
         sa.Column('add_time', sa.DateTime, nullable=False, \
                     default=sa.func.now()), \
+        sa.UniqueConstraint('toa_id', 'user_id'), \
+        mysql_engine='InnoDB', mysql_charset='ascii')
+
 # Define process table
 sa.Table('process', metadata, \
         sa.Column('process_id', sa.Integer, primary_key=True, \
