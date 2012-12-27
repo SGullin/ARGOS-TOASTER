@@ -60,16 +60,16 @@ sa.Table('toas', metadata, \
         mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define toa_comments table
-sa.Table('toa_comments', metadata, \
-        sa.Column('toa_comment_id', sa.Integer, primary_key=True, \
+sa.Table('toa_opinions', metadata, \
+        sa.Column('toa_opinion_id', sa.Integer, primary_key=True, \
                     autoincrement=True, nullable=False), \
         sa.Column('toa_id', sa.Integer, \
-                    sa.ForeignKey("toas.toa_id", name="fk_toatim_toa"), \
+                    sa.ForeignKey("toas.toa_id", name="fk_toaop_toa"), \
                     nullable=False), \
         sa.Column('user_id', sa.Integer, \
-                    sa.ForeignKey("users.user_id", name="fk_tim_user"), \
+                    sa.ForeignKey("users.user_id", name="fk_toaop_user"), \
                     nullable=False), \
-        sa.Column('comments', sa.Text, nullable=False), \
+        sa.Column('comments', sa.Text, nullable=True), \
         sa.Column('is_bad', sa.Boolean, nullable=False, \
                     default=False), \
         sa.Column('add_time', sa.DateTime, nullable=False, \
