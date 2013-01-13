@@ -285,6 +285,17 @@ sa.Table('raw_diagnostic_plots', metadata, \
         sa.UniqueConstraint('rawfile_id', 'plot_type'), \
         mysql_engine='InnoDB', mysql_charset='ascii')
 
+# Define curators table
+sa.Table('curators', metadata, \
+        sa.Column('pulsar_id', sa.Integer, \
+                    sa.ForeignKey('pulsars.pulsar_id', name="fk_cura_psr"), \
+                    nullable=False), \
+        sa.Column('user_id', sa.Integer, \
+                    sa.ForeignKey('users.user_id', name="fk_cura_user"), \
+                    nullable=True), \
+        sa.UniqueConstraint('pulsar_id', 'user_id'), \
+        mysql_engine='InnoDB', mysql_charset='ascii')
+
 # Define pulsars table
 sa.Table('pulsars', metadata, \
         sa.Column('pulsar_id', sa.Integer, primary_key=True, \
