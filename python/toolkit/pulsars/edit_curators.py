@@ -88,8 +88,8 @@ def update_curators(pulsar_id, to_add_ids=[], to_rm_ids=[], existdb=None):
         rows = results.fetchall()
         result.close()
         # Don't re-add existing curators
-        for row in rows:
-            to_add_ids.discard(row['user_id'])
+        curators = [row['user_id'] for row in rows]
+        to_add_ids.difference_update(curators)
         # Add curators
         ins = db.curators.insert()
         for add_id in to_add_id:
@@ -97,6 +97,8 @@ def update_curators(pulsar_id, to_add_ids=[], to_rm_ids=[], existdb=None):
                       'user_id':add_id})
         result = db.execute(ins, values)
         result.close()
+        # Only add curators that are present
+        to_rm_ids.intersection_update(curators)
         # Remove curators
         delete = db.curators.delete().\
                     where(db.curators.c.pulsar_id==pulsar_id & \
