@@ -39,7 +39,7 @@ def add_arguments(parser):
                             "any user to have curator-level permissions.")
 
 
-def update_curators(pulsar_id, to_add_ids=[], to_rm_ids=[]):
+def update_curators(pulsar_id, to_add_ids=[], to_rm_ids=[], existdb=None):
     """Update the list of curators for the given pulsar.
         Note: if a user is specified to be added and removed,
             the removal will take precedence.
@@ -48,37 +48,100 @@ def update_curators(pulsar_id, to_add_ids=[], to_rm_ids=[]):
             pulsar_id: The ID of the pulsar to edit curators for.
             to_add_ids: List of user IDs to add as curators.
             to_rm_ids: List of user IDs to remove as curators.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
 
         Outputs:
             None
     """
-    to_add_ids = set(to_add_ids)
-    to_rm_ids = set(to_rm_ids)
-    to_add_ids.difference_update(to_rm_ids) # Remove user_ids that will
-                                            # lose curator privileges
+    # Connect to the database
+    db = existdb or database.Database()
+    db.connect()
+    trans = db.begin()
 
-    if config.cfg.verbosity >= 2:
-        msg = "Updating curator privileges for %s" % \
-                    utils.get_pulsarname(pulsar_id)
-        for uid in to_add_ids:
-            if uid is None:
-                msg += "\n    + Wildcard"
-            else:
-                msg += "\n    + %s" % utils.get_userinfo(uid)['real_name']
-        for uid in to_rm_ids:
-            if uid is None:
-                msg += "\n    - Wildcard"
-            else:
-                msg += "\n    - %s" % utils.get_userinfo(uid)['real_name']
-        utils.print_info(msg, 2)
-    raise NotImplementedError
+    try:
+        to_add_ids = set(to_add_ids)
+        to_rm_ids = set(to_rm_ids)
+        to_add_ids.difference_update(to_rm_ids) # Remove user_ids that will
+                                                # lose curator privileges
+ 
+        if config.cfg.verbosity >= 2:
+            msg = "Updating curator privileges for %s" % \
+                        utils.get_pulsarname(pulsar_id)
+            for uid in to_add_ids:
+                if uid is None:
+                    msg += "\n    + Wildcard"
+                else:
+                    msg += "\n    + %s" % utils.get_userinfo(uid)['real_name']
+            for uid in to_rm_ids:
+                if uid is None:
+                    msg += "\n    - Wildcard"
+                else:
+                    msg += "\n    - %s" % utils.get_userinfo(uid)['real_name']
+            utils.print_info(msg, 2)
+ 
+    try:
+        # Fetch list of curators
+        select = db.select([db.curators.c.user_id]).\
+                    where(db.curators.c.pulsar_id==pulsar_id)
+        result = db.execute(select)
+        rows = results.fetchall()
+        result.close()
+        # Don't re-add existing curators
+        for row in rows:
+            to_add_ids.discard(row['user_id'])
+        # Add curators
+        ins = db.curators.insert()
+        for add_id in to_add_id:
+            values.append({'pulsar_id':pulsar_id, \
+                      'user_id':add_id})
+        result = db.execute(ins, values)
+        result.close()
+        # Remove curators
+        delete = db.curators.delete().\
+                    where(db.curators.c.pulsar_id==pulsar_id & \
+                            db.curators.c.user_id.in_(to_rm_ids))
+        result = db.execute(delete)
+        result.close()
+    except:
+        trans.rollback()
+        raise
+    else:
+        trans.commit()
+    finally:
+        if not existdb:
+            db.close()
+
+
+def clear_curators(pulsar_id, existdb=None):
+    """Clear all curators for a particular pulsar.
+
+        Inputs:
+            pulsar_id: The ID of the pulsar to edit curators for.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Outputs:
+            None
+    """
+    utils.print_info("Removing all curators for %s" % \
+                        utils.get_pulsarname(psr_id), 2)
+    # Connect to the database
+    db = existdb or database.Database()
+    db.connect()
+    # Remove curators
+    delete = db.curators.delete().\
+                where(db.curators.c.pulsar_id==pulsar_id)
+    result = db.execute(delete)
+    result.close()
+    if not existdb:
+        db.close()
 
 
 def main(args):
     psr_id = utils.get_pulsarid(args.psrname)
     if args.remove_all:
-        utils.print_info("Removing all curators for %s" % \
-                            utils.get_pulsarname(psr_id), 2)
+        clear_curators(psr_id)
     else:
         to_add_ids = [utils.get_userid(username) for username in \
                             args.to_add]
