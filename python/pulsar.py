@@ -17,6 +17,7 @@ toolkit = ['add_pulsar', \
            'rename_pulsar', \
            'add_pulsar_alias', \
            'merge_pulsar', \
+           'edit_curators', \
           ]
 
 
