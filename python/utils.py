@@ -55,7 +55,7 @@ userid_cache = {}
 userinfo_cache = {}
 obssysid_cache = {}
 obssysinfo_cache = {}
-
+telescopeinfo_cache = {}
 
 ##############################################################################
 # Functions
@@ -92,6 +92,7 @@ def get_userid_cache(existdb=None, update=False):
     """
     global userid_cache
     if update or not userid_cache:
+        userid_cache = {}
         db = existdb or database.Database()
         db.connect()
 
@@ -142,6 +143,7 @@ def get_userinfo_cache(existdb=None, update=False):
     """
     global userinfo_cache
     if update or not userinfo_cache:
+        userinfo_cache = {}
         db = existdb or database.Database()
         db.connect()
 
@@ -191,6 +193,7 @@ def get_pulsarid_cache(existdb=None, update=False):
     """
     global pulsarid_cache
     if update or not pulsarid_cache:
+        pulsarid_cache = {}
         db = existdb or database.Database()
         db.connect()
 
@@ -222,12 +225,28 @@ def get_pulsaralias_cache(existdb=None, update=False):
     """
     global pulsaralias_cache
     if update or not pulsaralias_cache:
-        pulsarid_cache = get_pulsarid_cache(existdb, update)
         pulsaralias_cache = {}
-        for alias, id in pulsarid_cache.iteritems():
-            aliases = pulsaralias_cache.setdefault(id, [])
+        pulsarid_cache = get_pulsarid_cache(existdb, update)
+        for alias, psrid in pulsarid_cache.iteritems():
+            aliases = pulsaralias_cache.setdefault(psrid, [])
             aliases.append(alias)
     return pulsaralias_cache
+
+
+def get_pulsaraliases(pulsar_id):
+    """Return the aliases for a pulsar given an ID.
+        
+        Inputs:
+            pulsar_id: The ID number of the pulsar in the DB.
+
+        Output:
+            pulsar_aliases: The aliases of the pulsar.
+    """
+    cache = get_pulsaralias_cache()
+    if pulsar_id not in cache:
+        raise errors.UnrecognizedValueError("The pulsar ID (%d) does not " \
+                                "appear in the pulsaralias_cache!" % pulsar_id)
+    return cache[pulsar_id]
 
 
 def get_pulsarname_cache(existdb=None, update=False):
@@ -245,6 +264,7 @@ def get_pulsarname_cache(existdb=None, update=False):
     """
     global pulsarname_cache
     if update or not pulsarname_cache:
+        pulsarname_cache = {}
         db = existdb or database.Database()
         db.connect()
 
@@ -321,6 +341,7 @@ def get_obssystemid_cache(existdb=None, update=False):
     """
     global obssysid_cache
     if update or not obssysid_cache:
+        obssysid_cache = {}
         # Use the exisitng DB connection, or open a new one if None was provided
         db = existdb or database.Database()
         db.connect()
@@ -388,6 +409,7 @@ def get_obssysinfo_cache(existdb=None, update=False):
     """
     global obssysinfo_cache
     if update or not obssysinfo_cache:
+        obssysinfo_cache = {}
         db = existdb or database.Database()
         db.connect()
 
@@ -422,52 +444,70 @@ def get_obssysinfo(obssys_id):
     return cache[obssys_id]
 
 
-def get_telescope_info(alias, existdb=None):
+def get_telescopeinfo_cache(existdb=None, update=False):
+    """Return a dictionary mapping telescope aliases to 
+        telescope info.
+
+        Inputs:
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+            update: If True, update the cache even if it already
+                exists. (Default: Don't update)
+
+        Output:
+            telinfo_cache: A dictionary with telescope aliases as 
+                keys and telescope info as values.
+    """
+    global telescopeinfo_cache
+    if update or not telescopeinfo_cache:
+        telescopeinfo_cache = {}
+        db = existdb or database.Database()
+        db.connect()
+    
+        select = db.select([db.telescopes.c.telescope_id, \
+                            db.telescopes.c.telescope_name, \
+                            db.telescopes.c.telescope_abbrev, \
+                            db.telescopes.c.telescope_code, \
+                            db.telescope_aliases.c.telescope_alias], \
+                    from_obj=[db.telescopes.\
+                        join(db.telescope_aliases, \
+                        onclause=db.telescopes.c.telescope_id == \
+                                db.telescope_aliases.c.telescope_id)], \
+                    distinct=db.telescopes.c.telescope_id)
+        result = db.execute(select)
+        rows = result.fetchall()
+        result.close()
+        if not existdb:
+            db.close()
+        # Create the mapping
+        for row in rows:
+            telinfo = dict(row)
+            telescope_alias = telinfo.pop('telescope_alias').lower()
+            telescope_id = telinfo['telescope_id']
+            telescopeinfo_cache[telescope_alias] = telinfo
+            if telescope_id not in telescopeinfo_cache:
+                telescopeinfo_cache[telescope_id] = telinfo
+    return telescopeinfo_cache
+
+
+def get_telescope_info(alias):
     """Given a telescope alias return the info from the 
         matching telescope columns.
 
         Inputs:
             alias: The telescope's alias.
-            existdb: A (optional) existing database connection object.
-                (Default: Establish a db connection)
 
         Output:
-            row: The matching database row.
-                NOTE: the columns in the return RowProxy object can
-                be referenced like a dictionary, using column names.
+            tel_info: A dictionary object of the telescope's info.
     """
-    # Use the exisitng DB connection, or open a new one if None was provided
-    db = existdb or database.Database()
-    db.connect()
-    
-    select = db.select([db.telescopes.c.telescope_id, \
-                        db.telescopes.c.telescope_name, \
-                        db.telescopes.c.telescope_abbrev, \
-                        db.telescopes.c.telescope_code], \
-                from_obj=[db.telescopes.\
-                    join(db.telescope_aliases, \
-                    onclause=db.telescopes.c.telescope_id == \
-                            db.telescope_aliases.c.telescope_id)], \
-                distinct=db.telescopes.c.telescope_id).\
-                where(db.telescope_aliases.c.telescope_alias.like(alias))
-    result = db.execute(select)
-    rows = result.fetchall()
-    result.close()
-    if not existdb:
-        # Close the DB connection we opened
-        db.close()
-    
-    if len(rows) > 1:
-        raise errors.BadInputError("Multiple matches (%d) for this " \
-                                    "telescope alias (%s)! Be more " \
-                                    "specific." % (len(rows), alias))
-    elif len(rows) == 0:
-        raise errors.BadInputError("Telescope alias provided (%s) doesn't " \
-                                    "match any telescope entries in the " \
-                                    "database." % alias)
-    else:
-        row = rows[0]
-    return row
+    if hasattr(alias, 'lower'):
+        alias = alias.lower() # cast strings to lower case
+    cache = get_telescopeinfo_cache()
+    if alias not in cache:
+        raise errors.UnrecognizedValueError("The telescope alias (%s) " \
+                            "does not appear in the telescopeinfo_cache!" % \
+                            alias)
+    return cache[alias]
 
 
 def get_header_vals(fn, hdritems):
