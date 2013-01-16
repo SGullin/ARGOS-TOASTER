@@ -54,32 +54,30 @@ def update_curators(pulsar_id, to_add_ids=[], to_rm_ids=[], existdb=None):
         Outputs:
             None
     """
+    to_add_ids = set(to_add_ids)
+    to_rm_ids = set(to_rm_ids)
+    to_add_ids.difference_update(to_rm_ids) # Remove user_ids that will
+                                            # lose curator privileges
+ 
+    if config.cfg.verbosity >= 2:
+        msg = "Updating curator privileges for %s" % \
+                    utils.get_pulsarname(pulsar_id)
+        for uid in to_add_ids:
+            if uid is None:
+                msg += "\n    + Wildcard"
+            else:
+                msg += "\n    + %s" % utils.get_userinfo(uid)['real_name']
+        for uid in to_rm_ids:
+            if uid is None:
+                msg += "\n    - Wildcard"
+            else:
+                msg += "\n    - %s" % utils.get_userinfo(uid)['real_name']
+        utils.print_info(msg, 2)
+ 
     # Connect to the database
     db = existdb or database.Database()
     db.connect()
     trans = db.begin()
-
-    try:
-        to_add_ids = set(to_add_ids)
-        to_rm_ids = set(to_rm_ids)
-        to_add_ids.difference_update(to_rm_ids) # Remove user_ids that will
-                                                # lose curator privileges
- 
-        if config.cfg.verbosity >= 2:
-            msg = "Updating curator privileges for %s" % \
-                        utils.get_pulsarname(pulsar_id)
-            for uid in to_add_ids:
-                if uid is None:
-                    msg += "\n    + Wildcard"
-                else:
-                    msg += "\n    + %s" % utils.get_userinfo(uid)['real_name']
-            for uid in to_rm_ids:
-                if uid is None:
-                    msg += "\n    - Wildcard"
-                else:
-                    msg += "\n    - %s" % utils.get_userinfo(uid)['real_name']
-            utils.print_info(msg, 2)
- 
     try:
         # Fetch list of curators
         select = db.select([db.curators.c.user_id]).\
