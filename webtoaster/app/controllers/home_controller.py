@@ -9,7 +9,7 @@ from app.models import *
 from httplib import HTTPResponse
 
 def index(request):
-	t = loader.get_template('app/views/home/index.html')
+	t = loader.get_template('home/index.html')
 	c = Context({
 		'welcome_message': 'Welcome to Web-Toaster, friend!',
 	})

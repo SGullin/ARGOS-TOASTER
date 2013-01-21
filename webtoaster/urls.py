@@ -8,7 +8,7 @@ urlpatterns = patterns('',
     # Example:
     # (r'^webtoaster/', include('webtoaster.foo.urls')),
 
-    (r'^/?$','app.home_controller.index'),
+    #(r'^/?$','app.home_controller.index'),
     # Uncomment the admin/doc line below and add 'django.contrib.admindocs' 
     # to INSTALLED_APPS to enable admin documentation:
     # (r'^admin/doc/', include('django.contrib.admindocs.urls')),
