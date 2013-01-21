@@ -1,0 +1,41 @@
+ul li {
+	list-style-type: none;
+}
+#app-header {
+	width: none !important;
+	padding: 17px;
+	background: #417690;
+	box-shadow: 0px 3px 3px rgba(0, 0, 0, 0.3);
+	border-bottom: 1px solid #2E567A;
+}
+
+div#app-header div#title {
+	color: white;
+	font-size: 26px;
+	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+div.container {
+	margin-left: 10px;
+}
+
+div.nav-container {
+	min-width:100px;
+	margin-left: 0px !important;
+}
+div.nav-container a {
+	font-size: 17px;
+	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+div#messages {
+	height: 40px;
+	margin-top: 10px;
+}
+div#messages > div.alert {
+	box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.row {
+	margin-left: 0px;
+}
