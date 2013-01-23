@@ -97,15 +97,15 @@ def is_curator(user_id, pulsar_id, existdb=None):
     """Return whether user has curator privileges for the given
         pulsar.
 
-        Input:
+        Inputs:
             user_id: The ID of the user to check privileges for.
             pulsar_id: The ID of the pulsar in question.
             existdb: A (optional) existing database connection object.
                 (Default: Establish a db connection)
 
         Output:
-            curator: True, if the user has curator privileges. 
-                False, otherwise.
+            curator: True if the user has curator privileges. 
+                False otherwise.
     """
     # Check if user_id and pulsar_id are valid
     # Exceptions will be raise if no matches are found
