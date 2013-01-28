@@ -607,7 +607,7 @@ def get_header_vals(fn, hdritems):
         raise errors.SystemCallError("The command: %s\nreturn the wrong " \
                             "number of values. (Was expecting %d, got %d.)" % \
                             (cmd, len(hdritems), len(outvals)))
-    params = {}
+    params = HeaderParams(fn)
     for key, val in zip(hdritems, outvals):
         if val == "INVALID":
             raise errors.SystemCallError("The vap header key '%s' " \
@@ -656,8 +656,7 @@ def parse_psrfits_header(fn, hdritems):
     return params
    
 
-def get_archive_dir(fn, data_archive_location=None, \
-                        site=None, backend=None, receiver=None, psrname=None):
+def get_archive_dir(fn, data_archive_location=None, params=None):
     """Given a file name return where it should be archived.
 
         Input:
@@ -665,46 +664,30 @@ def get_archive_dir(fn, data_archive_location=None, \
             data_archive_location: The base directory of the 
                 archive. (Default: use location listed in config
                 file).
-            site: Value of "site" keyword from 'psredit'.
-                Providing this will override the value stored
-                in the file header.
-                (Default: Fetch value using 'vap'.)
-            backend: Name of backend as reported by 'vap'.
-                Providing this will override the value stored
-                in the file header.
-                (Default: Fetch value using 'vap'.)
-            receiver: Name of receiver as reported by 'vap'.
-                Providing this will override the value stored
-                in the file header.
-                (Default: Fetch value using 'vap'.)
-            psrname: Name of the pulsar as reported by 'psredit'.
-                Providing this will override the value stored
-                in the file header.
-                (Default: Fetch value using 'vap'.)
+            params: A HeaderParams object containing header
+                parameters of the data file. (Default: create
+                a throw-away HeaderParams object and populate
+                it as necessary). NOTE: A dictionary object
+                containing the required params can also be used.
 
         Output:
             dir: The directory where the file should be archived.
     """
     if data_archive_location is None:
         data_archive_location = config.cfg.data_archive_location
-    if (site is None) or (backend is None) or (psrname is None) or \
-            (receiver is None):
-        params_to_get = ['telescop', 'backend', 'rcvr', 'name']
-        params = get_header_vals(fn, params_to_get)
-        if site is None:
-            site = params['telescop']
-        if backend is None:
-            backend = params['backend']
-        if receiver is None:
-            receiver = params['rcvr']
-        if psrname is None:
-            psrname = get_prefname(params['name'])
-    tinfo = get_telescope_info(site)
-    sitedir = tinfo['telescope_abbrev']
+    if params is None:
+        params = get_header_vals(fn, [])
     
-    dir = os.path.join(data_archive_location, psrname, sitedir.lower(), \
-                        backend.lower(), receiver.lower())
-    return dir
+    subdir = config.cfg.data_archive_layout % params
+    archivedir = os.path.join(data_archive_location, subdir)
+    archivedir = os.path.abspath(archivedir)
+    if not archivedir.startswith(os.path.abspath(data_archive_location)):
+        raise errors.ArchivingError("Archive directory for '%s' (%s) is " \
+                        "not inside the specified data archive location: %s. " \
+                        "Please check the 'data_archive_layout' parameter in " \
+                        "the config file." % \
+                        (fn, archivedir, data_archive_location))
+    return archivedir
 
 
 def prep_parfile(fn):
@@ -814,6 +797,7 @@ def prep_file(fn):
     # Normalise telescope name
     tinfo = get_telescope_info(params['telescop'])
     params['telescop'] = tinfo['telescope_name']
+    params.update(tinfo)
 
     # Check if obssystem_id, pulsar_id, user_id can be found
     obssys_key = (params['telescop'].lower(), params['rcvr'].lower(), \
@@ -827,6 +811,9 @@ def prep_file(fn):
                             (fn, t, r, b))
     else:
         params['obssystem_id'] = obssys_ids[obssys_key]
+        obssysinfo = get_obssysinfo(params['obssystem_id'])
+        params['band_descriptor'] = obssysinfo['band_descriptor']
+        params['obssys_name'] = obssysinfo['name']
     
     # Check if pulsar_id is found
     try:
@@ -1274,7 +1261,8 @@ def make_proc_diagnostics_dir(fn, proc_id):
             dir: The diagnostic directory's name.
     """
     diagnostics_location = os.path.join(config.cfg.data_archive_location, "diagnostics")
-    basedir = get_archive_dir(fn, \
+    params = prep_file(fn)
+    basedir = get_archive_dir(fn, params=params, \
                     data_archive_location=diagnostics_location)
     dir = os.path.join(basedir, "procid_%d" % proc_id)
     # Make sure directory exists
@@ -2165,3 +2153,49 @@ class DefaultArguments(argparse.ArgumentParser):
             sys.exit(1)
 
 
+null = lambda x: x
+class HeaderParams(dict):
+    def __init__(self, fn, *args, **kwargs):
+        self.fn = fn
+        super(HeaderParams, self).__init__(*args, **kwargs)
+
+    def __getitem__(self, key):
+        if (type(key) in (type('str'), type(u'str'))) and key.endswith("_L"):
+            filterfunc = str.lower
+            key = key[:-2]
+        elif (type(key) in (type('str'), type(u'str'))) and key.endswith("_U"):
+            filterfunc = str.upper
+            key = key[:-2]
+        else:
+            filterfunc = null
+        if self.has_key(key):
+            val = self.get_value(key)
+            if type(val) in (type('str'), type(u'str')):
+                return filterfunc(val)
+            else:
+                return val
+        else:
+            matches = [k for k in self.keys() if k.startswith(key)]
+            if len(matches) == 1:
+                val = self.get_value(matches[0])
+                if type(val) in (type('str'), type(u'str')):
+                    return filterfunc(val)
+                else:
+                    return val
+            elif len(matches) > 1:
+                raise errors.UnrecognizedValueError("The header parameter " \
+                                    "abbreviation '%s' is ambiguous. ('%s' " \
+                                    "all match)" % \
+                                    (key, "', '".join(matches)))
+            else:
+                val = self.get_value(key)
+                if type(val) in (type('str'), type(u'str')):
+                    return filterfunc(val)
+                else:
+                    return val
+
+    def get_value(self, key):
+        if key not in self:
+            params = get_header_vals(self.fn, [key])
+            self.update(params)
+        return super(self.__class__, self).__getitem__(key)
