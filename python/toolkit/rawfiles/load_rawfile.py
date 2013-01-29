@@ -81,17 +81,8 @@ def populate_rawfiles_table(db, archivefn, params):
         # Create rawfile diagnostics
         diagfns = utils.create_rawfile_diagnostic_plots(archivefn, path)
         # Load processing diagnostics
-        for diagtype, diagpath in diagfns.iteritems():
-            diagdir, diagfn = os.path.split(diagpath)
-            ins = db.raw_diagnostic_plots.insert()
-            values = {'rawfile_id':rawfile_id, \
-                      'filename':diagfn, \
-                      'filepath':diagdir, \
-                      'plot_type':diagtype}
-            result = db.execute(ins, values)
-            result.close()
-            utils.print_info("Inserted rawfile diagnostic plot (type: %s)." % \
-                        diagtype, 2)
+        diagnose_rawfiles.insert_rawfile_diagnostic_plots(rawfile_id, \
+                                                diagfns, db)
     db.commit()
     return rawfile_id
 
