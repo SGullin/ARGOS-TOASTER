@@ -168,6 +168,11 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         Outputs:
             None
     """
+    # Initialise these so the 'finally' clause doesn't throw an exception of
+    # it's own if an error is caught before these filenames are determined
+    manipfn = ''
+    adjustfn = ''
+
     #Start pipeline
     print "###################################################"
     print "Starting to toast data"
@@ -296,7 +301,11 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         # Commit database transaction
         db.commit()
     finally:
-        #End pipeline
+        # Clean up
+        for fn in [adjustfn, manipfn]:
+            if os.path.isfile(fn):
+                os.remove(fn)
+        # End pipeline
         print "###################################################"
         print random.choice(SUCCESSMSGS)
         print "End time: %s" % utils.Give_UTC_now()
