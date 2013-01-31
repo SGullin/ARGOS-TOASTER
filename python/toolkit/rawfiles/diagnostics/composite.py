@@ -8,11 +8,11 @@ import base
 class CompositePlotDiagnostic(base.PlotDiagnostic):
     name = 'Composite'
 
-    def _compute(self, fn):
-        utils.print_info("Creating composite summary plot for %s" % fn, 3)
+    def _compute(self):
+        utils.print_info("Creating composite summary plot for %s" % self.fn, 3)
         handle, tmpfn = tempfile.mkstemp(suffix=".png")
         os.close(handle)
-        params = utils.prep_file(fn)
+        params = utils.prep_file(self.fn)
         utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' %s -D %s/PNG " \
                         "-p flux -c ':0:x:view=0.575:0.95," \
                                        "y:view=0.7:0.9," \
@@ -37,12 +37,13 @@ class CompositePlotDiagnostic(base.PlotDiagnostic):
                                        "chan=I," \
                                        "pol=I," \
                                        "cmap:map=plasma'" % \
-                            (fn, tmpfn, os.path.split(fn)[-1], \
+                            (self.fn, tmpfn, os.path.split(fn)[-1], \
                                 params['telescop'], params['rcvr'], \
                                 params['backend'], params['length'], params['bw']))
         tmpdir = os.path.split(tmpfn)[0]
-        pngfn = os.path.join(tmpdir, fn+".composite.png")
+        pngfn = os.path.join(tmpdir, self.fn+".composite.png")
         shutil.move(tmpfn, pngfn) 
         return pngfn
+
 
 Diagnostic = CompositePlotDiagnostic
