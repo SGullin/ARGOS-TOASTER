@@ -70,6 +70,10 @@ class RawfileSuperseded(ToasterError):
     pass
 
 
+class DiagnosticsNotApplicable(ToasterError):
+    pass
+
+
 # Custom Warnings
 class ToasterWarning(Warning):
     def __str__(self):
