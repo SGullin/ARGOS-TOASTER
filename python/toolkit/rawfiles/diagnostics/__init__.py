@@ -6,7 +6,9 @@ import errors
 import base
 
 registered_diagnostics = ['composite', \
-                          'snr']
+                          'snr', \
+                          'time_vs_phase', \
+                          ]
 
 
 def get_diagnostic(diagnostic_name, rawfile_id):
