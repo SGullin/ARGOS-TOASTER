@@ -20,6 +20,11 @@ def add_arguments(parser):
                             "diagnostic describes.")
     parser.add_argument('-D', '--diagnostic', dest='diagnostic', type=str, \
                         help="Name of a diagnostic to add.")
+    parser.add_argument('-n', '--no-insert', dest='insert', \
+                        action='store_false', default=True, \
+                        help="Print diagnostic information to screen instead " \
+                            "of inserting into the DB. (Default: Insert into " \
+                            "DB.)")
     diaggroup = parser.add_mutually_exclusive_group(required=False)
     diaggroup.add_argument('--plot', dest='plot', type=str, \
                         default=None, \
@@ -154,7 +159,10 @@ def main(args):
                                         args.value, args.rawfile_id)
     else:
         diag = diagnostics.get_diagnostic(args.diagnostic, args.rawfile_id)
-    insert_rawfile_diagnostics([diag])
+    if args.insert:
+        insert_rawfile_diagnostics([diag])
+    else:
+        print str(diag)
 
 
 if __name__=='__main__':
