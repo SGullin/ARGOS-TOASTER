@@ -70,7 +70,11 @@ class RawfileSuperseded(ToasterError):
     pass
 
 
-class DiagnosticsNotApplicable(ToasterError):
+class DiagnosticNotApplicable(ToasterError):
+    pass
+
+
+class DiagnosticAlreadyExists(ToasterError):
     pass
 
 
