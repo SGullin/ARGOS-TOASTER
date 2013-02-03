@@ -19,6 +19,9 @@ class BaseDiagnostic(object):
         raise NotImplementedError("The compute method must be defined by " \
                                     "subclasses of BaseDiagnostic.")
 
+    def __str__(self):
+        return "%s: %s" % (self.name, self.diagnostic)
+
 
 class FloatDiagnostic(BaseDiagnostic):
     """The base class for floating-point valued diagnostics.
@@ -50,7 +53,7 @@ class FloatDiagnostic(BaseDiagnostic):
                             "values for this rawfile (ID: %d)" % \
                             (len(rows), self.name, self.rawfile_id))
         elif len(rows) == 1:
-            raise errors.DatabaseError("There is already a '%s' diagnostic " \
+            raise errors.DiagnosticAlreadyExists("There is already a '%s' diagnostic " \
                             "value in the DB for this rawfile (ID: %d)" % \
                             (self.name, self.rawfile_id))
 
@@ -85,6 +88,6 @@ class PlotDiagnostic(BaseDiagnostic):
                             "plots for this rawfile (ID: %d)" % \
                             (len(rows), self.name, self.rawfile_id))
         elif len(rows) == 1:
-            raise errors.DatabaseError("There is already a '%s' diagnostic " \
+            raise errors.DiagnosticAlreadyExists("There is already a '%s' diagnostic " \
                             "plot in the DB for this rawfile (ID: %d)" % \
                             (self.name, self.rawfile_id))
