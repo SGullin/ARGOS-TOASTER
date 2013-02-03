@@ -37,11 +37,12 @@ class CompositePlotDiagnostic(base.PlotDiagnostic):
                                        "chan=I," \
                                        "pol=I," \
                                        "cmap:map=plasma'" % \
-                            (self.fn, tmpfn, os.path.split(fn)[-1], \
+                            (self.fn, tmpfn, os.path.split(self.fn)[-1], \
                                 params['telescop'], params['rcvr'], \
                                 params['backend'], params['length'], params['bw']))
         tmpdir = os.path.split(tmpfn)[0]
-        pngfn = os.path.join(tmpdir, self.fn+".composite.png")
+        archivefn = os.path.split(self.fn)[-1]
+        pngfn = os.path.join(tmpdir, archivefn+".composite.png")
         shutil.move(tmpfn, pngfn) 
         return pngfn
 
