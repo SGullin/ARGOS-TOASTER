@@ -11,12 +11,13 @@ registered_diagnostics = ['composite', \
                           ]
 
 
-def get_diagnostic(diagnostic_name, rawfile_id):
+def get_diagnostic(diagnostic_name, *args, **kwargs):
     """Given a diagnostic name return a computed diagnostic object.
 
         Inputs:
             diagnostic_name: A diagnostic name.
-            rawfile_id: The ID of the rawfile to compute diagnostics for.
+            
+            ** Additional arguments are passed onto the diagnostic constructor.
 
         Outputs:
             diagnostic: The computed diagnostic object.
@@ -27,7 +28,7 @@ def get_diagnostic(diagnostic_name, rawfile_id):
                     "are registered: '%s'" % \
                     (diagnostic_name, "', '".join(registered_diagnostics)))
     mod = __import__(diagnostic_name, globals())
-    diag = mod.Diagnostic(rawfile_id)
+    diag = mod.Diagnostic(*args, **kwargs)
     return diag
 
 
