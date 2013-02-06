@@ -9,10 +9,18 @@ class BaseDiagnostic(object):
     """The base class for diagnostics.
     """
     name = NotImplemented
-    def __init__(self, rawfile_id):
+    def __init__(self, rawfile_id=None, fn=None):
+        if (rawfile_id is None) and (fn is None) or \
+                    (rawfile_id is not None) and (fn is not None):
+            raise errors.BadInputError("Exactly one of 'rawfile_id' and " \
+                        "'fn' may be provided! (rawfile_id=%s; fn=%s)" % \
+                        (rawfile_id, fn))
         self.rawfile_id = rawfile_id
-        self._precheck()
-        self.fn = utils.get_rawfile_from_id(rawfile_id)
+        if rawfile_id is not None:
+            self._precheck()
+            self.fn = utils.get_rawfile_from_id(rawfile_id)
+        else:
+            self.fn = fn
         self.diagnostic = self._compute()
 
     def _compute(self):
