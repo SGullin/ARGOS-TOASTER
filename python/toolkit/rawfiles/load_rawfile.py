@@ -11,7 +11,8 @@ import shlex
 import utils
 import errors
 import database
-
+import diagnostics
+import diagnose_rawfile
 
 SHORTNAME = 'load'
 DESCRIPTION = "Archive a single raw file, " \
@@ -79,10 +80,12 @@ def populate_rawfiles_table(db, archivefn, params):
         result.close()
 
         # Create rawfile diagnostics
-        diagfns = utils.create_rawfile_diagnostic_plots(archivefn, path)
-        # Load processing diagnostics
-        diagnose_rawfiles.insert_rawfile_diagnostic_plots(rawfile_id, \
-                                                diagfns, db)
+        diags = []
+        for diagname in config.cfg.default_rawfile_diagnostics:
+            diags.append(diagnostics.get_diagnostic(diagname, rawfile_id))
+        if diags:
+            # Load processing diagnostics
+            diagnose_rawfiles.insert_rawfile_diagnostics(diags, db)
     db.commit()
     return rawfile_id
 
