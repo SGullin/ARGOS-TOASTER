@@ -14,6 +14,61 @@ import utils
 import errors
 import colour
 
+SHORTNAME = 'show'
+DESCRIPTION = "Get a list of processing jobs from the DB that match the " \
+                "given set of criteria."
+
+
+def add_arguments(parser):
+    parser.add_argument('-r', '--rawfile-id', dest='rawfile_ids', \
+                        type=int, default=[], action='append', \
+                        help="A raw file ID. Multiple instances of " \
+                            "these criteria may be provided.")
+    parser.add_argument('-P', '--process-id', dest='process_ids', \
+                        type=int, default=[], action='append', \
+                        help="A process ID. Multiple instances of " \
+                            "these criteria may be provided.")
+    parser.add_argument('-p', '--psr', dest='pulsar_name', \
+                        type=str, default='%', \
+                        help="The pulsar to grab rawfiles for. " \
+                            "NOTE: SQL regular expression syntax may be used")
+    parser.add_argument('-m', '--manipulator', dest='manipulators', \
+                        type=str, default=[], action='append', \
+                        help="The name of the manipulator used to process " \
+                            "the data.")
+    parser.add_argument('--manipulator-arg', dest='manip_args', \
+                        type=str, default=[], action='append', \
+                        help="A string contained in the arguments " \
+                            "provided to the manipulator. Multiple " \
+                            "instances of these criteria may be provided. " \
+                            "All such criteria must be provided.")
+    parser.add_argument("--from-file", dest='from_file', \
+                        type=str, default=None, \
+                        help="A file containing a list of command line " \
+                            "arguments use.")
+    parser.add_argument("--output-style", default='text', \
+                        dest='output_style', type=str, \
+                        help="The following options control how " \
+                        "the matching processing jobs are presented. " \
+                        "Recognized modes: 'text' - List information. " \
+                        "Increase verbosity to get more info; " \
+                        "'summary' - Summarize the matching processing " \
+                        "jobs. Other styles are python-style format " \
+                        "strings interpolated using row-information for " \
+                        "each matching rawfile (e.g. 'Manipulator = " \
+                        "%%(manipulator)s'). " \
+                        "(Default: text).")
+    parser.add_argument('--sort', dest='sortkeys', metavar='SORTKEY', \
+                        action='append', default=['add_time', 'rawfile_id'], \
+                        help="DB column to sort processing jobs by. Multiple " \
+                            "--sort options can be provided. Options " \
+                            "provided later will take precedence " \
+                            "over previous options. (Default: Sort " \
+                            "primarily by rawfile_id, then processing " \
+                            "date/time)")
+    
+
+
 def get_procjobs(args, existdb=None):
     """Return a dictionary of information for each 
         processing job in the DB that matches the
@@ -167,8 +222,7 @@ def custom_show_procjobs(procjobs, fmt="%(process_id)d"):
         print fmt.decode('string-escape') % procjob
 
 
-def main():
-    global args
+def main(args):
     if args.from_file is not None:
         if args.from_file == '-':
             argfile = sys.stdin
@@ -200,54 +254,7 @@ def main():
 
 
 if __name__=='__main__':
-    parser = utils.DefaultArguments(description="Get a list of processing " \
-                                        "jobs from the DB that match the " \
-                                        "given set of criteria.")
-    parser.add_argument('-r', '--rawfile-id', dest='rawfile_ids', \
-                        type=int, default=[], action='append', \
-                        help="A raw file ID. Multiple instances of " \
-                            "these criteria may be provided.")
-    parser.add_argument('-P', '--process-id', dest='process_ids', \
-                        type=int, default=[], action='append', \
-                        help="A process ID. Multiple instances of " \
-                            "these criteria may be provided.")
-    parser.add_argument('-p', '--psr', dest='pulsar_name', \
-                        type=str, default='%', \
-                        help="The pulsar to grab rawfiles for. " \
-                            "NOTE: SQL regular expression syntax may be used")
-    parser.add_argument('-m', '--manipulator', dest='manipulators', \
-                        type=str, default=[], action='append', \
-                        help="The name of the manipulator used to process " \
-                            "the data.")
-    parser.add_argument('--manipulator-arg', dest='manip_args', \
-                        type=str, default=[], action='append', \
-                        help="A string contained in the arguments " \
-                            "provided to the manipulator. Multiple " \
-                            "instances of these criteria may be provided. " \
-                            "All such criteria must be provided.")
-    parser.add_argument("--from-file", dest='from_file', \
-                        type=str, default=None, \
-                        help="A file containing a list of command line " \
-                            "arguments use.")
-    parser.add_argument("--output-style", default='text', \
-                        dest='output_style', type=str, \
-                        help="The following options control how " \
-                        "the matching processing jobs are presented. " \
-                        "Recognized modes: 'text' - List information. " \
-                        "Increase verbosity to get more info; " \
-                        "'summary' - Summarize the matching processing " \
-                        "jobs. Other styles are python-style format " \
-                        "strings interpolated using row-information for " \
-                        "each matching rawfile (e.g. 'Manipulator = " \
-                        "%%(manipulator)s'). " \
-                        "(Default: text).")
-    parser.add_argument('--sort', dest='sortkeys', metavar='SORTKEY', \
-                        action='append', default=['add_time', 'rawfile_id'], \
-                        help="DB column to sort processing jobs by. Multiple " \
-                            "--sort options can be provided. Options " \
-                            "provided later will take precedence " \
-                            "over previous options. (Default: Sort " \
-                            "primarily by rawfile_id, then processing " \
-                            "date/time)")
+    parser = utils.DefaultArguments(description=DESCRIPTION)
+    add_arguments(parser)
     args = parser.parse_args()
-    main()
+    main(args)

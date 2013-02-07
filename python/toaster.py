@@ -13,6 +13,7 @@ import tempfile
 import shutil
 import traceback
 import shlex
+import random
 
 import config
 import colour
@@ -28,6 +29,13 @@ import utils
 ###############################################################################
 # DO NOT EDIT BELOW HERE
 ###############################################################################
+
+SUCCESSMSGS = ["Your data are freshly toasted", \
+               "Your data are part of this balanced breakfast", \
+               "Your data are nice and warm now", \
+               "Your data are golden brown", \
+               "Your data would go great with butter and jam", \
+              ]
 
 def get_master_parfile_id(rawfile_id, existdb=None):
     """Given a rawfile_id, get the corresponding
@@ -160,6 +168,11 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         Outputs:
             None
     """
+    # Initialise these so the 'finally' clause doesn't throw an exception of
+    # it's own if an error is caught before these filenames are determined
+    manipfn = ''
+    adjustfn = ''
+
     #Start pipeline
     print "###################################################"
     print "Starting to toast data"
@@ -288,9 +301,13 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         # Commit database transaction
         db.commit()
     finally:
-        #End pipeline
+        # Clean up
+        for fn in [adjustfn, manipfn]:
+            if os.path.isfile(fn):
+                os.remove(fn)
+        # End pipeline
         print "###################################################"
-        print "Your data are freshly toasted"
+        print random.choice(SUCCESSMSGS)
         print "End time: %s" % utils.Give_UTC_now()
         print "###################################################"    
         
