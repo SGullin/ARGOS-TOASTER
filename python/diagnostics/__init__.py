@@ -8,6 +8,9 @@ import base
 registered_diagnostics = ['composite', \
                           'snr', \
                           'time_vs_phase', \
+                          'freq_vs_phase', \
+                          'profile', \
+                          'stokes', \
                           ]
 
 
