@@ -9,7 +9,7 @@ class BaseDiagnostic(object):
     """The base class for diagnostics.
     """
     name = NotImplemented
-    def __init__(self, rawfile_id=None, fn=None):
+    def __init__(self, rawfile_id=None, fn=None, existdb=None):
         if (rawfile_id is None) and (fn is None) or \
                     (rawfile_id is not None) and (fn is not None):
             raise errors.BadInputError("Exactly one of 'rawfile_id' and " \
@@ -17,8 +17,8 @@ class BaseDiagnostic(object):
                         (rawfile_id, fn))
         self.rawfile_id = rawfile_id
         if rawfile_id is not None:
-            self._precheck()
-            self.fn = utils.get_rawfile_from_id(rawfile_id)
+            self._precheck(existdb)
+            self.fn = utils.get_rawfile_from_id(rawfile_id, existdb=existdb)
         else:
             self.fn = fn
         self.diagnostic = self._compute()
@@ -34,17 +34,18 @@ class BaseDiagnostic(object):
 class FloatDiagnostic(BaseDiagnostic):
     """The base class for floating-point valued diagnostics.
     """
-    def _precheck(self):
+    def _precheck(self, existdb=None):
         """Check if the rawfile already has a diagnostic of this type
             in the database. An exception is raised if the check fails.
 
             Inputs:
-                None
+                existdb: A (optional) existing database connection object.
+                    (Default: Establish a db connection)
 
             Outputs:
                 None
         """
-        db = database.Database()
+        db = existdb or database.Database()
         db.connect()
 
         select = db.select([db.raw_diagnostics.c.raw_diagnostic_id]).\
@@ -53,7 +54,8 @@ class FloatDiagnostic(BaseDiagnostic):
         result = db.execute(select)
         rows = result.fetchall()
         result.close()
-        db.close()
+        if existdb is None:
+            db.close()
         if len(rows) > 1:
             raise errors.InconsistentDatabaseError("There should be no " \
                             "more than one diagnostic value of each type " \
@@ -69,17 +71,18 @@ class FloatDiagnostic(BaseDiagnostic):
 class PlotDiagnostic(BaseDiagnostic):
     """The base class for plot diagnostics.
     """
-    def _precheck(self):
+    def _precheck(self, existdb=None):
         """Check if the rawfile already has a diagnostic of this type
             in the database. An exception is raised if the check fails.
 
             Inputs:
-                None
+                existdb: A (optional) existing database connection object.
+                    (Default: Establish a db connection)
 
             Outputs:
                 None
         """
-        db = database.Database()
+        db = existdb or database.Database()
         db.connect()
 
         select = db.select([db.raw_diagnostic_plots.c.raw_diagnostic_plot_id]).\
@@ -88,7 +91,8 @@ class PlotDiagnostic(BaseDiagnostic):
         result = db.execute(select)
         rows = result.fetchall()
         result.close()
-        db.close()
+        if existdb is None:
+            db.close()
         if len(rows) > 1:
             raise errors.InconsistentDatabaseError("There should be no " \
                             "more than one diagnostic plot of each type " \

@@ -8,6 +8,7 @@ import traceback
 import copy
 import shlex
 
+import config
 import utils
 import errors
 import database
@@ -82,10 +83,10 @@ def populate_rawfiles_table(db, archivefn, params):
         # Create rawfile diagnostics
         diags = []
         for diagname in config.cfg.default_rawfile_diagnostics:
-            diags.append(diagnostics.get_diagnostic(diagname, rawfile_id))
+            diags.append(diagnostics.get_diagnostic(diagname, rawfile_id, existdb=db))
         if diags:
             # Load processing diagnostics
-            diagnose_rawfiles.insert_rawfile_diagnostics(diags, db)
+            diagnose_rawfile.insert_rawfile_diagnostics(diags, existdb=db)
     db.commit()
     return rawfile_id
 

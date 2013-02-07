@@ -4,6 +4,7 @@ A script to add a rawfile diagnostic to the database/
 
 Patrick Lazarus, Jan. 28, 2013
 """
+import os.path
 
 import utils
 import errors
@@ -120,7 +121,7 @@ def __insert_rawfile_diagnostic_plot(diag, existdb=None):
     try:
         # Put diagnostic plot next to the data file
         diagplot = os.path.abspath(diag.diagnostic)
-        archivedir = os.path.split(diagplot)[0]
+        archivedir = os.path.split(os.path.abspath(diag.fn))[0]
         diagpath = utils.archive_file(diagplot, archivedir)
         diagdir, diagfn = os.path.split(os.path.abspath(diagpath))
     
