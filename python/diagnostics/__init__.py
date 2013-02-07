@@ -11,6 +11,7 @@ registered_diagnostics = ['composite', \
                           'freq_vs_phase', \
                           'profile', \
                           'stokes', \
+                          'masked_percentage', \
                           ]
 
 
