@@ -46,38 +46,25 @@ class CompositePlotDiagnostic(base.PlotDiagnostic):
         return info
 
     def __plot_profonly(self, tmpfn, params):
-        if params['npol'] > 1:
-            profplot = 'stokes'
-            pol = ''
-        else:
-            profplot = 'flux'
-            pol = 'pol=I,'
         info = self.__get_info(params)
         utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' %s -D %s/PNG " \
-                        "-p %s -c ':0:x:view=0.075:0.95," \
+                        "-p flux -c ':0:x:view=0.075:0.95," \
                                        "y:view=0.15:0.7," \
                                        "subint=I," \
                                        "chan=I," \
-                                       "%s" \
+                                       "pol=I," \
                                        "below:l=," \
                                        "%s'" % \
-                            (self.fn, tmpfn, profplot, pol, info))
+                            (self.fn, tmpfn, info))
         
     def __plot_nofreq(self, tmpfn, params):
-        profplot = 'flux'
-        if params['npol'] > 1:
-            profplot = 'stokes'
-            pol = ''
-        else:
-            profplot = 'flux'
-            pol = 'pol=I,'
         info = self.__get_info(params)
         utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' %s -D %s/PNG " \
-                        "-p %s -c ':0:x:view=0.075:0.95," \
+                        "-p flux -c ':0:x:view=0.075:0.95," \
                                        "y:view=0.5:0.7," \
                                        "subint=I," \
                                        "chan=I," \
-                                       "%s" \
+                                       "pol=I," \
                                        "x:opt=BCTS," \
                                        "x:lab=," \
                                        "below:l=," \
@@ -87,23 +74,16 @@ class CompositePlotDiagnostic(base.PlotDiagnostic):
                                        "chan=I," \
                                        "pol=I," \
                                        "cmap:map=plasma'" % \
-                            (self.fn, tmpfn, profplot, pol, info))
+                            (self.fn, tmpfn, info))
         
     def __plot_notime(self, tmpfn, params):
-        profplot = 'flux'
-        if params['npol'] > 1:
-            profplot = 'stokes'
-            pol = ''
-        else:
-            profplot = 'flux'
-            pol = 'pol=I,'
         info = self.__get_info(params)
         utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' %s -D %s/PNG " \
-                        "-p %s -c ':0:x:view=0.075:0.95," \
+                        "-p flux -c ':0:x:view=0.075:0.95," \
                                        "y:view=0.5:0.7," \
                                        "subint=I," \
                                        "chan=I," \
-                                       "%s" \
+                                       "pol=I," \
                                        "x:opt=BCTS," \
                                        "x:lab=," \
                                        "below:l=," \
@@ -113,22 +93,16 @@ class CompositePlotDiagnostic(base.PlotDiagnostic):
                                        "subint=I," \
                                        "pol=I," \
                                        "cmap:map=plasma'" % \
-                            (self.fn, tmpfn, profplot, pol, info))
+                            (self.fn, tmpfn, info))
         
     def __plot_all(self, tmpfn, params):
-        if params['npol'] > 1:
-            profplot = 'stokes'
-            pol = ''
-        else:
-            profplot = 'flux'
-            pol = 'pol=I,'
         info = self.__get_info(params)
         utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' %s -D %s/PNG " \
-                        "-p %s -c ':0:x:view=0.575:0.95," \
+                        "-p flux -c ':0:x:view=0.575:0.95," \
                                        "y:view=0.7:0.9," \
                                        "subint=I," \
                                        "chan=I," \
-                                       "%s" \
+                                       "pol=I," \
                                        "x:opt=BCTS," \
                                        "x:lab=," \
                                        "below:l=' " \
