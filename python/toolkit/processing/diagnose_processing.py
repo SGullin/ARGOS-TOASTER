@@ -103,15 +103,23 @@ def insert_processing_diagnostics(proc_id, diags, archivedir=None, \
 
     try:
         for diag in diags:
-            if isinstance(diag, diagnostics.base.FloatDiagnostic):
-                __insert_processing_float_diagnostic(proc_id, diag, existdb=db)
-            elif isinstance(diag, diagnostics.base.PlotDiagnostic):
-                __insert_processing_diagnostic_plot(proc_id, diag, \
-                                                archivedir=archivedir, \
-                                                suffix=suffix, existdb=db)
+            trans = db.begin()
+            try:
+                if isinstance(diag, diagnostics.base.FloatDiagnostic):
+                    __insert_processing_float_diagnostic(proc_id, diag, existdb=db)
+                elif isinstance(diag, diagnostics.base.PlotDiagnostic):
+                    __insert_processing_diagnostic_plot(proc_id, diag, \
+                                                    archivedir=archivedir, \
+                                                    suffix=suffix, existdb=db)
+                else:
+                    raise ValueError("Diagnostic is not a valid type (%s)!" % \
+                                        type(diag))
+            except errors.DiagnosticAlreadyExists, e:
+                print_info("Diagnostic already exists: %s. Skipping..." % \
+                                str(e), 2)
+                trans.rollback()
             else:
-                raise ValueError("Diagnostic is not a valid type (%s)!" % \
-                                    type(diag))
+                trans.commit()
     finally:
         if not existdb:
             # Close DB connection

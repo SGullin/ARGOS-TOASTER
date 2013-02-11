@@ -126,15 +126,25 @@ def insert_rawfile_diagnostics(rawfile_id, diags, existdb=None):
 
     try:
         for diag in diags:
-            if isinstance(diag, diagnostics.base.FloatDiagnostic):
-                __insert_rawfile_float_diagnostic(rawfile_id, diag, \
-                                                    existdb=db)
-            elif isinstance(diag, diagnostics.base.PlotDiagnostic):
-                __insert_rawfile_diagnostic_plot(rawfile_id, diag, \
-                                                    existdb=db)
+            trans = db.begin()
+            try:
+                check_rawfile_diagnostic_existence(rawfile_id, diag.name, \
+                                                        existdb=db)
+                if isinstance(diag, diagnostics.base.FloatDiagnostic):
+                    __insert_rawfile_float_diagnostic(rawfile_id, diag, \
+                                                        existdb=db)
+                elif isinstance(diag, diagnostics.base.PlotDiagnostic):
+                    __insert_rawfile_diagnostic_plot(rawfile_id, diag, \
+                                                        existdb=db)
+                else:
+                    raise ValueError("Diagnostic is not a valid type (%s)!" % \
+                                        type(diag))
+            except errors.DiagnosticAlreadyExists, e:
+                print_info("Diagnostic already exists: %s. Skipping..." % \
+                                str(e), 2)
+                trans.rollback()
             else:
-                raise ValueError("Diagnostic is not a valid type (%s)!" % \
-                                    type(diag))
+                trans.commit()
     finally:
         if not existdb:
             # Close DB connection
@@ -250,10 +260,6 @@ def main(args):
     if args.insert:
         trans = db.begin()
         try:
-            # Do a safer check for existing diagnostics (include the
-            # insert in the same transaction).
-            check_rawfile_diagnostic_existence(args.rawfile_id, \
-                                    diag.name, existdb=db)
             insert_rawfile_diagnostics(args.rawfile_id, \
                                     [diag], existdb=db)
         except:
