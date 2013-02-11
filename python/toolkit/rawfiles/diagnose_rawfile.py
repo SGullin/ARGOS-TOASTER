@@ -39,11 +39,80 @@ def add_arguments(parser):
                             "load. (Default: load a diagnostic provided " \
                             "on the cmd line.)")
 
-def insert_rawfile_diagnostics(diags, existdb=None):
+
+def check_rawfile_diagnostic_existence(rawfile_id, diagname, existdb=None):
+    """Check a rawfile has a diagnostic (float-valued, or a plot) with
+        the name provided. If a diagnostic exists raise a
+        DiagnosticAlreadyExists error.
+ 
+        Inputs:
+            rawfile_id: The ID number of the raw file for which to 
+                check diagnostics.
+            diagname: The name of a registered diagnostic.
+            existdb: An (optional) existing database connection object.
+                (Default: Establish a db connection)
+        
+        Outputs:
+            None
+    """
+    db = existdb or database.Database()
+    db.connect()
+
+    # Get float-valued diagnostics
+    select = db.select([db.raw_diagnostics.c.raw_diagnostic_id, \
+                        db.raw_diagnostics.c.value]).\
+                where((db.raw_diagnostics.c.type==diagname) & \
+                        (db.raw_diagnostics.c.rawfile_id==rawfile_id))
+    result = db.execute(select)
+    floatrows = result.fetchall()
+    result.close()
+
+    # Get plot-valued diagnostics
+    select = db.select([db.raw_diagnostic_plots.c.raw_diagnostic_plot_id, \
+                        db.raw_diagnostic_plots.c.filename, \
+                        db.raw_diagnostic_plots.c.filepath]).\
+                where((db.raw_diagnostic_plots.c.plot_type==diagname) & \
+                        (db.raw_diagnostic_plots.c.rawfile_id==rawfile_id))
+    result = db.execute(select)
+    plotrows = result.fetchall()
+    result.close()
+    
+    if existdb is None:
+        db.close()
+    if len(floatrows) > 1:
+        raise errors.InconsistentDatabaseError("There should be no " \
+                        "more than one float diagnostic of each type " \
+                        "per candidate. There are %d '%s' diagnostic " \
+                        "values for this rawfile (ID: %d)" % \
+                        (len(floatrows), diagname, rawfile_id))
+    elif len(floatrows) == 1:
+        val = floatrows[0]['value']
+        raise errors.DiagnosticAlreadyExists("There is already a '%s' float " \
+                        "diagnostic value in the DB for this rawfile " \
+                        "(ID: %d; value: %g)" % \
+                        (diagname, rawfile_id, val))
+
+    if len(plotrows) > 1:
+        raise errors.InconsistentDatabaseError("There should be no " \
+                        "more than one diagnostic plot of each type " \
+                        "per candidate. There are %d '%s' diagnostic " \
+                        "plots for this rawfile (ID: %d)" % \
+                        (len(plotrows), diagname, rawfile_id))
+    elif len(plotrows) == 1:
+        fn = os.path.join(plotrows[0]['filepath'], plotrows[0]['filename'])
+        raise errors.DiagnosticAlreadyExists("There is already a '%s' " \
+                        "diagnostic plot in the DB for this rawfile " \
+                        "(ID: %d; file: %s)" % \
+                        (diagname, rawfile_id, fn))
+
+
+def insert_rawfile_diagnostics(rawfile_id, diags, existdb=None):
     """Insert rawfile diagnostics, carefully checking if each
         diagnostic is float-valued, or plot-valued.
  
         Inputs:
+            rawfile_id: The ID number of the raw file for which to 
+                insert the diagnostic.
             diags: A list of computed diagnostics.
             existdb: An (optional) existing database connection object.
                 (Default: Establish a db connection)
@@ -58,9 +127,11 @@ def insert_rawfile_diagnostics(diags, existdb=None):
     try:
         for diag in diags:
             if isinstance(diag, diagnostics.base.FloatDiagnostic):
-                __insert_rawfile_float_diagnostic(diag, existdb=db)
+                __insert_rawfile_float_diagnostic(rawfile_id, diag, \
+                                                    existdb=db)
             elif isinstance(diag, diagnostics.base.PlotDiagnostic):
-                __insert_rawfile_diagnostic_plot(diag, existdb=db)
+                __insert_rawfile_diagnostic_plot(rawfile_id, diag, \
+                                                    existdb=db)
             else:
                 raise ValueError("Diagnostic is not a valid type (%s)!" % \
                                     type(diag))
@@ -70,10 +141,12 @@ def insert_rawfile_diagnostics(diags, existdb=None):
             db.close()
         
 
-def __insert_rawfile_float_diagnostic(diag, existdb=None):
+def __insert_rawfile_float_diagnostic(rawfile_id, diag, existdb=None):
     """Insert rawfile float diagnostic.
 
         Inputs:
+            rawfile_id: The ID number of the raw file for which to 
+                insert the diagnostic.
             diag: A FloatDiagnostic object.
             existdb: An (optional) existing database connection object.
                 (Default: Establish a db connection)
@@ -87,7 +160,7 @@ def __insert_rawfile_float_diagnostic(diag, existdb=None):
 
     try:
         ins = db.raw_diagnostics.insert()
-        values = {'rawfile_id':diag.rawfile_id, \
+        values = {'rawfile_id':rawfile_id, \
                   'value':diag.diagnostic, \
                   'type':diag.name}
         result = db.execute(ins, values)
@@ -102,10 +175,12 @@ def __insert_rawfile_float_diagnostic(diag, existdb=None):
     return diag_id
 
     
-def __insert_rawfile_diagnostic_plot(diag, existdb=None):
+def __insert_rawfile_diagnostic_plot(rawfile_id, diag, existdb=None):
     """Insert rawfile plot diagnostic.
 
         Inputs:
+            rawfile_id: The ID number of the raw file for which to 
+                insert the diagnostic.
             diag: A FloatDiagnostic object.
             existdb: An (optional) existing database connection object.
                 (Default: Establish a db connection)
@@ -126,7 +201,7 @@ def __insert_rawfile_diagnostic_plot(diag, existdb=None):
         diagdir, diagfn = os.path.split(os.path.abspath(diagpath))
     
         ins = db.raw_diagnostic_plots.insert()
-        values = {'rawfile_id':diag.rawfile_id, \
+        values = {'rawfile_id':rawfile_id, \
                   'filename':diagfn, \
                   'filepath':diagdir, \
                   'plot_type':diag.name}
@@ -150,18 +225,44 @@ def __insert_rawfile_diagnostic_plot(diag, existdb=None):
 def main(args):
     if not args.rawfile_id:
         raise ValueError("A rawfile ID number must be provided!")
+    
+    # Connect to the database
+    db = database.Database()
+    db.connect()
+
+    fn = utils.get_rawfile_from_id(args.rawfile_id, existdb=db)
     if args.plot is not None:
         utils.print_info("Custom rawfile diagnostic plot provided", 2)
-        diag = diagnostics.get_custom_diagnostic_plot(args.diagnostic, \
-                                        args.plot, args.rawfile_id)
+        diag = diagnostics.get_custom_diagnostic_plot(fn, args.diagnostic, \
+                                        args.plot)
     elif args.value is not None:
         utils.print_info("Custom floating-point rawfile diagnostic provided", 2)
-        diag = diagnostics.get_custom_float_diagnostic(args.diagnostic, \
-                                        args.value, args.rawfile_id)
+        diag = diagnostics.get_custom_float_diagnostic(fn, args.diagnostic, \
+                                        args.value)
     else:
-        diag = diagnostics.get_diagnostic(args.diagnostic, args.rawfile_id)
+        diagcls = diagnostics.get_diagnostic_class(args.diagnostic)
+        # Pre-check if a diagnostic with this name already exists for
+        # the rawfile provided
+        check_rawfile_diagnostic_existence(args.rawfile_id, diagcls.name, \
+                                            existdb=db)
+        diag = diagcls(fn)
+
     if args.insert:
-        insert_rawfile_diagnostics([diag])
+        trans = db.begin()
+        try:
+            # Do a safer check for existing diagnostics (include the
+            # insert in the same transaction).
+            check_rawfile_diagnostic_existence(args.rawfile_id, \
+                                    diag.name, existdb=db)
+            insert_rawfile_diagnostics(args.rawfile_id, \
+                                    [diag], existdb=db)
+        except:
+            trans.rollback()
+            raise
+        else:
+            trans.commit()
+        finally:
+            db.close()
     else:
         print str(diag)
 

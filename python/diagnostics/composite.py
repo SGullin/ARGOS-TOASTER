@@ -36,13 +36,11 @@ class CompositePlotDiagnostic(base.PlotDiagnostic):
         info = "above:l=%s\n" \
                        "%s    %s (%s)\n" \
                        "Length=%.1f s    BW=%.1f MHz\n" \
-                       "N\\dbin\\u=$nbin    N\\dchan\\u=$nchan    N\\dsub\\u=$nsubint\n" \
-                       "Rawfile ID: %s," \
+                       "N\\dbin\\u=$nbin    N\\dchan\\u=$nchan    N\\dsub\\u=$nsubint," \
                "above:off=3.5" % \
                         (os.path.split(self.fn)[-1], \
                          params['telescop'], params['rcvr'], \
-                         params['backend'], params['length'], params['bw'], \
-                         self.rawfile_id)
+                         params['backend'], params['length'], params['bw'])
         return info
 
     def __plot_profonly(self, tmpfn, params):
@@ -117,7 +115,7 @@ class CompositePlotDiagnostic(base.PlotDiagnostic):
                                        "chan=I," \
                                        "pol=I," \
                                        "cmap:map=plasma'" % \
-                            (self.fn, tmpfn, profplot, pol, info))
+                            (self.fn, tmpfn, info))
 
 
 Diagnostic = CompositePlotDiagnostic

@@ -83,10 +83,16 @@ def populate_rawfiles_table(db, archivefn, params):
         # Create rawfile diagnostics
         diags = []
         for diagname in config.cfg.default_rawfile_diagnostics:
-            diags.append(diagnostics.get_diagnostic(diagname, rawfile_id, existdb=db))
+            diagcls = diagnostics.get_diagnostic_class(diagname)
+            try:
+                diags.append(diagcls(archivefn))
+            except errors.DiagnosticNotApplicable, e:
+                utils.print_info("Diagnostic isn't applicable: %s. " \
+                                "Skipping..." % str(e), 1)
         if diags:
             # Load processing diagnostics
-            diagnose_rawfile.insert_rawfile_diagnostics(diags, existdb=db)
+            diagnose_rawfile.insert_rawfile_diagnostics(rawfile_id, diags, \
+                                                        existdb=db)
     db.commit()
     return rawfile_id
 

@@ -20,7 +20,7 @@ class TimeVsPhasePlotDiagnostic(base.PlotDiagnostic):
         os.close(handle)
         utils.execute("psrplot -p time -j DFp -c 'above:c=%s' " \
                                     "-D %s/PNG %s" % \
-                        (os.path.split(archivefn)[-1], tmpfn, archivefn))
+                        (os.path.split(self.fn)[-1], tmpfn, self.fn))
         tmpdir = os.path.split(tmpfn)[0]
         pngfn = os.path.join(tmpdir, self.fn+".time.png")
         shutil.move(tmpfn, pngfn) 

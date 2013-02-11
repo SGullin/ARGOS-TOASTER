@@ -244,7 +244,8 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         # Fill pipeline table
         cmdline = " ".join(sys.argv)
         process_id = fill_process_table(version_id, rawfile_id, parfile_id, \
-                                     template_id, manip, hdr['nchan'], hdr['nsub'], db)
+                                    template_id, manip, hdr['nchan'], \
+                                    hdr['nsub'], db)
         
         # Parse pat output
         toainfo = utils.parse_pat_output(patout)
@@ -253,10 +254,22 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         toa_ids = utils.load_toas(toainfo, process_id, template_id, rawfile_id, db)
                  
         # Create processing diagnostics
-        utils.print_info("Generating processing diagnostics", 0)
+        utils.print_info("Generating processing diagnostics", 1)
         diagdir = utils.make_proc_diagnostics_dir(manipfn, process_id)
         suffix = "_procid%d.%s" % (process_id, manip.name)
-        diagfns = utils.create_rawfile_diagnostic_plots(manipfn, diagdir, suffix)
+        diags = []
+        for diagname in config.cfg.default_rawfile_diagnostics:
+            diagcls = diagnostics.get_diagnostic_class(diagname)
+            try:
+                diags.append(diagcls(archivefn))
+            except errors.DiagnosticNotApplicable, e:
+                utils.print_info("Diagnostic isn't applicable: %s. " \
+                                "Skipping..." % str(e), 1)
+        if diags:
+            # Load processing diagnostics
+            diagnose_processing.insert_processing_diagnostics(process_id, \
+                                                        diags, diagdir, \
+                                                        suffix, existdb=db)
        
         # Copy TOA diagnostic plots and register them into DB
         basefn = "%(name)s_%(intmjd)05d_%(secs)05d" % hdr
