@@ -76,14 +76,20 @@ MIDDLEWARE_CLASSES = (
 )
 
 ROOT_URL = "/webtoaster/"
-
+LOGIN_URL = "%slogin" % ROOT_URL
 ROOT_URLCONF = 'urls'
+CYBERSKA_APP_URL= "http://www.cyberska.org/pg/oauth/application?appID=24563"
+
+TEMPLATE_CONTEXT_PROCESSORS = (
+    'django.contrib.auth.context_processors.auth',
+)
 
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
-    '/home/palfa/webtoaster/app/views'
+    os.path.join(os.path.abspath(os.path.dirname(__file__)),'app','views'),
+    os.path.join(os.path.abspath(os.path.dirname(__file__)),'oauthclient','templates'),
 )
 
 INSTALLED_APPS = (
@@ -94,6 +100,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.admin',
     'app',
-    # Uncomment the next line to enable the admin:
-    # 'django.contrib.admin',
+    'oauthclient',
 )
+
+AUTH_PROFILE_MODULE = 'app.UserProfile'

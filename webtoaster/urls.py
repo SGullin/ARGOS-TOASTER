@@ -19,5 +19,10 @@ urlpatterns = patterns('',
     (r'^pulsars/','app.controllers.pulsars_controller.index'),
     (r'^help/','app.controllers.help_controller.index'),
     (r'^about/','app.controllers.about_controller.index'),
+    (r'^oauth/', include('oauthclient.urls', namespace='oauth',
+            app_name='app'), {'identifier': 'default'}),
+    (r'^login','app.controllers.users_controller.authentication'),
+    (r'^logout','app.controllers.users_controller.destroy_session'),
+    (r'^profile','app.controllers.users_controller.profile'),
 
 )

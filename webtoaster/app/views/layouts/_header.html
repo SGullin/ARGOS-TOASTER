@@ -1,3 +1,11 @@
 <div id="app-header">
-	<div id="title">Webtoaster</div>
+	<div id="title" class="float-left">Webtoaster</div>
+	<div class="session-control inner-shadow float-right">
+		{% if user.is_authenticated %}
+			Loggedin as: <a href="/webtoaster/profile">{{user.username}}</a> | <a href="/webtoaster/logout"> Logout </a>
+    {% else %}
+      <a href="/webtoaster/login"> Login </a>
+		{%endif%}
+	</div>
+	<br class="clear"/>
 </div>
