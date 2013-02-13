@@ -109,9 +109,24 @@ def access_token_ready(request, identifier='default'):
 
     user = User.objects.get_or_create( username= access_token['loginname'] )[0]
 
+    username = access_token['username']
+    if len(username.split()) >= 2:
+        first_name = username.split()[0]
+        last_name = username.split()[1]
+    else:
+        first_name = username
+        last_name = ''
+
+
+    user.first_name = first_name
+    user.last_name = last_name
+    user.email = access_token['email']
+    user.save()
+
     user_profile = UserProfile.objects.get_or_create( user=user )[0]
     user_profile.oauth_token= access_token['oauth_token']
     user_profile.oauth_token_secret= access_token['oauth_token_secret']
+
     user_profile.save()
 
     user.backend = 'django.contrib.auth.backends.ModelBackend'
