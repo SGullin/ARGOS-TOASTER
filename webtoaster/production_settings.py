@@ -82,6 +82,7 @@ CYBERSKA_APP_URL= "http://www.cyberska.org/pg/oauth/application?appID=24563"
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.contrib.auth.context_processors.auth',
+    'app.flash_processor.flash'
 )
 
 TEMPLATE_DIRS = (

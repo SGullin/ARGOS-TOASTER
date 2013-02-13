@@ -19,7 +19,7 @@ from django.contrib.auth.decorators import login_required
 from django import forms
 
 class ProfileForm(forms.Form):
-  password   = forms.PasswordInput()
+  password   = forms.CharField(required=False)
   first_name = forms.CharField()
   last_name  = forms.CharField()
   email      = forms.EmailField()
@@ -90,11 +90,24 @@ def profile(request):
 
   if request.method == 'POST':
     profile_form = ProfileForm(request.POST)
+    if not profile_form.is_valid():
+      request.session['flash'] = { 'type': 'error', 'message': 'Please check the form for errors.'}
+    else:
+      user = request.user
+      user.first_name = profile_form.cleaned_data['first_name']
+      user.last_name = profile_form.cleaned_data['last_name']
+      user.email = profile_form.cleaned_data['email']
+      print profile_form.cleaned_data
+      if profile_form.cleaned_data['password'] != u'':
+        user.set_password( profile_form.cleaned_data['password'] )
+      user.save()
+      request.session['flash'] = { 'type': 'success', 'message': 'Your profile was successfully updated.'}
   else:
     user = request.user
     form_dict = {'first_name': user.first_name,
                 'last_name': user.last_name,
                 'email': user.email }
+    print form_dict
     profile_form = ProfileForm(form_dict)
 
   t = loader.get_template('users/profile.html')
