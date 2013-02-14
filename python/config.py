@@ -21,7 +21,7 @@ class ToasterConfigs(dict):
             self.load_config_file(cfg_file)
 
         if not self.loaded_configs:
-            raise errors.FatalToasterError("No configuration files loaded. " \
+            raise ValueError("No configuration files loaded. " \
                         "Please set environment variable 'TOASTER_CFG' and " \
                         "ensure at least one file listed is accessible.")
         
