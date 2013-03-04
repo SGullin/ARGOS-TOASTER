@@ -5,6 +5,7 @@ import base
 
 class MaskedPercentageDiagnostic(base.FloatDiagnostic):
     name = "Masked Percentage"
+    description = "Percentage of profiles that are fully masked."
 
     def _compute(self):
         utils.print_info("Calling psrstat to get weights for %s" % self.fn, 3)

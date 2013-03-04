@@ -7,6 +7,7 @@ import base
 
 class ProfilePlotDiagnostic(base.PlotDiagnostic):
     name = 'Profile'
+    description = "Fully scrunched profile."
 
     def _compute(self):
         utils.print_info("Creating profile plot for %s" % self.fn, 3)

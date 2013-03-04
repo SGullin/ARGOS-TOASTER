@@ -7,7 +7,11 @@ import base
 
 class CompositePlotDiagnostic(base.PlotDiagnostic):
     name = 'Composite'
-
+    description = "A composite plot including a profile, " \
+                    "a time vs. phase plot, a freq vs. phase " \
+                    "plot, and some text information. NOTE: " \
+                    "if the raw file is fully scrunched along " \
+                    "an axis the relevent plot will not be shown."
     def _compute(self):
         utils.print_info("Creating composite summary plot for %s" % self.fn, 3)
         handle, tmpfn = tempfile.mkstemp(suffix=".png")

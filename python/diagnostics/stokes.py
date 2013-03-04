@@ -7,6 +7,8 @@ import base
 
 class StokesPlotDiagnostic(base.PlotDiagnostic):
     name = 'Profile (w/ pol)'
+    description = "Fully scrunched profile with polarisation information " \
+                    "shown."
 
     def _compute(self):
         utils.print_info("Creating profile plot (w/ polarization) for %s" % self.fn, 3)
