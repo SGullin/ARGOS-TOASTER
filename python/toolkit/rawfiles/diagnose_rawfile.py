@@ -5,9 +5,13 @@ A script to add a rawfile diagnostic to the database/
 Patrick Lazarus, Jan. 28, 2013
 """
 import os.path
+import argparse
+import textwrap
+import sys
 
 import utils
 import errors
+import colour
 import database
 import diagnostics
 
@@ -21,6 +25,9 @@ def add_arguments(parser):
                             "diagnostic describes.")
     parser.add_argument('-D', '--diagnostic', dest='diagnostic', type=str, \
                         help="Name of a diagnostic to add.")
+    parser.add_argument('--list-diagnostics', nargs=0, \
+                        action=ListDiagnosticsAction, \
+                        help="List available diagnostics and exit.")
     parser.add_argument('-n', '--no-insert', dest='insert', \
                         action='store_false', default=True, \
                         help="Print diagnostic information to screen instead " \
@@ -38,6 +45,20 @@ def add_arguments(parser):
                         help="A list of diagnostics (one per line) to " \
                             "load. (Default: load a diagnostic provided " \
                             "on the cmd line.)")
+
+class ListDiagnosticsAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string):
+        colour.cprint("Available Diagnostics:", \
+                        bold=True, underline=True) 
+        for key in sorted(diagnostics.registered_diagnostics):
+            diagcls = diagnostics.get_diagnostic_class(key)
+            wrapper = textwrap.TextWrapper(subsequent_indent=" "*(len(key)+4))
+            print "%s -- %s" % (colour.cstring(key, bold=True), 
+                                    wrapper.fill(diagcls.name))
+            wrapper = textwrap.TextWrapper(initial_indent="    ", 
+                                    subsequent_indent="    ")
+            print wrapper.fill(diagcls.description)
+        sys.exit(1)
 
 
 def check_rawfile_diagnostic_existence(rawfile_id, diagname, existdb=None):
