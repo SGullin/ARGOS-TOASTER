@@ -156,7 +156,7 @@ class Database(object):
             if self.engine.dialect.name == 'sqlite':
                 result = self.execute("PRAGMA foreign_keys=ON")
                 result.close()
-            utils.print_debug("Database connection established.", 'dbconn', \
+            utils.print_debug("Database connection established.", 'database', \
                                 stepsback=2)
         return self.conn
 
@@ -201,6 +201,8 @@ class Database(object):
                            errors.ToasterWarning) 
         trans = self.conn.begin()
         self.open_transactions.append(trans)
+        utils.print_debug("Database transaction started.", 'database', \
+                            stepsback=2)
         return trans
 
     def commit(self):
@@ -217,6 +219,8 @@ class Database(object):
         else:
             raise errors.DatabaseError("Cannot commit. No open database transactions.")
         trans.commit()
+        utils.print_debug("Database transaction committed.", 'database', \
+                            stepsback=2)
 
     def rollback(self):
         """Roll back the most recently opened transaction.
@@ -229,6 +233,8 @@ class Database(object):
         """
         trans = self.open_transactions.pop()
         trans.rollback()
+        utils.print_debug("Database transaction rolled back.", 'database', \
+                            stepsback=2)
 
     def close(self):
         """Close the established connection. 
@@ -241,7 +247,7 @@ class Database(object):
                 None
         """
         if self.is_connected():
-            utils.print_debug("Database connection closed.", 'dbconn', \
+            utils.print_debug("Database connection closed.", 'database', \
                                 stepsback=2)
             self.conn.close()
             if self.result is not None:

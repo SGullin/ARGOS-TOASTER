@@ -16,7 +16,7 @@ modes = [('syscalls', 'Print commands being executed as system calls.'), \
                         "git repos. This is useful for testing " \
                         "un-committed changes."), \
          ('config', "Display what config files are loaded."), \
-         ('dbconn', "Display when DB connections are opened/closed."), \
+         ('database', "Display DB connection/transaction info."), \
          ('timfile', None), 
             ]
 
