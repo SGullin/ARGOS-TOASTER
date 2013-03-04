@@ -50,14 +50,15 @@ class ListDiagnosticsAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string):
         colour.cprint("Available Diagnostics:", \
                         bold=True, underline=True) 
+        descwrapper = textwrap.TextWrapper(initial_indent="    ", 
+                                subsequent_indent="    ")
         for key in sorted(diagnostics.registered_diagnostics):
             diagcls = diagnostics.get_diagnostic_class(key)
             wrapper = textwrap.TextWrapper(subsequent_indent=" "*(len(key)+4))
             print "%s -- %s" % (colour.cstring(key, bold=True), 
                                     wrapper.fill(diagcls.name))
-            wrapper = textwrap.TextWrapper(initial_indent="    ", 
-                                    subsequent_indent="    ")
-            print wrapper.fill(diagcls.description)
+            if diagcls.description is not None:
+                print descwrapper.fill(diagcls.description)
         sys.exit(1)
 
 

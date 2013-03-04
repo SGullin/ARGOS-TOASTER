@@ -9,6 +9,8 @@ class BaseDiagnostic(object):
     """The base class for diagnostics.
     """
     name = NotImplemented
+    description = None
+
     def __init__(self, fn):
         if not os.path.isfile(fn):
             raise errors.FileError("Input file (%s) doesn't exist!" % fn)
