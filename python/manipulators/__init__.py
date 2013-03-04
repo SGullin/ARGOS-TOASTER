@@ -132,10 +132,10 @@ class ManipulatorArguments(utils.DefaultArguments):
 
     class ListManipulatorsAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
+            colour.cprint("Available Manipulators:", \
+                            bold=True, underline=True) 
             for name in sorted(registered_manipulators):
                 manip = load_manipulator(name)
-                colour.cprint("Available Manipulators:", \
-                                bold=True, underline=True) 
                 wrapper = textwrap.TextWrapper(subsequent_indent=" "*(len(name)+4))
                 print "%s -- %s" % (colour.cstring(name, bold=True), 
                                         wrapper.fill(manip.description))
