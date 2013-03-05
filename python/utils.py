@@ -1297,6 +1297,7 @@ def print_success(msg):
             None
     """
     colour.cprint(msg, 'success')
+    sys.stdout.flush()
 
 def print_info(msg, level=1):
     """Print an informative message if the current verbosity is
@@ -1322,6 +1323,7 @@ def print_info(msg, level=1):
             colour.cprint("    %s" % msg, 'info')
         else:
             colour.cprint(msg, 'info')
+        sys.stdout.flush()
 
 
 def print_debug(msg, category, stepsback=1):
