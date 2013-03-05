@@ -53,6 +53,33 @@ def before_cursor_execute(conn, cursor, statement, parameters, \
     utils.print_debug(msg, "queries", stepsback=7)
 
 
+def commit_event(conn):
+    """An event to be executed when a transaction is committed.
+
+        See SQLAlchemy for details about event triggers.
+    """
+    utils.print_debug("Database transaction committed.", 'database', \
+                        stepsback=7)
+
+
+def rollback_event(conn):
+    """An event to be executed when a transaction is rolled back.
+        
+        See SQLAlchemy for details about event triggers.
+    """
+    utils.print_debug("Database transaction rolled back.", 'database', \
+                        stepsback=7)
+        
+
+def begin_event(conn):
+    """An event to be executed when a transaction is opened.
+        
+        See SQLAlchemy for details about event triggers.
+    """
+    utils.print_debug("Database transaction opened.", 'database', \
+                        stepsback=7)
+
+
 # Cache of database engines
 engines = {}
 
@@ -75,6 +102,10 @@ def get_toaster_engine(url=None):
         engine = sa.create_engine(config.cfg.dburl)
         sa.event.listen(engine, "before_cursor_execute", \
                             before_cursor_execute)
+        if config.debug.is_on('database'):
+            sa.event.listen(engine, "commit", commit_event)
+            sa.event.listen(engine, "rollback", rollback_event)
+            sa.event.listen(engine, "begin", begin_event)
         engines[url] = engine
     return engines[url]
 
@@ -201,8 +232,6 @@ class Database(object):
                            errors.ToasterWarning) 
         trans = self.conn.begin()
         self.open_transactions.append(trans)
-        utils.print_debug("Database transaction started.", 'database', \
-                            stepsback=2)
         return trans
 
     def commit(self):
@@ -219,8 +248,6 @@ class Database(object):
         else:
             raise errors.DatabaseError("Cannot commit. No open database transactions.")
         trans.commit()
-        utils.print_debug("Database transaction committed.", 'database', \
-                            stepsback=2)
 
     def rollback(self):
         """Roll back the most recently opened transaction.
@@ -233,8 +260,6 @@ class Database(object):
         """
         trans = self.open_transactions.pop()
         trans.rollback()
-        utils.print_debug("Database transaction rolled back.", 'database', \
-                            stepsback=2)
 
     def close(self):
         """Close the established connection. 
