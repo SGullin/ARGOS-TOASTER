@@ -146,8 +146,13 @@ def insert_rawfile_diagnostics(rawfile_id, diags, existdb=None):
     db = existdb or database.Database()
     db.connect()
 
+    utils.print_info("Computing raw file diagnostics for " \
+                        "rawfile (ID: %d)" % rawfile_id, 2)
+
     try:
         for diag in diags:
+            utils.print_info("Computing %s diagnostic" % diag.name, 3)
+            
             trans = db.begin()
             try:
                 check_rawfile_diagnostic_existence(rawfile_id, diag.name, \
@@ -159,6 +164,7 @@ def insert_rawfile_diagnostics(rawfile_id, diags, existdb=None):
                     __insert_rawfile_diagnostic_plot(rawfile_id, diag, \
                                                         existdb=db)
                 else:
+                    trans.rollback()
                     raise ValueError("Diagnostic is not a valid type (%s)!" % \
                                         type(diag))
             except errors.DiagnosticAlreadyExists, e:

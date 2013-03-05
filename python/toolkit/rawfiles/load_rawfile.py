@@ -45,7 +45,7 @@ def populate_rawfiles_table(db, archivefn, params):
     rows = result.fetchall()
     result.close()
     if len(rows) > 1:
-        db.rollback()
+        trans.rollback()
         raise errors.InconsistentDatabaseError("There are %d rawfiles " \
                     "with MD5 (%s) in the database already" % (len(rows), md5))
     elif len(rows) == 1:
@@ -57,14 +57,15 @@ def populate_rawfiles_table(db, archivefn, params):
                             "The file will not be re-registed into the DB. " \
                             "Doing nothing..." % (md5, psr_id), \
                             errors.ToasterWarning)
-            db.commit()
+            trans.commit()
             return rawfile_id
         else:
-            db.rollback()
+            trans.rollback()
             raise errors.InconsistentDatabaseError("A rawfile with this " \
                             "MD5 (%s) already exists in the DB, but for " \
                             "a different pulsar (ID: %d)!" % (md5, psr_id))
     else:
+        utils.print_info("Inserting rawfile (%s) into DB." % fn, 3)
         # Based on its MD5, this rawfile doesn't already 
         # exist in the DB. Insert it.
 
@@ -93,7 +94,7 @@ def populate_rawfiles_table(db, archivefn, params):
             # Load processing diagnostics
             diagnose_rawfile.insert_rawfile_diagnostics(rawfile_id, diags, \
                                                         existdb=db)
-    db.commit()
+    trans.commit()
     return rawfile_id
 
 
