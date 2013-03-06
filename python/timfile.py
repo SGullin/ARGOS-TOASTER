@@ -15,6 +15,7 @@ import errors
 toolkit = ['create_timfile', \
            'describe_timfiles', \
            'write_timfile', \
+           'edit_timfile', \
           ]
 
 
