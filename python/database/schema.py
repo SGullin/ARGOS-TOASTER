@@ -430,6 +430,16 @@ sa.Table('obssystems', metadata, \
                             'clock'), \
         mysql_engine='InnoDB', mysql_charset='ascii')
 
+# Create master_timfiles table
+sa.Table('master_timfiles', metadata, \
+        sa.Column('timfile_id', sa.Integer, \
+                    sa.ForeignKey("timfiles.timfile_id", name="fk_mtim_tim"), \
+                    nullable=False, unique=True), \
+        sa.Column('pulsar_id', sa.Integer, \
+                    sa.ForeignKey('pulsars.pulsar_id', name="fk_mtim_psr"), \
+                    nullable=False), \
+        mysql_engine='InnoDB', mysql_charset='ascii')
+
 # Create master_templates table
 sa.Table('master_templates', metadata, \
         sa.Column('template_id', sa.Integer, \
