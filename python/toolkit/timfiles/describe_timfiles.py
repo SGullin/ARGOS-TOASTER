@@ -100,6 +100,7 @@ def get_timfiles(psr='%', timfile_id=None):
                         db.users.c.real_name, \
                         db.users.c.email_address, \
                         db.pulsars.c.pulsar_name, \
+                        db.master_timfiles.c.timfile_id.label('mtimid'), \
                         database.sa.func.count(db.toa_tim.c.toa_id.distinct()).\
                                     label('numtoas'), \
                         database.sa.func.max(db.toas.c.fmjd+db.toas.c.imjd).\
@@ -119,6 +120,9 @@ def get_timfiles(psr='%', timfile_id=None):
                     outerjoin(db.pulsars, \
                         onclause=db.timfiles.c.pulsar_id == \
                                 db.pulsars.c.pulsar_id).\
+                    outerjoin(db.master_timfiles, \
+                        onclause=db.master_timfiles.c.timfile_id == \
+                                    db.timfiles.c.timfile_id).\
                     outerjoin(db.users, \
                         onclause=db.users.c.user_id == \
                                 db.timfiles.c.user_id).\
@@ -153,10 +157,12 @@ def show_timfiles(timfiles):
             print colour.cstring("Timfile ID:", underline=True, bold=True) + \
                     colour.cstring(" %d" % timfile['timfile_id'], bold=True)
             print "Pulsar name: %s" % timfile['pulsar_name']
-            print "Uploaded by: %s (%s)" % (timfile['real_name'], \
+            print "Master timfile? %s" % \
+                        (((timfile['mtimid'] is not None) and "Yes") or "No")
+            print "Last edited by: %s (%s)" % (timfile['real_name'], \
                                             timfile['email_address'])
-            print "Uploader's comments: %s" % timfile['comments']
-            print "Date and time timfile was created: %s" % \
+            print "Comments: %s" % timfile['comments']
+            print "Date and time timfile was last edited: %s" % \
                         timfile['add_time'].isoformat(' ')
             print "Number of TOAs: %d" % timfile['numtoas']
             if timfile['any_replaced'] is not None:

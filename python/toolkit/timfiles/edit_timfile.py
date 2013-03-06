@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Edit a timfile comment or add/remove TOAs.
 """
-
+import datetime
 
 import database
 import errors
@@ -31,6 +31,30 @@ def add_arguments(parser):
                         help="The ID of a TOA to remove from the timfile." \
                             "NOTE: multiple -r/p-rm-toa options may be " \
                             "provided.")
+
+
+def touch_timfile(timfile_id, existdb=None):
+    """Update the mod_time of the timfile.
+
+        Inputs:
+            timfile_id: The ID of the timfile to touch.
+
+        Outputs:
+            None
+    """
+    db = existdb or database.Database()
+    db.connect()
+
+    values = {'user_id': utils.get_userid(), \
+              'add_time': datetime.datetime.now()}
+    update = db.timfiles.update().\
+                where(db.timfiles.c.timfile_id==timfile_id)
+    results = db.execute(update, values)
+    results.close()
+
+    if not existdb:
+        db.close()
+
 
 def verify_timfile(timfile_id, existdb=None):
     """Verify TOAs in timfile do don't have any conflicts.
@@ -195,6 +219,7 @@ def edit_timfile(timfile_id, toas_to_add=[], toas_to_remove=[], \
             __add_toas(timfile_id, toas_to_add, existdb=db)
         __update_comments(timfile_id, comments, existdb=db)
         verify_timfile(timfile_id, existdb=db)
+        touch_timfile(timfile_id, existdb=db)
     except:
         trans.rollback()
         raise
