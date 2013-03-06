@@ -103,6 +103,13 @@ def add_arguments(parser):
                         "strings interpolated using row-information for " \
                         "each matching rawfile (e.g. 'MJD %%(mjd)d'). " \
                         "(Default: text).")
+    parser.add_argument('--sort', dest='sortkeys', metavar='SORTKEY', \
+                        action='append', default=['rawfile_id'], \
+                        help="DB column to sort raw data files by. Multiple " \
+                            "--sort options can be provided. Options " \
+                            "provided later will take precedent " \
+                            "over previous options. (Default: Sort " \
+                            "by rawfile_id.)")
 
 
 def main(args):
@@ -110,7 +117,7 @@ def main(args):
     if not len(rawfiles):
         raise errors.ToasterError("No rawfiles match parameters provided!")
     if args.output_style=='text':
-        show_rawfiles(rawfiles)
+        show_rawfiles(rawfiles, args.sortkeys)
     elif args.output_style=='plot':
         import matplotlib.pyplot as plt
         plot_rawfiles(rawfiles)
@@ -423,7 +430,10 @@ def plot_rawfiles(rawfiles):
     plt.title("# of archives", size='small') 
 
 
-def show_rawfiles(rawfiles):
+def show_rawfiles(rawfiles, sortkeys=['rawfile_id']):
+    # Sort rawfiles
+    utils.sort_by_keys(rawfiles, sortkeys)
+
     print "--"*25
     for rawdict in rawfiles:
         print colour.cstring("Rawfile ID:", underline=True, bold=True) + \

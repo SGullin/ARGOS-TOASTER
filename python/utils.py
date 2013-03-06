@@ -1935,6 +1935,7 @@ def sort_by_keys(tosort, keys):
         Outputs:
             None - sorting is done in-place.
     """
+    print_info("Sorting by keys (%s)" % " then ".join(keys), 3)
     for sortkey in keys:
         if sortkey.endswith("_r"):
             sortkey = sortkey[:-2]
