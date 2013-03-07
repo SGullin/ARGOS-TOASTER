@@ -1,0 +1,60 @@
+monitor (pid=6076): Change detected to '/home/snip3/dev/pythonapps/webtoaster/settings.py'.
+monitor (pid=6076): Triggering process restart.
+monitor (pid=6262): Change detected to '/home/snip3/dev/pythonapps/webtoaster/settings.py'.
+monitor (pid=6262): Triggering process restart.
+monitor (pid=6304): Change detected to '/home/snip3/dev/pythonapps/webtoaster/settings.py'.
+monitor (pid=6304): Triggering process restart.
+Test
+Test
+Test
+Test
+Test
+Test
+Test
+Test
+Test
+Test
+monitor (pid=6337): Change detected to '/home/snip3/dev/pythonapps/webtoaster/app/controllers/pulsars_controller.py'.
+monitor (pid=6337): Triggering process restart.
+monitor (pid=6372): Change detected to '/home/snip3/dev/pythonapps/webtoaster/settings.py'.
+monitor (pid=6372): Triggering process restart.
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+{'test': 'Test'}
+monitor (pid=6760): Change detected to '/home/snip3/dev/pythonapps/webtoaster/app/controllers/pulsars_controller.py'.
+monitor (pid=6760): Triggering process restart.
+monitor (pid=6947): Change detected to '/home/snip3/dev/pythonapps/webtoaster/settings.py'.
+monitor (pid=6947): Triggering process restart.

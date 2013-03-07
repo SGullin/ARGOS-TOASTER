@@ -744,21 +744,6 @@ table#change-history tbody th {
     color: #666;
 }
 
-.session-control {
-    background: white;
-    border-radius: 5px;
-    padding: 3px 5px;
-
-}
-
-.inner-shadow {
-   -moz-box-shadow:    inset 1px 1px 5px 0px black;
-   -webkit-box-shadow: inset 1px 1px 5px 0px black;
-   box-shadow:         inset 1px 1px 5px 0px black;
-}
-
-.shadow {
-  -moz-box-shadow:    3px 3px 5px 6px #ccc;
-  -webkit-box-shadow: 3px 3px 5px 6px #ccc;
-  box-shadow:         3px 3px 5px 6px #ccc;
+ul.nav.nav-tabs.nav-stacked li {
+ padding: 0px 0px !important;
 }

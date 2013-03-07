@@ -15,18 +15,7 @@ div#app-header div#title {
 	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
 }
 
-div.container {
-	margin-left: 10px;
-}
 
-div.nav-container {
-	min-width:100px;
-	margin-left: 0px !important;
-}
-div.nav-container a {
-	font-size: 17px;
-	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
-}
 
 div#messages {
 	height: 40px;
@@ -38,4 +27,38 @@ div#messages > div.alert {
 
 .row {
 	margin-left: 0px;
+}
+
+.session-control {
+    background: white;
+    border-radius: 5px;
+    padding: 3px 5px;
+
+}
+
+.inner-shadow {
+   -moz-box-shadow:    inset 1px 1px 5px 0px black;
+   -webkit-box-shadow: inset 1px 1px 5px 0px black;
+   box-shadow:         inset 1px 1px 5px 0px black;
+}
+
+.shadow {
+  -moz-box-shadow:    3px 3px 5px 6px #ccc;
+  -webkit-box-shadow: 3px 3px 5px 6px #ccc;
+  box-shadow:         3px 3px 5px 6px #ccc;
+}
+
+div.container {
+  float: left;
+	margin-left: 10px;
+}
+
+div.nav-container {
+	min-width:100px;
+  margin: 10px 0 0 10px !important;
+}
+
+div.nav-container a {
+	font-size: 17px;
+	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
 }

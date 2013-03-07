@@ -18,7 +18,37 @@
      </head>
      <body>
         {% include 'layouts/_header.html' %}
-
+        <div class="nav-container span2 bs-docs-sidebar">
+        {% block navigation %}
+        <ul class="nav nav-tabs nav-stacked">
+            <li class="active">
+                <a href="/webtoaster">
+                    <!--<i class="icon-chevron-right"></i>
+                -->
+                    Home
+                </a>
+            </li>
+            <li>
+                <a href="/webtoaster/pulsars">
+                    <!--<i class="icon-chevron-right"></i>
+                -->
+                    Pulsars
+                </a>
+            </li>
+            <li>
+                <a href="/webtoaster/help">
+                    Help
+                </a>
+            </li>
+            <li>
+                <a href="/webtoaster/about">
+                    About
+                </a>
+            </li>
+        </ul>
+        {% endblock %}
+    </div>
+    
         <div class="container">
             <div class="row">
                 <div id="messages">
@@ -30,40 +60,8 @@
                 </div>
             </div>
             <div class="row">
-                <div class="nav-container span2 bs-docs-sidebar">
-                    {% block navigation %}
-                    <ul class="nav nav-tabs nav-stacked">
-                        <li class="active">
-                            <a href="/webtoaster">
-                                <!--<i class="icon-chevron-right"></i>
-                            -->
-                                Home
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/webtoaster/pulsars">
-                                <!--<i class="icon-chevron-right"></i>
-                            -->
-                                Pulsars
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/webtoaster/help">
-                                Help
-                            </a>
-                        </li>
-                        <li>
-                            <a href="/webtoaster/about">
-                                About
-                            </a>
-                        </li>
-                    </ul>
-                    {% endblock %}
-                </div>
-                <div class="content-container span10">
-                    <div class="span9">
-         	              {% block content %}{% endblock %}
-                    <div>
+                <div class="content-container span12">
+         	      {% block content %}{% endblock %}
                 </div>
             </div>
         </div>

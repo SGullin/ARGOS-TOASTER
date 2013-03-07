@@ -123,10 +123,15 @@ def access_token_ready(request, identifier='default'):
     user.email = access_token['email']
     user.save()
 
-    user_profile = UserProfile.objects.get_or_create( user=user )[0]
+    toaster_user = ToasterUser.objects.get_or_create(user_name=user.username)[0]
+    toaster_user.real_name = username
+    toaster_user.email_address = user.email
+    toaster_user.save()
+
+    user_profile = UserProfile.objects.get_or_create( user=user, toaster_user=toaster_user )[0]
     user_profile.oauth_token= access_token['oauth_token']
     user_profile.oauth_token_secret= access_token['oauth_token_secret']
-
+    #user_profile.toaster_user = toaster_user
     user_profile.save()
 
     user.backend = 'django.contrib.auth.backends.ModelBackend'

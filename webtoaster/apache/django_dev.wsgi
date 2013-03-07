@@ -33,8 +33,9 @@ sys.path.append('/home/snip3/dev/pythonapps/webtoaster')
 #sys.path.append('C:\\yml\\_myScript_\\dj_things\\web_development\\svn_views\\django_src\\trunk')
 #sys.path.append('C:\\yml\\_myScript_\\dj_things\\web_development\\svn_views\\django-registration')
 
-sys.stdout = sys.stderr
+#sys.stdout = sys.stderr
 os.environ['DJANGO_SETTINGS_MODULE'] = "settings"
+os.environ['TOASTER_CFG'] = '/home/snip3/dev/pythonapps/webtoaster-patrick/toaster/toaster.cfg'
 import django.core.handlers.wsgi
 application = django.core.handlers.wsgi.WSGIHandler()
 

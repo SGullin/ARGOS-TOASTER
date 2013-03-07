@@ -1,5 +1,5 @@
 # Django settings for webtoaster project.
-import os
+import os, sys
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
@@ -106,3 +106,14 @@ INSTALLED_APPS = (
 )
 
 AUTH_PROFILE_MODULE = 'app.UserProfile'
+
+
+#########################
+# TOASTER Configuration #
+#########################
+TOASTER_PYTHON_LIB = "/home/snip3/dev/pythonapps/webtoaster-patrick/toaster/python/"
+sys.path.append(TOASTER_PYTHON_LIB)
+
+# LOG_FILE = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),'log','development.log'), 'a')
+# sys.stderr = LOG_FILE
+# sys.stdout = LOG_FILE

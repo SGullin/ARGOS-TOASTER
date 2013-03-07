@@ -16,6 +16,7 @@ urlpatterns = patterns('',
     # Uncomment the next line to enable the admin:
     (r'^admin/', include(admin.site.urls)),
     (r'^/?$','app.controllers.home_controller.index'),
+    (r'^pulsars/add','app.controllers.pulsars_controller.add'),
     (r'^pulsars/','app.controllers.pulsars_controller.index'),
     (r'^help/','app.controllers.help_controller.index'),
     (r'^about/','app.controllers.about_controller.index'),

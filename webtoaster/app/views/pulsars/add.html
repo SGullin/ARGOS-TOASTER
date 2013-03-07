@@ -1,0 +1,40 @@
+{% extends 'layouts/app.html' %}
+
+{% block content %}
+
+<h2>Add Pulsar</h2>
+
+  <form class="form-horizontal" method="POST">{% csrf_token %}
+    <fieldset>
+      <legend>Information</legend>
+      <div class="control-group">
+        <label class="control-label" for="name">Name: &nbsp</label> <input class="input-medium text-center" name="name" type="text" value="{% if form.name.data %}{{form.name.data}}{% endif%}" placeholder="Pulsar's name"/>{{form.name.errors}}
+      </div>
+
+      <div id="aliases">
+
+      </div>
+
+      <div class="control-group">        
+         <label class="control-label" for="aliases"></label> <button class="btn btn-info" type="button" id="add_aliases"><b>+</b>&nbsp&nbspAdd Alias</button>
+      </div>
+
+      <br/>
+      <div class="control-group">
+        <label class="control-label"></label>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </fieldset>
+
+  </form>
+
+<script>
+  $(document).ready(function(){
+    $('#add_aliases').click(function(){
+      $('#aliases').append( $('<div class="control-group">'
+                              +'<label class="control-label" for="name">Alias: &nbsp</label> <input class="input-medium text-center" name="aliases[]" type="text" value="" placeholder="name"/>'
+                              +'</div>') );
+    });
+  });
+</script>
+{% endblock %}
