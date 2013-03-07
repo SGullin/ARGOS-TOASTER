@@ -105,3 +105,9 @@ INSTALLED_APPS = (
 )
 
 AUTH_PROFILE_MODULE = 'app.UserProfile'
+
+#########################
+# TOASTER Configuration #
+#########################
+TOASTER_PYTHON_LIB = "/home/palfa/webtoaster-patrick/toaster/python"
+sys.path.append(TOASTER_PYTHON_LIB)
