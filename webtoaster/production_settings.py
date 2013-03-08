@@ -1,5 +1,9 @@
 # Django settings for webtoaster project.
 import os, sys
+<<<<<<< HEAD
+=======
+
+>>>>>>> MOD: Production Settings and WSGi script
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 

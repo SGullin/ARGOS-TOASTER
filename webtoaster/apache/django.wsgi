@@ -8,6 +8,8 @@ workspace = os.path.dirname(project)
 sys.path.append('/home/palfa/webtoaster')
 
 sys.stdout = sys.stderr
+os.environ['DJANGO_SETTINGS_MODULE'] = "settings"
+os.environ['TOASTER_CFG'] = '/home/palfa/webtoaster-patrick/toaster/toaster.cfg'
 os.environ['DJANGO_SETTINGS_MODULE'] = "production_settings"
 import django.core.handlers.wsgi
 application = django.core.handlers.wsgi.WSGIHandler()
