@@ -31,9 +31,7 @@ def main():
             params = utils.prep_file(fn)
             
             # Move the File
-            destdir = utils.get_archive_dir(fn, site=params['telescop'], \
-                        backend=params['backend'], receiver=params['rcvr'], \
-                        psrname=params['name'])
+            destdir = utils.get_archive_dir(fn, params)
             
             utils.print_info("%s will get archived to %s (%s)" % \
                         (fn, destdir, utils.Give_UTC_now()), 1)
