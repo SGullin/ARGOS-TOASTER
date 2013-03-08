@@ -97,6 +97,16 @@ def add(request):
     })
   return HttpResponse(t.render(c))
 
+
+def show(request, pulsar_id):
+  pulsar_id = int( pulsar_id )
+  pulsar = Pulsars.show( pulsar_ids=[pulsar_id])[0]
+  t = loader.get_template('pulsars/show.html')
+  c = RequestContext(request, {
+    'pulsar': pulsar,
+    })
+  return HttpResponse(t.render(c))
+
 def get_columns(pulsars):
   key = pulsars.keys()[0]
   return pulsars[key].keys()

@@ -62,3 +62,17 @@ div.nav-container a {
 	font-size: 17px;
 	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
 }
+
+table.pulsar-info tr td:first-child {
+  width: 120px;
+}
+
+table.pulsar-info  {
+  border-collapse:separate; 
+  border-spacing: 0px 27px;
+  width: 100%;
+}
+
+table.pulsar-info td, table.pulsar-info th {
+  border-bottom: none !important;
+}

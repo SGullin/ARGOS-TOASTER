@@ -11,8 +11,8 @@ from toolkit.pulsars.add_pulsar import add_pulsar
 
 class Pulsars:
   @classmethod
-  def show(cls):
-    pulsars = cls.init_pulsars(get_pulsarinfo())
+  def show(cls, pulsar_ids=None):
+    pulsars = cls.init_pulsars(get_pulsarinfo(pulsar_ids=pulsar_ids))
     return pulsars
 
   @classmethod

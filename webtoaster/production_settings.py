@@ -1,5 +1,5 @@
 # Django settings for webtoaster project.
-import os
+import os, sys
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 

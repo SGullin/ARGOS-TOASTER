@@ -70,7 +70,7 @@
 		</tr>
 		{% for pulsar in pulsars.object_list %}
 			<tr>
-				<td>{{pulsar.name}}</td>
+				<td><a href="/webtoaster/pulsars/{{pulsar.id}}/">{{pulsar.name}}</a></td>
 				<td>{{pulsar.raj}}</td>
 				<td>{{pulsar.decj}}</td>
 				<td>{{pulsar.period}}</td>
