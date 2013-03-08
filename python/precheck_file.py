@@ -30,8 +30,8 @@ def main():
             # Check the file and parse the header
             params = utils.prep_file(fn)
             
-            # Move the File
-            destdir = utils.get_archive_dir(fn, params)
+            # Find where the file will be moved to.
+            destdir = utils.get_archive_dir(fn, params=params)
             
             utils.print_info("%s will get archived to %s (%s)" % \
                         (fn, destdir, utils.Give_UTC_now()), 1)
