@@ -16,9 +16,29 @@ urlpatterns = patterns('',
     # Uncomment the next line to enable the admin:
     (r'^admin/', include(admin.site.urls)),
     (r'^/?$','app.controllers.home_controller.index'),
+
     (r'^pulsars/add','app.controllers.pulsars_controller.add'),
-    (r'^pulsars/(?P<pulsar_id>\d+)/','app.controllers.pulsars_controller.show'),
-    (r'^pulsars/','app.controllers.pulsars_controller.index'),
+    (r'^pulsars/(?P<pulsar_id>\d+)/?$','app.controllers.pulsars_controller.show'),    
+    (r'^pulsars/(?P<pulsar_id>\d+)/master_parfile/?$','app.controllers.pulsars_controller.master_parfile'),
+    (r'^pulsars/?$','app.controllers.pulsars_controller.index'),
+
+    (r'^telescopes/new','app.controllers.telescopes_controller.new'),
+    (r'^telescopes/(?P<telescope_id>\d+)/?$','app.controllers.telescopes_controller.show'),
+    (r'^telescopes/?$','app.controllers.telescopes_controller.index'),
+
+    (r'^parfiles/?$','app.controllers.parfiles_controller.index'),
+    (r'^parfiles/(?P<parfile_id>\d+)/destroy/?$','app.controllers.parfiles_controller.destroy'),
+    (r'^parfiles/new/?$','app.controllers.parfiles_controller.new'),
+
+    (r'^templates/?$','app.controllers.templates_controller.index'),
+    (r'^templates/(?P<parfile_id>\d+)/destroy/?$','app.controllers.templates_controller.destroy'),
+    (r'^templates/new/?$','app.controllers.templates_controller.new'),
+
+    (r'^rawfiles/?$','app.controllers.rawfiles_controller.index'),
+    (r'^rawfiles/(?P<rawfile_id>\d+)/destroy/?$','app.controllers.rawfiles_controller.destroy'),
+    (r'^rawfiles/new/?$','app.controllers.rawfiles_controller.new'),
+
+
     (r'^help/','app.controllers.help_controller.index'),
     (r'^about/','app.controllers.about_controller.index'),
     (r'^oauth/', include('oauthclient.urls', namespace='oauth',

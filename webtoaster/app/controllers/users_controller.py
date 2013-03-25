@@ -1,5 +1,4 @@
 from django.http import Http404
-from django.http import Http404
 from django.http import HttpResponse
 from django.http import HttpResponseRedirect
 from django.shortcuts import *
@@ -39,6 +38,7 @@ def authentication(request):
             redirect_to_url = settings.ROOT_URL
             if next_url != None:
               redirect_to_url = next_url
+            verify_or_create_toaster_user( user )
             return redirect(redirect_to_url)
         else:
             message = "Account is Disabled"
@@ -122,3 +122,17 @@ def profile(request):
 def update(request):
   if not request.user.is_authenticated():
     return redirect(settings.ROOT_URL +'user/profile')
+
+def verify_or_create_toaster_user( user ):
+
+  try:
+    t_user = user.userprofile.toaster_user
+  except ObjectDoesNotExist as e:
+    toaster_user = ToasterUser.objects.get_or_create(user_name=user.username)[0]
+    toaster_user.real_name = "%s %s" % ( user.first_name, user.last_name )
+    toaster_user.email_address = user.email
+    toaster_user.active = user.is_active
+    toaster_user.admin = user.is_staff
+    user.userprofile.toaster_user = toaster_user
+    toaster_user.save()
+    user.userprofile.save()

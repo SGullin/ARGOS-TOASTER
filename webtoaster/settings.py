@@ -117,3 +117,5 @@ sys.path.append(TOASTER_PYTHON_LIB)
 # LOG_FILE = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),'log','development.log'), 'a')
 # sys.stderr = LOG_FILE
 # sys.stdout = LOG_FILE
+
+TEMP_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),'temp')

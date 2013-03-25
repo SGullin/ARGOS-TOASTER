@@ -8,8 +8,12 @@
         <link href="/webtoaster/media/css/base.css?111111111" media="screen" rel="stylesheet" type="screen" />
         <link href="/webtoaster/media/css/bootstrap/bootstrap.min.css" rel="stylesheet" media="screen">        
         <link href="/webtoaster/media/css/style.css?111111111" media="screen" rel="stylesheet" type="screen" />
+        {% block css %}
+        {% endblock %}
         <script type="text/javascript" src="/webtoaster/media/js/jquery-latest.min.js"></script> 
         <script src="/webtoaster/media/js/bootstrap/bootstrap.min.js"></script>
+        {% block js %}
+        {% endblock %}
         <script type="text/javascript">
             setTimeout(function(){
                 $('#messages > div').hide('fadeout');

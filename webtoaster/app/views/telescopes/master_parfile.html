@@ -1,10 +1,14 @@
 {% extends 'layouts/app.html' %}
 
+{% block js %}
+<script src="/webtoaster/media/js/bootstrap/bootstrap-confirm.js"></script>
+{% endblock %}
+
 {% block content %}
 
 <div class="navbar">
   <div class="navbar-inner">
-    <a class="brand" href="">{{pulsar.name}}:</a>
+    <a class="brand" href="">{{pulsar.name}}'s master TOAs:</a>
     <ul class="nav">
       <li class="dropdown"> 
         <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tims <b class="caret"></b></a>
@@ -44,34 +48,36 @@
   </div>
 </div>
 
-
+{% if parfile %}
 <table class="pulsar-info">
   <tr> 
-    <td><b>Name</b> </td><td>{{pulsar.name}}</td>
+    <td><b>File Name</b> </td><td>{{parfile.filename}}</td>
   </tr>
   <tr> 
-    <td><b>RA</b> <br/> <small class="muted">(hh:mm:ss)</small> </td><td>{{pulsar.raj}}</td>
+    <td><b>File path</b> </td><td>{{parfile.filepath}}</td>
   </tr>
   <tr> 
-    <td><b>DEC</b> <br/> <small class="muted">(dd:am:as)</small></td><td>{{pulsar.decj}}</td>
+    <td><b>Add at:</b> </td><td>{{parfile.add_time}}</td>
   </tr>
   <tr> 
-    <td><b>Period</b> <small class="muted">(sec)</small></td><td>{{pulsar.period}}</td>
-  </tr>
-  <tr> 
-    <td><b>DM</b> <br/> <small class="muted">(pc/cm<sup>3</sup>)</small> </td><td>{{pulsar.dm}}</td>
-  </tr>
-  <tr> 
-    <td><b>Observations</b> <br/> <small class="muted">(count)</small></td><td>{{pulsar.observations}}</td>
-  </tr>
-  <tr> 
-    <td><b>TOAs</b> <br/> <small class="muted">(count)</small></td><td>{{pulsar.num_toas}}</td>
-  </tr>
-  <tr> 
-    <td><b>Curator(s)</b> </td><td>{{pulsar.curators}}</td>
-  </tr>
-  <tr> 
-    <td><b>Telescope(s)<br/>Used</b> </td><td>{{pulsar.telescopes}}</td>
+    <td><b>MPAR id:</b></td><td>{{parfile.mparid}}</td>
   </tr>
 </table>
+<button type="button" class="btn btn-danger" onclick="delete_parfile();"> Delete </button>
+<div class="confirmmodalcontainer"></div>
+<script>
+  function delete_parfile(){
+    $('.confirmmodalcontainer').confirmModal({
+      heading:'Deleting Parfile',
+      body:'<p class="text-error">Please confirm that you want to delete {{parfile.filename}}</p>',
+      callback: function() {
+      window.location = "/webtoaster/parfiles/{{parfile.parfile_id}}/destroy?after=/webtoaster/pulsars/{{pulsar.id}}/";
+       }
+       });
+  }
+</script>
+
+{%else%}
+  <p class="text-warning">No TOAs Found.</p>
+{% endif %}
 {% endblock %}

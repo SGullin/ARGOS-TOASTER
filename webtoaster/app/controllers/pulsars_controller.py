@@ -25,7 +25,6 @@ class PulsarForm(forms.Form):
   name = forms.CharField()
 
 def index(request):
-
   page = request.GET.get('page')
   if page == None:
     page = 1
@@ -83,7 +82,8 @@ def add(request):
       new_aliases = aliases
       try:
         response = Pulsars.add(new_pulsar_name, aliases)
-        request.session['flash'] = { 'type': 'success', 'message': 'Pulsar was succesfulyl added with iD: %i' % response }
+        request.session['flash'] = { 'type': 'success', 'message': 'Pulsar was succesfully added with iD: %i' % response }
+        return redirect("/webtoaster/pulsars/%i/" % response)
       except Exception, e:
         request.session['flash'] = { 'type': 'error', 'message': 'Toaster produced an error: %s' %  str(e)}      
     else:
@@ -103,6 +103,22 @@ def show(request, pulsar_id):
   pulsar = Pulsars.show( pulsar_ids=[pulsar_id])[0]
   t = loader.get_template('pulsars/show.html')
   c = RequestContext(request, {
+    'pulsar': pulsar,
+    })
+  return HttpResponse(t.render(c))
+
+def master_parfile(request, pulsar_id):
+  pulsar_id = int( pulsar_id )
+  pulsar = Pulsars.show( pulsar_ids=[pulsar_id])[0]
+  parfiles = pulsar.parfiles()
+  if parfiles != []:
+    parfile = parfiles[0]
+  else:
+    parfile=None
+  print parfile.__class__
+  t = loader.get_template('pulsars/master_parfile.html')
+  c = RequestContext(request, {
+    'parfile': parfile,
     'pulsar': pulsar,
     })
   return HttpResponse(t.render(c))

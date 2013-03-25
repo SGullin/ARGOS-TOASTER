@@ -76,3 +76,8 @@ table.pulsar-info  {
 table.pulsar-info td, table.pulsar-info th {
   border-bottom: none !important;
 }
+
+.table th, .table td {
+  vertical-align: middle;
+  text-align: center;
+}

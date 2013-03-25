@@ -1,0 +1,106 @@
+{% extends 'layouts/app.html' %}
+{% load mytags %}
+
+{% block navigation %}
+<ul class="nav nav-tabs nav-stacked">
+	<li>
+		<a href="/webtoaster">
+			<!--<i class="icon-chevron-right"></i>
+		-->
+			Home
+		</a>
+	</li>
+	<li class="active">
+		<a href="/webtoaster/pulsars">
+			<!--<i class="icon-chevron-right"></i>
+		-->
+			Pulsars
+		</a>
+	</li>
+	<li>
+		<a href="/webtoaster/help">
+			Help
+		</a>
+	</li>
+	<li>
+		<a href="/webtoaster/about">
+			About
+		</a>
+	</li>
+</ul>
+{% endblock %}
+
+
+{% block content %}
+<div class="navbar">
+  <div class="navbar-inner">
+    <a class="brand" href="#">Telescopes</a>
+    <ul class="nav">
+      <li class="active"><a href="">List</a></li>
+      <li><a href="/webtoaster/telescopes/new">Add</a></li>
+    </ul>
+  </div>
+</div>
+
+<div>
+
+
+	<table class="table table-bordered" id="pulsars_table">
+		<tr>
+				<th><a href="?page={{telescopes.number}}&sort_by=name&order={% if order == 'desc' %}asc{%else%}desc{% endif %}"> Name </a></th>
+				<th><a href="?page={{telescopes.number}}&sort_by=raj&order={% if order == 'desc' %}asc{%else%}desc{% endif %}"> X </a></th>
+				<th><a href="?page={{telescopes.number}}&sort_by=decj&order={% if order == 'desc' %}asc{%else%}desc{% endif %}"> Y </a></th>
+				<th><a href="?page={{telescopes.number}}&sort_by=period&order={% if order == 'desc' %}asc{%else%}desc{% endif %}"> Z </a></th>
+				<th><a href="?page={{telescopes.number}}&sort_by=dm&order={% if order == 'desc' %}asc{%else%}desc{% endif %}"> Abbrev. </a></th>
+				<th><a href="?page={{telescopes.number}}&sort_by=observations&order={% if order == 'desc' %}asc{%else%}desc{% endif %}"> Code </a></th>
+				<th>
+					<button class="btn btn-info" id="select_deselect_all">Select/Deselect All</button>
+				</th>
+		</tr>
+		{% for telescope in telescopes.object_list %}
+			<tr>
+				<td><a href="/webtoaster/telescopes/{{telescope.telescope_id}}/">{{telescope.telescope_name}}</a></td>
+				<td>{{telescope.itrf_x}}</td>
+				<td>{{telescope.itrf_y}}</td>
+				<td>{{telescope.itrf_z}}</td>
+				<td>{{telescope.telescope_abbrev}}</td>
+				<td>{{telescope.code}}</td>
+				<td><input type="checkbox" value="{{telescope.telescope_id}}"/></td>
+			</tr>
+		{% endfor %}
+
+	</table>
+	<div style="text-align: center">
+		<div class="pagination" style="margin-left: auto; margin-right: auto">
+		  <ul>
+		    <li class="{% if not pulsars.has_previous %}disabled{%endif%}"><a {% if pulsars.has_previous %}href="?page={{pulsars.previous_page_number}}&sort_by={{sort_by}}&order={{order}}"{%endif%}>&laquo;</a></li>
+		  	{% for num in page_range %}
+		    	<li class="{% if num == pulsars.number %}active{%endif%}"><a href="?page={{num}}&sort_by={{sort_by}}&order={{order}}">{{num}}</a></li>
+		    {% endfor %}
+		    <li class="{% if not pulsars.has_next %}disabled{%endif%}"><a {% if pulsars.has_next %}href="?page={{pulsars.next_page_number}}&sort_by={{sort_by}}&order={{order}}"{%endif%}>&raquo;</a></li>
+		  </ul>
+		</div>
+	</div>
+
+
+</div>
+
+<script>
+	$(document).ready(function(){
+		
+		$('#select_deselect_all').click(function(){
+			if( $(this).attr('data') == 'checked' ) {
+				$('#pulsars_table input[type=checkbox]').removeAttr('checked').change();
+				$(this).attr('data','unchecked');
+			} else {
+				$('#pulsars_table input[type=checkbox]').attr('checked','checked');
+				$(this).attr('data', 'checked');
+			}
+			
+		});
+
+	});
+
+</script>
+
+{% endblock %}

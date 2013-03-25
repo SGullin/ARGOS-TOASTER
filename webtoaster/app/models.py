@@ -17,6 +17,20 @@ class ToasterUser(models.Model):
   def __str__(self):
     return "%s's ToasterUser " % (self.userprofile.user)
 
+class Telescope(models.Model):
+  telescope_id = models.AutoField(primary_key=True)
+  telescope_name = models.CharField(null=False, max_length=64)
+  latitude = models.DecimalField()
+  longitude = models.DecimalField()
+  datum = models.CharField(max_length=64)
+  itrf_x = models.DecimalField(null=False)
+  itrf_y = models.DecimalField(null=False)
+  itrf_z = models.DecimalField(null=False)
+  telescope_abbrev= models.CharField(null=False, max_length=16)
+  telescope_code = models.CharField(null=False, max_length=2)
+  class Meta:
+        db_table = u'telescopes'  
+
 class UserProfile(models.Model):
   user = models.OneToOneField(User)
   toaster_user = models.OneToOneField(ToasterUser)

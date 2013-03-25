@@ -1,0 +1,77 @@
+{% extends 'layouts/app.html' %}
+{% load mytags %}
+
+
+{% block js %}
+<script src="/webtoaster/media/js/bootstrap/bootstrap-confirm.js"></script>
+{% endblock %}
+
+{% block navigation %}
+<ul class="nav nav-tabs nav-stacked">
+  <li>
+    <a href="/webtoaster">
+      <!--<i class="icon-chevron-right"></i>
+    -->
+      Home
+    </a>
+  </li>
+  <li class="active">
+    <a href="/webtoaster/pulsars">
+      <!--<i class="icon-chevron-right"></i>
+    -->
+      Pulsars
+    </a>
+  </li>
+  <li>
+    <a href="/webtoaster/help">
+      Help
+    </a>
+  </li>
+  <li>
+    <a href="/webtoaster/about">
+      About
+    </a>
+  </li>
+</ul>
+{% endblock %}
+
+
+{% block content %}
+
+<h2>Listing Template files <button class='btn btn-success' onclick="window.location='/webtoaster/templates/new'">+&nbspUpload</button> </h2>
+
+{% if parfiles != list %}
+  <table class="table table-bordered" id="pulsars_table">
+    <tr>
+      <th>File Name</th>
+      <th>MPAR Id</th>
+      <th>Pulsar</th>
+      <th>Added On</th>
+      <th></th>
+    </tr>
+    {% for parfile in parfiles %}
+      <tr>
+        <td>{{parfile.filename}}</td>
+        <td>{{parfile.mparid}}</td>       
+        <td><a href="/webtoaster/pulsars/{{parfile.pulsar_id}}">{{parfile.pulsar_name}}</a></td>
+        <td>{{parfile.add_time}}</td>
+        <td>
+          <button type="button" class="btn btn-danger" onclick="delete_file({{parfile.parfile_id}}, '{{parfile.filename}}');"> Delete </button>
+          <div class="confirmmodalcontainer"></div>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+{% endif %}
+<script>
+  function delete_file(id, name){
+    $('.confirmmodalcontainer').confirmModal({
+      heading:'Deleting Parfile',
+      body:'<p class="text-error">Please confirm that you want to delete '+name+'</p>',
+      callback: function() {
+        window.location = "/webtoaster/templates/"+id+"/destroy?after=/webtoaster/templates";
+       }
+    });
+  }
+</script>
+{% endblock %}
