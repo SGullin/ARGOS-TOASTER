@@ -1,0 +1,49 @@
+{% extends 'layouts/app.html' %}
+
+{% block content %}
+<h2>Profile</h2>
+
+
+<div>
+  <form class="form-horizontal" method="POST">{% csrf_token %}
+    <fieldset>
+      <legend>Credentials</legend>
+      <div class="control-group">
+        <label class="control-label" for="username">Login name: </label> <input class="input-medium text-center" name="username" type="text" disabled value="{{user.username}}"/>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="password">Password: </label><input class="input-medium" name="password" type="password" placeholder="Set New Password"/>{{form.password.errors}}
+      </div>
+
+      <legend>Contact</legend>      
+      <div class="control-group">
+        <label class="control-label" for="email">Email: </label><input class="input-large" name="email" type="text" value="{{form.email.data}}"/>{{form.email.errors}}
+      </div>
+
+
+      <div class="control-group">
+        <label class="control-label" for="first_name">First Name: </label><input class="input-medium" name="first_name" type="text" value="{{form.first_name.data}}"/>{{form.first_name.errors}}
+      </div>
+
+
+      <div class="control-group">
+        <label class="control-label" for="last_name">Last Name: </label><input class="input-medium" name="last_name" type="text" value="{{form.last_name.data}}"/>{{form.last_name.errors}}
+      </div>
+
+      <legend> CyberSKA OAuth </legend>
+      <div class="control-group">
+        <label class="control-label" for="token">Token: </label><input class="input-xlarge" name="token" type="text" value="{{user.userprofile.oauth_token}}" disabled/>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label" for="secret">Token Secret: </label><input class="input-xlarge" name="secret" type="text" value="{{user.userprofile.oauth_token_secret}}" disabled/>
+      </div>
+
+      <br/>
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+    </fieldset>
+
+  </form>
+</div>
+
+{% endblock %}

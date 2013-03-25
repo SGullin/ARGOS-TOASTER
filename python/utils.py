@@ -593,13 +593,15 @@ def get_header_vals(fn, hdritems):
             params: A dictionary. The keys are values requested from 'vap'
                 the values are the values reported by 'vap'.
     """
+    if not len(hdritems):
+        raise ValueError("No 'hdritems' requested to get from file header!")
     hdrstr = ",".join(hdritems)
     if '=' in hdrstr:
         raise ValueError("'hdritems' passed to 'get_header_vals' " \
                          "should not perform and assignments!")
-    cmd = "vap -n -c '%s' %s" % (hdrstr, fn)
+    cmd = "vap -n -c '%s' '%s'" % (hdrstr, fn)
     outstr, errstr = execute(cmd)
-    outvals = outstr.split()[1:] # First value is filename (we don't need it)
+    outvals = outstr.split()[(0-len(hdritems)):] # First value is filename (we don't need it)
     if errstr:
         raise errors.SystemCallError("The command: %s\nprinted to stderr:\n%s" % \
                                 (cmd, errstr))
@@ -1262,8 +1264,8 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, \
         (stdoutdata, stderrdata) = pipe.communicate(stdinstr)
     else:
         # Run (and time) the command. Check for errors.
-        pipe = subprocess.Popen(cmd, shell=True, cwd=dir, \
-                            stdout=stdout, stderr=stderr)
+        pipe = subprocess.Popen(cmd, shell=True, cwd=dir , \
+                            stdout=stdout)#, stderr=stderr)
         (stdoutdata, stderrdata) = pipe.communicate()
     retcode = pipe.returncode
     if retcode < 0:

@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html lang="en">
+    <head>
+        <meta http-equiv="cache-control" content="no-cache"> <!-- tells browser not to cache -->
+        <meta http-equiv="expires" content="0"> <!-- says that the cache expires 'now' -->
+        <meta http-equiv="pragma" content="no-cache"> <!-- says not to use cached stuff, if there is any -->
+        
+        <link href="/webtoaster/media/css/base.css?111111111" media="screen" rel="stylesheet" type="screen" />
+        <link href="/webtoaster/media/css/bootstrap/bootstrap.min.css" rel="stylesheet" media="screen">        
+        <link href="/webtoaster/media/css/style.css?111111111" media="screen" rel="stylesheet" type="screen" />
+        {% block css %}
+        {% endblock %}
+        <script type="text/javascript" src="/webtoaster/media/js/jquery-latest.min.js"></script> 
+        <script src="/webtoaster/media/js/bootstrap/bootstrap.min.js"></script>
+        {% block js %}
+        {% endblock %}
+        <script type="text/javascript">
+            setTimeout(function(){
+                $('#messages > div').hide('fadeout');
+            },2000);
+        </script>
+     </head>
+     <body>
+        {% include 'layouts/_header.html' %}
+        <div class="nav-container span2 bs-docs-sidebar">
+        {% block navigation %}
+        <ul class="nav nav-tabs nav-stacked">
+            <li class="active">
+                <a href="/webtoaster">
+                    <!--<i class="icon-chevron-right"></i>
+                -->
+                    Home
+                </a>
+            </li>
+            <li>
+                <a href="/webtoaster/pulsars">
+                    <!--<i class="icon-chevron-right"></i>
+                -->
+                    Pulsars
+                </a>
+            </li>
+            <li>
+                <a href="/webtoaster/parfiles">
+                    <!--<i class="icon-chevron-right"></i>
+                -->
+                    Ephemeris
+                </a>
+            </li>
+            <li>
+                <a href="/webtoaster/templates">
+                    <!--<i class="icon-chevron-right"></i>
+                -->
+                    Templates
+                </a>
+            </li>
+            <li>
+                <a href="/webtoaster/rawfiles">
+                    <!--<i class="icon-chevron-right"></i>
+                -->
+                    Raw Data
+                </a>
+            </li>
+            <li>
+                <a href="/webtoaster/help">
+                    Help
+                </a>
+            </li>
+            <li>
+                <a href="/webtoaster/about">
+                    About
+                </a>
+            </li>
+        </ul>
+        {% endblock %}
+    </div>
+    
+        <div class="container">
+            <div class="row">
+                <div id="messages">
+                    {% if flash %}
+                    <div class="alert alert-{{flash.type}} center">
+                     {{flash.message}}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="row">
+                <div class="content-container span12">
+         	      {% block content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+
+     </body>
+</html>

@@ -1,0 +1,83 @@
+ul li {
+	list-style-type: none;
+}
+#app-header {
+	width: none !important;
+	padding: 17px;
+	background: #417690;
+	box-shadow: 0px 3px 3px rgba(0, 0, 0, 0.3);
+	border-bottom: 1px solid #2E567A;
+}
+
+div#app-header div#title {
+	color: white;
+	font-size: 26px;
+	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+
+
+div#messages {
+	height: 40px;
+	margin-top: 10px;
+}
+div#messages > div.alert {
+	box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.row {
+	margin-left: 0px;
+}
+
+.session-control {
+    background: white;
+    border-radius: 5px;
+    padding: 3px 5px;
+
+}
+
+.inner-shadow {
+   -moz-box-shadow:    inset 1px 1px 5px 0px black;
+   -webkit-box-shadow: inset 1px 1px 5px 0px black;
+   box-shadow:         inset 1px 1px 5px 0px black;
+}
+
+.shadow {
+  -moz-box-shadow:    3px 3px 5px 6px #ccc;
+  -webkit-box-shadow: 3px 3px 5px 6px #ccc;
+  box-shadow:         3px 3px 5px 6px #ccc;
+}
+
+div.container {
+  float: left;
+	margin-left: 10px;
+}
+
+div.nav-container {
+	min-width:100px;
+  margin: 10px 0 0 10px !important;
+}
+
+div.nav-container a {
+	font-size: 17px;
+	text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+table.pulsar-info tr td:first-child {
+  width: 120px;
+}
+
+table.pulsar-info  {
+  border-collapse:separate; 
+  border-spacing: 0px 27px;
+  width: 100%;
+}
+
+table.pulsar-info td, table.pulsar-info th {
+  border-bottom: none !important;
+}
+
+.table th, .table td {
+  vertical-align: middle;
+  text-align: center;
+}

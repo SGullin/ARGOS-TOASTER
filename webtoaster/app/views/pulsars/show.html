@@ -1,0 +1,77 @@
+{% extends 'layouts/app.html' %}
+
+{% block content %}
+
+<div class="navbar">
+  <div class="navbar-inner">
+    <a class="brand" href="">{{pulsar.name}}:</a>
+    <ul class="nav">
+      <li class="dropdown"> 
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tims <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#">Upload</a></li>
+            <li><a href="#">View Master TOAs</a></li>
+            <!--
+            <li class="divider"></li>
+            <li class="nav-header">Nav header</li>
+            <li><a href="#">Separated link</a></li>
+            <li><a href="#">One more separated link</a></li>
+            -->
+          </ul>
+      </li>
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Ephemeris <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+            <li><a href="/webtoaster/parfiles/new">Upload</a></li>
+            <li><a href="/webtoaster/pulsars/{{pulsar.id}}/master_parfile">View Master TOAs</a></li>
+        </ul>
+      </li>
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Template <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+            <li><a href="#">Upload</a></li>
+            <li><a href="#">Download Master</a></li>
+        </ul>
+      </li>
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Raw Data <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+            <li><a href="#">Upload</a></li>
+            <li><a href="#">Download</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+
+
+<table class="pulsar-info">
+  <tr> 
+    <td><b>Name</b> </td><td>{{pulsar.name}}</td>
+  </tr>
+  <tr> 
+    <td><b>RA</b> <br/> <small class="muted">(hh:mm:ss)</small> </td><td>{{pulsar.raj}}</td>
+  </tr>
+  <tr> 
+    <td><b>DEC</b> <br/> <small class="muted">(dd:am:as)</small></td><td>{{pulsar.decj}}</td>
+  </tr>
+  <tr> 
+    <td><b>Period</b> <small class="muted">(sec)</small></td><td>{{pulsar.period}}</td>
+  </tr>
+  <tr> 
+    <td><b>DM</b> <br/> <small class="muted">(pc/cm<sup>3</sup>)</small> </td><td>{{pulsar.dm}}</td>
+  </tr>
+  <tr> 
+    <td><b>Observations</b> <br/> <small class="muted">(count)</small></td><td>{{pulsar.observations}}</td>
+  </tr>
+  <tr> 
+    <td><b>TOAs</b> <br/> <small class="muted">(count)</small></td><td>{{pulsar.num_toas}}</td>
+  </tr>
+  <tr> 
+    <td><b>Curator(s)</b> </td><td>{{pulsar.curators}}</td>
+  </tr>
+  <tr> 
+    <td><b>Telescope(s)<br/>Used</b> </td><td>{{pulsar.telescopes}}</td>
+  </tr>
+</table>
+{% endblock %}

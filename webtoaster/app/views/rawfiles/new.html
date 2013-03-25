@@ -1,0 +1,36 @@
+{% extends 'layouts/app.html' %}
+{% load mytags %}
+
+{% block css %}
+<link href="/webtoaster/media/css/bootstrap/bootstrap-fileupload.min.css?111111111" media="screen" rel="stylesheet" type="screen" />
+{% endblock %}
+{% block js %}
+<script src="/webtoaster/media/js/bootstrap/bootstrap-fileupload.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<legend>
+  Select Raw file to Upload
+</legend>
+
+<form enctype="multipart/form-data" method="post" action="">{% csrf_token %}
+  <div class="fileupload fileupload-new" data-provides="fileupload">
+  <div class="input-append">
+    <div class="uneditable-input span3">
+      <i class="icon-file fileupload-exists"></i> 
+      <span class="fileupload-preview"></span>
+    </div>
+    <span class="btn btn-file">
+      <span class="fileupload-new">Select file</span>
+      <span class="fileupload-exists">Change</span>
+      <input type="file" name="rawfile"/>
+    </span>
+    <a href="#" class="btn fileupload-exists" data-dismiss="fileupload">Remove</a>
+  </div>
+  </div>
+  <button type="submit" class="btn btn-primary">Upload</button>
+</form>
+
+{% endblock %}
+
