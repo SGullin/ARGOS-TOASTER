@@ -112,3 +112,5 @@ AUTH_PROFILE_MODULE = 'app.UserProfile'
 #########################
 TOASTER_PYTHON_LIB = "/home/palfa/webtoaster-patrick/python"
 sys.path.append(TOASTER_PYTHON_LIB)
+
+TEMP_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)),'temp')
