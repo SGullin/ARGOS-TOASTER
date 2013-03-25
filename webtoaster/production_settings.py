@@ -1,9 +1,6 @@
 # Django settings for webtoaster project.
 import os, sys
-<<<<<<< HEAD
-=======
 
->>>>>>> MOD: Production Settings and WSGi script
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
@@ -113,5 +110,5 @@ AUTH_PROFILE_MODULE = 'app.UserProfile'
 #########################
 # TOASTER Configuration #
 #########################
-TOASTER_PYTHON_LIB = "/home/palfa/webtoaster-patrick/toaster/python"
+TOASTER_PYTHON_LIB = "/home/palfa/webtoaster-patrick/python"
 sys.path.append(TOASTER_PYTHON_LIB)

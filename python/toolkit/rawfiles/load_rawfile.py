@@ -108,10 +108,7 @@ def load_rawfile(fn, existdb=None):
         params = utils.prep_file(fn)
         
         # Move the File
-        destdir = utils.get_archive_dir(fn, site=params['telescop'], \
-                    backend=params['backend'], \
-                    receiver=params['rcvr'], \
-                    psrname=params['name'])
+        destdir = utils.get_archive_dir(fn, params=params)
         newfn = utils.archive_file(fn, destdir)
         
         utils.print_info("%s moved to %s (%s)" % (fn, newfn, utils.Give_UTC_now()), 1)

@@ -68,7 +68,7 @@ def validate_aliases(db, aliases):
                                     "', '".join(aliases_in_use))
 
 
-def add_telescope(db, name, itrf_x, itrf_y, itrf_z, abbrev, code, aliases=[]):
+def add_telescope(name, itrf_x, itrf_y, itrf_z, abbrev, code, aliases=[], existdb=None):
     """Add a new telescope and its aliases to the database.
 
         Inputs:
@@ -88,6 +88,10 @@ def add_telescope(db, name, itrf_x, itrf_y, itrf_z, abbrev, code, aliases=[]):
         Output:
             telescope_id: The ID number of the newly inserted telescope.
     """
+    # Connect to the database
+    db = existdb or database.Database()
+    db.connect()
+
     # Add the telescope's name, abbrev, and code to the list of aliases
     aliases.extend([name, abbrev, code])
     # Convert aliases to lower case

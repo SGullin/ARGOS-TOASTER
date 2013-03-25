@@ -41,7 +41,7 @@ def index(request):
     order == 'desc'
 
 
-  per_page = 2
+  per_page = 10
 
   pulsars = Pulsars.show()
 

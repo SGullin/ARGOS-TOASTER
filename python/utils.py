@@ -55,11 +55,82 @@ userid_cache = {}
 userinfo_cache = {}
 obssysid_cache = {}
 obssysinfo_cache = {}
-
+telescopeinfo_cache = {}
 
 ##############################################################################
 # Functions
 ##############################################################################
+def is_admin(user_id, existdb=None):
+    """Return whether user has administrator privileges or not.
+
+        Input:
+            user_id: The ID of the user to check privileges for.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Output:
+            admin: True, if the user has admin privileges. False, otherwise.
+    """
+    # Connect to the DB if necessary
+    db = existdb or database.Database()
+    db.connect()
+   
+    select = db.select([db.users.c.admin]).\
+                where((db.users.c.user_id == user_id) & \
+                        db.users.c.active)
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
+
+    if len(rows) == 1:
+        admin = rows[0]['admin']
+    elif len(rows) > 1:
+        raise errors.InconsistentDatabaseError("Multiple rows (%d) with " \
+                                "user_id=%d!" % (len(rows), user_id))
+    else:
+        raise errors.UnrecognizedValueError("User ID (%d) is not " \
+                                "recognized!" % user_id)
+    return admin
+
+
+def is_curator(user_id, pulsar_id, existdb=None):
+    """Return whether user has curator privileges for the given
+        pulsar.
+
+        Inputs:
+            user_id: The ID of the user to check privileges for.
+            pulsar_id: The ID of the pulsar in question.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Output:
+            curator: True if the user has curator privileges. 
+                False otherwise.
+    """
+    # Check if user_id and pulsar_id are valid
+    # Exceptions will be raise if no matches are found
+    get_userinfo(user_id)
+    get_pulsarname(pulsar_id)
+
+    # Connect to the DB if necessary
+    db = existdb or database.Database()
+    db.connect()
+    select = db.select([db.curators.c.user_id], \
+                from_obj=[db.curators.\
+                    outerjoin(db.users, \
+                        onclause=db.curators.c.user_id == \
+                                    db.users.c.user_id)]).\
+                where((db.curators.c.pulsar_id == pulsar_id) & \
+                        db.curators.c.user_id.in_((user_id,None)) & \
+                        db.users.c.active)
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
+
+    curator = bool(rows)
+    return curator
+
+
 def Verify_file_path(file):
     #Verify that file exists
     print_info("Verifying file: %s" % file, 2)
@@ -92,6 +163,7 @@ def get_userid_cache(existdb=None, update=False):
     """
     global userid_cache
     if update or not userid_cache:
+        userid_cache = {}
         db = existdb or database.Database()
         db.connect()
 
@@ -142,6 +214,7 @@ def get_userinfo_cache(existdb=None, update=False):
     """
     global userinfo_cache
     if update or not userinfo_cache:
+        userinfo_cache = {}
         db = existdb or database.Database()
         db.connect()
 
@@ -191,6 +264,7 @@ def get_pulsarid_cache(existdb=None, update=False):
     """
     global pulsarid_cache
     if update or not pulsarid_cache:
+        pulsarid_cache = {}
         db = existdb or database.Database()
         db.connect()
 
@@ -222,12 +296,28 @@ def get_pulsaralias_cache(existdb=None, update=False):
     """
     global pulsaralias_cache
     if update or not pulsaralias_cache:
-        pulsarid_cache = get_pulsarid_cache(existdb, update)
         pulsaralias_cache = {}
-        for alias, id in pulsarid_cache.iteritems():
-            aliases = pulsaralias_cache.setdefault(id, [])
+        pulsarid_cache = get_pulsarid_cache(existdb, update)
+        for alias, psrid in pulsarid_cache.iteritems():
+            aliases = pulsaralias_cache.setdefault(psrid, [])
             aliases.append(alias)
     return pulsaralias_cache
+
+
+def get_pulsaraliases(pulsar_id):
+    """Return the aliases for a pulsar given an ID.
+        
+        Inputs:
+            pulsar_id: The ID number of the pulsar in the DB.
+
+        Output:
+            pulsar_aliases: The aliases of the pulsar.
+    """
+    cache = get_pulsaralias_cache()
+    if pulsar_id not in cache:
+        raise errors.UnrecognizedValueError("The pulsar ID (%d) does not " \
+                                "appear in the pulsaralias_cache!" % pulsar_id)
+    return cache[pulsar_id]
 
 
 def get_pulsarname_cache(existdb=None, update=False):
@@ -245,6 +335,7 @@ def get_pulsarname_cache(existdb=None, update=False):
     """
     global pulsarname_cache
     if update or not pulsarname_cache:
+        pulsarname_cache = {}
         db = existdb or database.Database()
         db.connect()
 
@@ -321,6 +412,7 @@ def get_obssystemid_cache(existdb=None, update=False):
     """
     global obssysid_cache
     if update or not obssysid_cache:
+        obssysid_cache = {}
         # Use the exisitng DB connection, or open a new one if None was provided
         db = existdb or database.Database()
         db.connect()
@@ -388,6 +480,7 @@ def get_obssysinfo_cache(existdb=None, update=False):
     """
     global obssysinfo_cache
     if update or not obssysinfo_cache:
+        obssysinfo_cache = {}
         db = existdb or database.Database()
         db.connect()
 
@@ -422,52 +515,70 @@ def get_obssysinfo(obssys_id):
     return cache[obssys_id]
 
 
-def get_telescope_info(alias, existdb=None):
+def get_telescopeinfo_cache(existdb=None, update=False):
+    """Return a dictionary mapping telescope aliases to 
+        telescope info.
+
+        Inputs:
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+            update: If True, update the cache even if it already
+                exists. (Default: Don't update)
+
+        Output:
+            telinfo_cache: A dictionary with telescope aliases as 
+                keys and telescope info as values.
+    """
+    global telescopeinfo_cache
+    if update or not telescopeinfo_cache:
+        telescopeinfo_cache = {}
+        db = existdb or database.Database()
+        db.connect()
+    
+        select = db.select([db.telescopes.c.telescope_id, \
+                            db.telescopes.c.telescope_name, \
+                            db.telescopes.c.telescope_abbrev, \
+                            db.telescopes.c.telescope_code, \
+                            db.telescope_aliases.c.telescope_alias], \
+                    from_obj=[db.telescopes.\
+                        join(db.telescope_aliases, \
+                        onclause=db.telescopes.c.telescope_id == \
+                                db.telescope_aliases.c.telescope_id)], \
+                    distinct=db.telescopes.c.telescope_id)
+        result = db.execute(select)
+        rows = result.fetchall()
+        result.close()
+        if not existdb:
+            db.close()
+        # Create the mapping
+        for row in rows:
+            telinfo = dict(row)
+            telescope_alias = telinfo.pop('telescope_alias').lower()
+            telescope_id = telinfo['telescope_id']
+            telescopeinfo_cache[telescope_alias] = telinfo
+            if telescope_id not in telescopeinfo_cache:
+                telescopeinfo_cache[telescope_id] = telinfo
+    return telescopeinfo_cache
+
+
+def get_telescope_info(alias):
     """Given a telescope alias return the info from the 
         matching telescope columns.
 
         Inputs:
             alias: The telescope's alias.
-            existdb: A (optional) existing database connection object.
-                (Default: Establish a db connection)
 
         Output:
-            row: The matching database row.
-                NOTE: the columns in the return RowProxy object can
-                be referenced like a dictionary, using column names.
+            tel_info: A dictionary object of the telescope's info.
     """
-    # Use the exisitng DB connection, or open a new one if None was provided
-    db = existdb or database.Database()
-    db.connect()
-    
-    select = db.select([db.telescopes.c.telescope_id, \
-                        db.telescopes.c.telescope_name, \
-                        db.telescopes.c.telescope_abbrev, \
-                        db.telescopes.c.telescope_code], \
-                from_obj=[db.telescopes.\
-                    join(db.telescope_aliases, \
-                    onclause=db.telescopes.c.telescope_id == \
-                            db.telescope_aliases.c.telescope_id)], \
-                distinct=db.telescopes.c.telescope_id).\
-                where(db.telescope_aliases.c.telescope_alias.like(alias))
-    result = db.execute(select)
-    rows = result.fetchall()
-    result.close()
-    if not existdb:
-        # Close the DB connection we opened
-        db.close()
-    
-    if len(rows) > 1:
-        raise errors.BadInputError("Multiple matches (%d) for this " \
-                                    "telescope alias (%s)! Be more " \
-                                    "specific." % (len(rows), alias))
-    elif len(rows) == 0:
-        raise errors.BadInputError("Telescope alias provided (%s) doesn't " \
-                                    "match any telescope entries in the " \
-                                    "database." % alias)
-    else:
-        row = rows[0]
-    return row
+    if hasattr(alias, 'lower'):
+        alias = alias.lower() # cast strings to lower case
+    cache = get_telescopeinfo_cache()
+    if alias not in cache:
+        raise errors.UnrecognizedValueError("The telescope alias (%s) " \
+                            "does not appear in the telescopeinfo_cache!" % \
+                            alias)
+    return cache[alias]
 
 
 def get_header_vals(fn, hdritems):
@@ -486,9 +597,9 @@ def get_header_vals(fn, hdritems):
     if '=' in hdrstr:
         raise ValueError("'hdritems' passed to 'get_header_vals' " \
                          "should not perform and assignments!")
-    cmd = "vap -n -c '%s' %s" % (hdrstr, fn)
+    cmd = "vap -n -c '%s' '%s'" % (hdrstr, fn)
     outstr, errstr = execute(cmd)
-    outvals = outstr.split()[1:] # First value is filename (we don't need it)
+    outvals = outstr.split()[-20:] # First value is filename (we don't need it)
     if errstr:
         raise errors.SystemCallError("The command: %s\nprinted to stderr:\n%s" % \
                                 (cmd, errstr))
@@ -496,7 +607,7 @@ def get_header_vals(fn, hdritems):
         raise errors.SystemCallError("The command: %s\nreturn the wrong " \
                             "number of values. (Was expecting %d, got %d.)" % \
                             (cmd, len(hdritems), len(outvals)))
-    params = {}
+    params = HeaderParams(fn)
     for key, val in zip(hdritems, outvals):
         if val == "INVALID":
             raise errors.SystemCallError("The vap header key '%s' " \
@@ -545,8 +656,7 @@ def parse_psrfits_header(fn, hdritems):
     return params
    
 
-def get_archive_dir(fn, data_archive_location=None, \
-                        site=None, backend=None, receiver=None, psrname=None):
+def get_archive_dir(fn, data_archive_location=None, params=None):
     """Given a file name return where it should be archived.
 
         Input:
@@ -554,46 +664,30 @@ def get_archive_dir(fn, data_archive_location=None, \
             data_archive_location: The base directory of the 
                 archive. (Default: use location listed in config
                 file).
-            site: Value of "site" keyword from 'psredit'.
-                Providing this will override the value stored
-                in the file header.
-                (Default: Fetch value using 'vap'.)
-            backend: Name of backend as reported by 'vap'.
-                Providing this will override the value stored
-                in the file header.
-                (Default: Fetch value using 'vap'.)
-            receiver: Name of receiver as reported by 'vap'.
-                Providing this will override the value stored
-                in the file header.
-                (Default: Fetch value using 'vap'.)
-            psrname: Name of the pulsar as reported by 'psredit'.
-                Providing this will override the value stored
-                in the file header.
-                (Default: Fetch value using 'vap'.)
+            params: A HeaderParams object containing header
+                parameters of the data file. (Default: create
+                a throw-away HeaderParams object and populate
+                it as necessary). NOTE: A dictionary object
+                containing the required params can also be used.
 
         Output:
             dir: The directory where the file should be archived.
     """
     if data_archive_location is None:
         data_archive_location = config.cfg.data_archive_location
-    if (site is None) or (backend is None) or (psrname is None) or \
-            (receiver is None):
-        params_to_get = ['telescop', 'backend', 'rcvr', 'name']
-        params = get_header_vals(fn, params_to_get)
-        if site is None:
-            site = params['telescop']
-        if backend is None:
-            backend = params['backend']
-        if receiver is None:
-            receiver = params['rcvr']
-        if psrname is None:
-            psrname = get_prefname(params['name'])
-    tinfo = get_telescope_info(site)
-    sitedir = tinfo['telescope_abbrev']
+    if params is None:
+        params = get_header_vals(fn, [])
     
-    dir = os.path.join(data_archive_location, psrname, sitedir.lower(), \
-                        backend.lower(), receiver.lower())
-    return dir
+    subdir = config.cfg.data_archive_layout % params
+    archivedir = os.path.join(data_archive_location, subdir)
+    archivedir = os.path.abspath(archivedir)
+    if not archivedir.startswith(os.path.abspath(data_archive_location)):
+        raise errors.ArchivingError("Archive directory for '%s' (%s) is " \
+                        "not inside the specified data archive location: %s. " \
+                        "Please check the 'data_archive_layout' parameter in " \
+                        "the config file." % \
+                        (fn, archivedir, data_archive_location))
+    return archivedir
 
 
 def prep_parfile(fn):
@@ -703,6 +797,7 @@ def prep_file(fn):
     # Normalise telescope name
     tinfo = get_telescope_info(params['telescop'])
     params['telescop'] = tinfo['telescope_name']
+    params.update(tinfo)
 
     # Check if obssystem_id, pulsar_id, user_id can be found
     obssys_key = (params['telescop'].lower(), params['rcvr'].lower(), \
@@ -716,6 +811,9 @@ def prep_file(fn):
                             (fn, t, r, b))
     else:
         params['obssystem_id'] = obssys_ids[obssys_key]
+        obssysinfo = get_obssysinfo(params['obssystem_id'])
+        params['band_descriptor'] = obssysinfo['band_descriptor']
+        params['obssys_name'] = obssysinfo['name']
     
     # Check if pulsar_id is found
     try:
@@ -1163,7 +1261,8 @@ def make_proc_diagnostics_dir(fn, proc_id):
             dir: The diagnostic directory's name.
     """
     diagnostics_location = os.path.join(config.cfg.data_archive_location, "diagnostics")
-    basedir = get_archive_dir(fn, \
+    params = prep_file(fn)
+    basedir = get_archive_dir(fn, params=params, \
                     data_archive_location=diagnostics_location)
     dir = os.path.join(basedir, "procid_%d" % proc_id)
     # Make sure directory exists
@@ -1230,8 +1329,8 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, \
         (stdoutdata, stderrdata) = pipe.communicate(stdinstr)
     else:
         # Run (and time) the command. Check for errors.
-        pipe = subprocess.Popen(cmd, shell=True, cwd=dir, \
-                            stdout=stdout, stderr=stderr)
+        pipe = subprocess.Popen(cmd, shell=True, cwd=dir , \
+                            stdout=stdout)#, stderr=stderr)
         (stdoutdata, stderrdata) = pipe.communicate()
     retcode = pipe.returncode
     if retcode < 0:
@@ -1475,7 +1574,7 @@ def get_template_from_id(template_id, existdb=None, verify_md5=True):
         filepath = rows[0]['filepath']
         md5sum_DB = rows[0]['md5sum']
     else:
-        raise errors.IncosistentDatabaseError("Bad number of files (%d) " \
+        raise errors.InconsistentDatabaseError("Bad number of files (%d) " \
                             "with template_id=%d" % (len(rows), template_id))
         
     fullpath = os.path.join(filepath,filename)
@@ -1746,7 +1845,7 @@ def get_rawfile_from_id(rawfile_id, existdb=None, verify_md5=True):
         filepath = rows[0]['filepath']
         md5sum_DB = rows[0]['md5sum']
     else:
-        raise errors.IncosistentDatabaseError("Bad number of files (%d) " \
+        raise errors.InconsistentDatabaseError("Bad number of files (%d) " \
                             "with rawfile_id=%d" % (len(rows), rawfile_id))
         
     fullpath = os.path.join(filepath,filename)
@@ -2054,3 +2153,49 @@ class DefaultArguments(argparse.ArgumentParser):
             sys.exit(1)
 
 
+null = lambda x: x
+class HeaderParams(dict):
+    def __init__(self, fn, *args, **kwargs):
+        self.fn = fn
+        super(HeaderParams, self).__init__(*args, **kwargs)
+
+    def __getitem__(self, key):
+        if (type(key) in (type('str'), type(u'str'))) and key.endswith("_L"):
+            filterfunc = str.lower
+            key = key[:-2]
+        elif (type(key) in (type('str'), type(u'str'))) and key.endswith("_U"):
+            filterfunc = str.upper
+            key = key[:-2]
+        else:
+            filterfunc = null
+        if self.has_key(key):
+            val = self.get_value(key)
+            if type(val) in (type('str'), type(u'str')):
+                return filterfunc(val)
+            else:
+                return val
+        else:
+            matches = [k for k in self.keys() if k.startswith(key)]
+            if len(matches) == 1:
+                val = self.get_value(matches[0])
+                if type(val) in (type('str'), type(u'str')):
+                    return filterfunc(val)
+                else:
+                    return val
+            elif len(matches) > 1:
+                raise errors.UnrecognizedValueError("The header parameter " \
+                                    "abbreviation '%s' is ambiguous. ('%s' " \
+                                    "all match)" % \
+                                    (key, "', '".join(matches)))
+            else:
+                val = self.get_value(key)
+                if type(val) in (type('str'), type(u'str')):
+                    return filterfunc(val)
+                else:
+                    return val
+
+    def get_value(self, key):
+        if key not in self:
+            params = get_header_vals(self.fn, [key])
+            self.update(params)
+        return super(self.__class__, self).__getitem__(key)

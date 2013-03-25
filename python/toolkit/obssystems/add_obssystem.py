@@ -162,7 +162,7 @@ def main(args):
                                 "must have a telescope, backend, frontend, " \
                                 "band descriptor, and clock file! At least " \
                                 "one of these is missing.")
-                    tinfo = utils.get_telescope_info(customargs.telescope, db)
+                    tinfo = utils.get_telescope_info(customargs.telescope)
                     telescope_id = tinfo['telescope_id']
 
                     if customargs.name is None:

@@ -122,9 +122,7 @@ def load_template(fn, comments, is_master=False, existdb=None):
         params = utils.prep_file(fn)
         
         # Move the file
-        destdir = utils.get_archive_dir(fn, site=params['telescop'], \
-                    backend=params['backend'], receiver=params['rcvr'], \
-                    psrname=params['name'])
+        destdir = utils.get_archive_dir(fn, params=params)
         newfn = utils.archive_file(fn, destdir)
  
         # Register the template into the database

@@ -246,15 +246,15 @@ sa.Table('rawfiles', metadata, \
 # Definte replacement_rawfiles
 sa.Table('replacement_rawfiles', metadata, \
         sa.Column('obsolete_rawfile_id', sa.Integer, \
-                    sa.ForeignKey("rawfiles.rawfile_id", name="fk_obsolete"), \
+                    sa.ForeignKey("rawfiles.rawfile_id", name="fk_rep_obs"), \
                     nullable=False, unique=True), \
         sa.Column('replacement_rawfile_id', sa.Integer, \
-                    sa.ForeignKey("rawfiles.rawfile_id", name="fk_replacement"), \
+                    sa.ForeignKey("rawfiles.rawfile_id", name="fk_rep_rep"), \
                     nullable=False), \
         sa.Column('add_time', sa.DateTime, nullable=False, \
                     default=sa.func.now()), \
         sa.Column('user_id', sa.Integer, \
-                    sa.ForeignKey('users.user_id', name="fk_raw_user"), \
+                    sa.ForeignKey('users.user_id', name="fk_rep_user"), \
                     nullable=False), \
         sa.Column('comments', sa.Text, nullable=False), \
         mysql_engine='InnoDB', mysql_charset='ascii')
@@ -283,6 +283,17 @@ sa.Table('raw_diagnostic_plots', metadata, \
         sa.Column('filepath', sa.String(512), nullable=False), \
         sa.Column('plot_type', sa.String(16), nullable=False), \
         sa.UniqueConstraint('rawfile_id', 'plot_type'), \
+        mysql_engine='InnoDB', mysql_charset='ascii')
+
+# Define curators table
+sa.Table('curators', metadata, \
+        sa.Column('pulsar_id', sa.Integer, \
+                    sa.ForeignKey('pulsars.pulsar_id', name="fk_cura_psr"), \
+                    nullable=False), \
+        sa.Column('user_id', sa.Integer, \
+                    sa.ForeignKey('users.user_id', name="fk_cura_user"), \
+                    nullable=True), \
+        sa.UniqueConstraint('pulsar_id', 'user_id'), \
         mysql_engine='InnoDB', mysql_charset='ascii')
 
 # Define pulsars table

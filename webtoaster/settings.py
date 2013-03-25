@@ -111,7 +111,7 @@ AUTH_PROFILE_MODULE = 'app.UserProfile'
 #########################
 # TOASTER Configuration #
 #########################
-TOASTER_PYTHON_LIB = "/home/snip3/dev/pythonapps/webtoaster-patrick/toaster/python/"
+TOASTER_PYTHON_LIB = "/home/snip3/dev/pythonapps/webtoaster-patrick/python/"
 sys.path.append(TOASTER_PYTHON_LIB)
 
 # LOG_FILE = open(os.path.join(os.path.abspath(os.path.dirname(__file__)),'log','development.log'), 'a')

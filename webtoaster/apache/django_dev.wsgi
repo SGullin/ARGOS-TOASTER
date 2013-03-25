@@ -35,7 +35,7 @@ sys.path.append('/home/snip3/dev/pythonapps/webtoaster')
 
 #sys.stdout = sys.stderr
 os.environ['DJANGO_SETTINGS_MODULE'] = "settings"
-os.environ['TOASTER_CFG'] = '/home/snip3/dev/pythonapps/webtoaster-patrick/toaster/toaster.cfg'
+os.environ['TOASTER_CFG'] = '/home/snip3/dev/pythonapps/webtoaster-patrick/toaster-dev.cfg'
 import django.core.handlers.wsgi
 application = django.core.handlers.wsgi.WSGIHandler()
 
