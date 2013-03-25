@@ -21,9 +21,6 @@ from add_telescope import add_telescope
 import utils
 
 
-
-
-
 from add_user import add_new_user
 #import errors
 
@@ -92,8 +89,11 @@ class Telescopes:
 
 class Parfiles:
   @classmethod
-  def show(cls):
-    parfiles = get_parfiles('%')
+  def show(cls, parfile_id=None):
+    if parfile_id == None:
+      parfiles = get_parfiles('%')
+    else:
+      parfiles = get_parfiles('%', parid=parfile_id)
     print parfiles
     return parfiles
 

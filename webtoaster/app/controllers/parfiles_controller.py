@@ -73,3 +73,20 @@ def destroy(request, parfile_id):
     redirect_url = '/webtoaster/parfiles'
 
   return redirect( redirect_url )
+
+def download(request, parfile_id):
+  from django.http import HttpResponse
+  from django.core.servers.basehttp import FileWrapper
+  import os 
+  parfile = Parfiles.show(parfile_id=int(parfile_id) )[0]
+
+  file_name = parfile.filename
+  try:
+    myfile = file(os.path.join(parfile.filepath, parfile.filename) )
+  except:
+    request.session['flash'] = { 'type': 'error', 'message': 'Could not open the requested file.' }
+    return redirect( '/webtoaster/parfiles' )
+
+  response = HttpResponse(myfile, content_type='application/par')
+  response['Content-Disposition'] = "attachment; filename=%s" % file_name
+  return response

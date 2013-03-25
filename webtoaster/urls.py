@@ -29,6 +29,7 @@ urlpatterns = patterns('',
     (r'^parfiles/?$','app.controllers.parfiles_controller.index'),
     (r'^parfiles/(?P<parfile_id>\d+)/destroy/?$','app.controllers.parfiles_controller.destroy'),
     (r'^parfiles/new/?$','app.controllers.parfiles_controller.new'),
+    (r'^parfiles/(?P<parfile_id>\d+)/download/?$','app.controllers.parfiles_controller.download'),
 
     (r'^templates/?$','app.controllers.templates_controller.index'),
     (r'^templates/(?P<parfile_id>\d+)/destroy/?$','app.controllers.templates_controller.destroy'),

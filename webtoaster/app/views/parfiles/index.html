@@ -22,7 +22,7 @@
     </tr>
     {% for parfile in parfiles %}
       <tr>
-        <td>{{parfile.filename}}</td>
+        <td><a href="/webtoaster/parfiles/{{parfile.parfile_id}}/download"> {{parfile.filename}}</a></td>
         <td>{{parfile.mparid}}</td>       
         <td><a href="/webtoaster/pulsars/{{parfile.pulsar_id}}">{{parfile.pulsar_name}}</a></td>
         <td>{{parfile.add_time}}</td>
