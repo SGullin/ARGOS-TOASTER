@@ -11,6 +11,8 @@ from toolkit.parfiles.get_parfile_id import get_parfiles
 from toolkit.parfiles.load_parfile import load_parfile
 from toolkit.parfiles.remove_parfile import remove_parfile_entry
 
+from toolkit.timfiles.describe_timfiles import get_timfiles
+
 from toolkit.templates.get_template_id import get_templates, add_arguments
 from toolkit.templates.load_template import load_template
 
@@ -112,6 +114,18 @@ class Parfiles:
     utils.get_current_username = my_function
     response=remove_parfile_entry( parfile_id )
     return response
+
+
+class Timfiles:
+  @classmethod
+  def show(cls, timfile_id=None):
+    if timfile_id == None:
+      timfiles = get_timfiles()
+      print "here"
+    else:
+      timfiles = get_timfiles('%', parid=timfile_id)
+    print timfiles
+    return timfiles
 
 
 class Templates:

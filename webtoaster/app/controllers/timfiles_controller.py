@@ -7,7 +7,7 @@ from django.template import loader
 from app.models import *
 from httplib import HTTPResponse
 from lib.toaster import Pulsars
-from lib.toaster import Parfiles
+from lib.toaster import Timfiles
 
 from django.core.context_processors import csrf
 from django.conf import settings
@@ -28,11 +28,11 @@ class ParfileForm(forms.Form):
   name = forms.CharField()
 
 def index(request):
-  parfiles = Parfiles.show()
+  timfiles = Timfiles.show()
 
-  t = loader.get_template('parfiles/index.html')
+  t = loader.get_template('timfiles/index.html')
   c = RequestContext(request, {
-    'parfiles': parfiles,
+    'timfiles': timfiles,
     })
   return HttpResponse(t.render(c))
 
@@ -89,27 +89,4 @@ def download(request, parfile_id):
 
   response = HttpResponse(myfile, content_type='application/par')
   response['Content-Disposition'] = "attachment; filename=%s" % file_name
-  return response
-
-def view(request, parfile_id):
-  from django.http import HttpResponse
-  from django.core.servers.basehttp import FileWrapper
-  import os 
-  parfile = Parfiles.show(parfile_id=int(parfile_id) )[0]
-
-  filename = parfile.filename
-  try:
-    myfile = file(os.path.join(parfile.filepath, parfile.filename) )
-  except:
-    request.session['flash'] = { 'type': 'error', 'message': 'Could not open the requested file.' }
-    return redirect( '/webtoaster/parfiles' )
-
-
-  t = loader.get_template('parfiles/view.html')
-  c = RequestContext(request, {
-    'filename': filename,
-    'filecontent': myfile.read()
-    })
-  c.update(csrf(request))
-  return HttpResponse(t.render(c))
   return response

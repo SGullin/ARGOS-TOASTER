@@ -20,6 +20,7 @@ div#app-header div#title {
 div#messages {
 	height: 40px;
 	margin-top: 10px;
+  z-index: 100;
 }
 div#messages > div.alert {
 	box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);

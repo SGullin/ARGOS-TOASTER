@@ -6,9 +6,9 @@ apache_configuration= os.path.dirname(__file__)
 project = os.path.dirname(apache_configuration)
 workspace = os.path.dirname(project)
 sys.path.append('/home/palfa/webtoaster')
+sys.path.append('/usr/local/linux/bin')
 
 sys.stdout = sys.stderr
-os.environ['DJANGO_SETTINGS_MODULE'] = "settings"
 os.environ['TOASTER_CFG'] = '/home/palfa/webtoaster-patrick/toaster.cfg'
 os.environ['DJANGO_SETTINGS_MODULE'] = "production_settings"
 import django.core.handlers.wsgi

@@ -30,6 +30,13 @@ urlpatterns = patterns('',
     (r'^parfiles/(?P<parfile_id>\d+)/destroy/?$','app.controllers.parfiles_controller.destroy'),
     (r'^parfiles/new/?$','app.controllers.parfiles_controller.new'),
     (r'^parfiles/(?P<parfile_id>\d+)/download/?$','app.controllers.parfiles_controller.download'),
+    (r'^parfiles/(?P<parfile_id>\d+)/view/?$','app.controllers.parfiles_controller.view'),
+
+    (r'^timfiles/?$','app.controllers.timfiles_controller.index'),
+    (r'^timfiles/(?P<timfile_id>\d+)/destroy/?$','app.controllers.timfiles_controller.destroy'),
+    (r'^timfiles/new/?$','app.controllers.timfiles_controller.new'),
+    (r'^timfiles/(?P<timfile_id>\d+)/download/?$','app.controllers.timfiles_controller.download'),
+
 
     (r'^templates/?$','app.controllers.templates_controller.index'),
     (r'^templates/(?P<parfile_id>\d+)/destroy/?$','app.controllers.templates_controller.destroy'),
