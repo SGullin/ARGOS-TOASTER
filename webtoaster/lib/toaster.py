@@ -31,9 +31,10 @@ class Pulsars:
   @classmethod
   def show(cls, pulsar_ids=None):
 
-    from utils import get_pulsaralias_cache, get_pulsarid_cache
+    from utils import get_pulsaralias_cache, get_pulsarid_cache, get_pulsarname_cache
     get_pulsaralias_cache(update=True)
     get_pulsarid_cache(update=True)
+    get_pulsarname_cache(update=True)
     pulsars = cls.init_pulsars(get_pulsarinfo(pulsar_ids=pulsar_ids))
     return pulsars
 
