@@ -9,6 +9,7 @@ Patrick Lazarus, Apr. 8, 2012.
 """
 
 import argparse
+import os
 import os.path
 import datetime
 import warnings
@@ -203,26 +204,31 @@ def show_templates(templates):
                      "Backend: %s" % tdict['backend'], \
                      "Clock: %s" % tdict['clock']]
             utils.print_info("\n".join(lines), 1)
-            
-            # Show the template if verbosity is >= 2
-            cmd = "psrtxt %s" % fn
-            psrtxtout, stderr = utils.execute(cmd)
+           
+            try:
+                # Show the template if verbosity is >= 2
+                cmd = "psrtxt %s" % fn
+                psrtxtout, stderr = utils.execute(cmd)
 
-            gnuplotcode = """set term dumb
-                             set format y ""
-                             set nokey
-                             set border 1
-                             set tics out
-                             set xtics nomirror
-                             set ytics 0,1,0
-                             set xlabel "Phase Bin"
-                             set xrange [0:%d]
-                             plot "-" using 3:4 w l
-                             %s
-                             end
-                         """ % (tdict.nbin-1, psrtxtout)
-            plot, stderr = utils.execute("gnuplot", stdinstr=gnuplotcode)
-            utils.print_info(plot, 2)
+                gnuplotcode = """set term dumb
+                                 set format y ""
+                                 set nokey
+                                 set border 1
+                                 set tics out
+                                 set xtics nomirror
+                                 set ytics 0,1,0
+                                 set xlabel "Phase Bin"
+                                 set xrange [0:%d]
+                                 plot "-" using 3:4 w l
+                                 %s
+                                 end
+                            """ % (tdict.nbin-1, psrtxtout)
+                plot, stderr = utils.execute("gnuplot", \
+                                stderr=open(os.devnull), stdinstr=gnuplotcode)
+                utils.print_info(plot, 2)
+            except errors.SystemCallError:
+                # gnuplot is probably not installed
+                pass
             print "--"*25
     else:
         raise errors.ToasterError("No templates match parameters provided!")
