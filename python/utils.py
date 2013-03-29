@@ -845,6 +845,7 @@ def is_gitrepo(repodir):
         Output:
             is_git: True if directory is part of a git repository. False otherwise.
     """
+    print_info("Checking if directory '%s' contains a Git repo..." % repodir, 2)
     try:
         stdout, stderr = execute("git rev-parse", dir=repodir, \
                                     stderr=open(os.devnull))
@@ -865,6 +866,7 @@ def is_gitrepo_dirty(repodir):
         Output:
             is_dirty: True if git repository has local changes. False otherwise.
     """
+    print_info("Checking if Git repo at '%s' is dirty..." % repodir, 2)
     try:
         stdout, stderr = execute("git diff --quiet", dir=repodir)
     except errors.SystemCallError:
@@ -969,7 +971,7 @@ def check_repos():
         Outputs:
             None
     """
-    if is_gitrepo_dirty(os.path.dirname(__file__)):
+    if is_gitrepo_dirty(os.path.abspath(os.path.dirname(__file__))):
         if config.debug.GITTEST:
             warnings.warn("Git repository is dirty! Will tolerate because " \
                             "pipeline debugging is on.", \
