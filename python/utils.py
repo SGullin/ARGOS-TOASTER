@@ -162,7 +162,7 @@ def get_userid_cache(existdb=None, update=False):
                     and user ids as values.
     """
     global userid_cache
-    if update or not userid_cache:
+    if update or not userid_cache or not config.cfg.use_caches:
         userid_cache = {}
         db = existdb or database.Database()
         db.connect()
@@ -213,7 +213,7 @@ def get_userinfo_cache(existdb=None, update=False):
                     and user-info dicts as values.
     """
     global userinfo_cache
-    if update or not userinfo_cache:
+    if update or not userinfo_cache or not config.cfg.use_caches:
         userinfo_cache = {}
         db = existdb or database.Database()
         db.connect()
@@ -263,7 +263,7 @@ def get_pulsarid_cache(existdb=None, update=False):
                     and pulsar ids as values.
     """
     global pulsarid_cache
-    if update or not pulsarid_cache:
+    if update or not pulsarid_cache or not config.cfg.use_caches:
         pulsarid_cache = {}
         db = existdb or database.Database()
         db.connect()
@@ -295,7 +295,7 @@ def get_pulsaralias_cache(existdb=None, update=False):
                     and a list of pulsar aliases as values.
     """
     global pulsaralias_cache
-    if update or not pulsaralias_cache:
+    if update or not pulsaralias_cache or not config.cfg.use_caches:
         pulsaralias_cache = {}
         pulsarid_cache = get_pulsarid_cache(existdb, update)
         for alias, psrid in pulsarid_cache.iteritems():
@@ -334,7 +334,7 @@ def get_pulsarname_cache(existdb=None, update=False):
                     and pulsar names as values.
     """
     global pulsarname_cache
-    if update or not pulsarname_cache:
+    if update or not pulsarname_cache or not config.cfg.use_caches:
         pulsarname_cache = {}
         db = existdb or database.Database()
         db.connect()
@@ -411,7 +411,7 @@ def get_obssystemid_cache(existdb=None, update=False):
                     and obs system ids as values.
     """
     global obssysid_cache
-    if update or not obssysid_cache:
+    if update or not obssysid_cache or not config.cfg.use_caches:
         obssysid_cache = {}
         # Use the exisitng DB connection, or open a new one if None was provided
         db = existdb or database.Database()
@@ -479,7 +479,7 @@ def get_obssysinfo_cache(existdb=None, update=False):
                 keys and observation info as values.
     """
     global obssysinfo_cache
-    if update or not obssysinfo_cache:
+    if update or not obssysinfo_cache or not config.cfg.use_caches:
         obssysinfo_cache = {}
         db = existdb or database.Database()
         db.connect()
@@ -530,7 +530,7 @@ def get_telescopeinfo_cache(existdb=None, update=False):
                 keys and telescope info as values.
     """
     global telescopeinfo_cache
-    if update or not telescopeinfo_cache:
+    if update or not telescopeinfo_cache or not config.cfg.use_caches:
         telescopeinfo_cache = {}
         db = existdb or database.Database()
         db.connect()
