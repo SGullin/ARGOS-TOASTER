@@ -23,7 +23,9 @@ import database
 from toolkit.rawfiles import load_rawfile
 from toolkit.parfiles import load_parfile
 from toolkit.templates import load_template
+from toolkit.processing import diagnose_processing
 import utils
+import diagnostics
 
 
 ###############################################################################
@@ -203,7 +205,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
             # Get ephemeris from parfile_id and verify MD5SUM
             parfile = utils.get_parfile_from_id(parfile_id, db, verify_md5=True)
   
-            cmd = "pam -m -E %s --update_dm %s" % (parfile, adjustfn)
+            cmd = "pam -m -E '%s' --update_dm %s" % (parfile, adjustfn)
             utils.execute(cmd)
         
         # Create a temporary file for the manipulated results
@@ -261,7 +263,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         for diagname in config.cfg.default_rawfile_diagnostics:
             diagcls = diagnostics.get_diagnostic_class(diagname)
             try:
-                diags.append(diagcls(archivefn))
+                diags.append(diagcls(manipfn))
             except errors.DiagnosticNotApplicable, e:
                 utils.print_info("Diagnostic isn't applicable: %s. " \
                                 "Skipping..." % str(e), 1)
@@ -290,20 +292,6 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         result = db.execute(ins, values)
         result.close()
         utils.print_info("Inserted %d TOA diagnostic plots." % len(toa_ids), 2)
-
-        # Load processing diagnostics
-        values = []
-        for diagtype, diagpath in diagfns.iteritems():
-            dir, fn = os.path.split(diagpath)
-            ins = db.proc_diagnostic_plots.insert()
-            values.append({'process_id':process_id, \
-                      'filename': fn, \
-                      'filepath': dir, \
-                      'plot_type':diagtype})
-            utils.print_info("Inserting processing diagnostic plot (type: %s)." % \
-                        diagtype, 2)
-        result = db.execute(ins, values)
-        result.close()
     except:
         db.rollback()
         sys.stdout.write(colour.cstring("Error encountered. " \
