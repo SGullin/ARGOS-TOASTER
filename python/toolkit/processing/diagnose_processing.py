@@ -4,6 +4,7 @@ A script to add processing diagnostics to the database
 Patrick Lazarus, Feb 8, 2013
 """
 import os.path
+import shutil
 
 import utils
 import errors
@@ -117,9 +118,9 @@ def insert_processing_diagnostics(proc_id, diags, archivedir=None, \
             except errors.DiagnosticAlreadyExists, e:
                 print_info("Diagnostic already exists: %s. Skipping..." % \
                                 str(e), 2)
-                trans.rollback()
+                db.rollback()
             else:
-                trans.commit()
+                db.commit()
     finally:
         if not existdb:
             # Close DB connection
@@ -183,7 +184,7 @@ def __insert_processing_diagnostic_plot(proc_id, diag, archivedir=None, \
     db = existdb or database.Database()
     db.connect()
 
-    diagpath = None # Initialise diagplot in case an exception is raised
+    diagpath = None # Initialise diagpath in case an exception is raised
     try:
         # Put diagnostic plot next to the data file
         origfn = os.path.abspath(diag.diagnostic)
@@ -191,14 +192,14 @@ def __insert_processing_diagnostic_plot(proc_id, diag, archivedir=None, \
             archivedir = os.path.split(os.path.abspath(diag.fn))[0]
         if suffix:
             # Rename file
-            stem, ext = os.path.splitext(diagplot)
+            stem, ext = os.path.splitext(origfn)
             newfn = stem+suffix+ext
-            if os.path.dirname(newfn) != os.path.dirname(diagplot):
+            if os.path.dirname(newfn) != os.path.dirname(origfn):
                 raise errors.FileError("Adding processing diagnostic " \
                             "plot suffix will cause plot to be moved " \
                             "to annother directory (new file name: %s)!" % \
                             newfn)
-            shutil.move(diagplot, newfn)
+            shutil.move(origfn, newfn)
             diagplot = newfn
         else:
             diagplot = origfn

@@ -135,6 +135,9 @@ def get_procjobs(args, existdb=None):
                         db.users.c.email_address, \
                         ], \
                 from_obj=[db.process.\
+                    outerjoin(db.users, \
+                        onclause=db.users.c.user_id == \
+                                db.process.c.user_id).\
                     outerjoin(db.rawfiles, \
                         onclause=db.rawfiles.c.rawfile_id == \
                                 db.process.c.rawfile_id).\

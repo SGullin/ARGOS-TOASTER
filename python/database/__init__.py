@@ -58,7 +58,7 @@ def commit_event(conn):
 
         See SQLAlchemy for details about event triggers.
     """
-    utils.print_debug("Database transaction committed.", 'database', \
+    utils.print_debug("Committing database transaction.", 'database', \
                         stepsback=7)
 
 
@@ -67,7 +67,7 @@ def rollback_event(conn):
         
         See SQLAlchemy for details about event triggers.
     """
-    utils.print_debug("Database transaction rolled back.", 'database', \
+    utils.print_debug("Rolling back database transaction.", 'database', \
                         stepsback=7)
         
 
@@ -76,7 +76,7 @@ def begin_event(conn):
         
         See SQLAlchemy for details about event triggers.
     """
-    utils.print_debug("Database transaction opened.", 'database', \
+    utils.print_debug("Opening database transaction.", 'database', \
                         stepsback=7)
 
 
@@ -223,6 +223,8 @@ class Database(object):
             Outputs:
                 None
         """
+        utils.print_debug("Attempting to begin a transaction via " \
+                            "database object", 'database', stepsback=2)
         if not self.is_connected():
             raise errors.DatabaseError("Connection to database not " \
                     "established. Be sure self.connect(...) is called " \
@@ -243,6 +245,8 @@ class Database(object):
             Outputs:
                 None
         """
+        utils.print_debug("Attempting to commit a transaction via " \
+                            "database object", 'database', stepsback=2)
         if self.open_transactions:
             trans = self.open_transactions.pop()
         else:
@@ -258,6 +262,8 @@ class Database(object):
             Outputs:
                 None
         """
+        utils.print_debug("Attempting to roll back a transaction via " \
+                            "database object", 'database', stepsback=2)
         trans = self.open_transactions.pop()
         trans.rollback()
 
