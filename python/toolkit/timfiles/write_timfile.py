@@ -202,7 +202,10 @@ def write_timfile(toas, timfile, sortkeys=['freq', 'mjd'], flags="", \
     if outname != '-' and os.path.exists(outname):
         raise errors.FileError("The output timfile sepcified (%s) " \
                                 "already exists. Doing nothing..." % outname)
-    
+    if not timfile['comments']:
+        raise errors.BadInputError("Timfile (ID: %d) has no comment!" % \
+                                timfile['timfile_id'])
+
     # Sort TOAs
     utils.sort_by_keys(toas, sortkeys)
     if outname is '-':
