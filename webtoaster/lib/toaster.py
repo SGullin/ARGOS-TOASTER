@@ -17,7 +17,8 @@ from toolkit.templates.get_template_id import get_templates, add_arguments
 from toolkit.templates.load_template import load_template
 
 from toolkit.rawfiles.load_rawfile import load_rawfile
-
+from toolkit.rawfiles.get_rawfile_id import get_rawfiles
+ 
 
 from add_telescope import add_telescope
 import utils
@@ -161,9 +162,9 @@ class RawFiles:
     parser = utils.DefaultArguments(description='DESCRIPTION')
     add_arguments(parser)
     args = parser.parse_args()
-    templates = get_templates(args)
-    print templates
-    return templates
+    rawfiles = get_rawfiles(args)
+    print rawfiles
+    return rawfiles
 
   @classmethod
   def upload(cls, username, path):

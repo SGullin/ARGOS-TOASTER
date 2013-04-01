@@ -32,8 +32,8 @@ class Telescope(models.Model):
         db_table = u'telescopes'  
 
 class UserProfile(models.Model):
-  user = models.OneToOneField(User)
-  toaster_user = models.OneToOneField(ToasterUser)
+  user = models.ForeignKey(User)
+  toaster_user = models.ForeignKey(ToasterUser)
   oauth_token = models.CharField(max_length=128)
   oauth_token_secret = models.CharField(max_length=128)
   def __str__(self):
