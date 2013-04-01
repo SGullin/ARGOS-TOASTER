@@ -59,7 +59,7 @@ MEDIA_URL = 'http://webtoaster.localhost/webtoaster/media/'
 ADMIN_MEDIA_PREFIX = '/webtoaster/media/'
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = 'u2lb=^5a_(4irufn086!5qsyzh+gajjy+9g8@yitc_diraro$d'
+SECRET_KEY = 'sn1p3^5a_(4irufn086!5qsyzh+gajjy+9g8@yitc_diraro$d'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
