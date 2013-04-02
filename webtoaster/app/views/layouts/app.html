@@ -15,9 +15,9 @@
         {% block js %}
         {% endblock %}
         <script type="text/javascript">
-            setTimeout(function(){
-                $('#messages > div').hide('fadeout');
-            },2000);
+            // setTimeout(function(){
+            //     $('#messages > div').hide('fadeout');
+            // },2000);
         </script>
      </head>
      <body>
@@ -79,6 +79,7 @@
                 <div id="messages">
                     {% if flash %}
                     <div class="alert alert-{{flash.type}} center">
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
                      {{flash.message}}
                     </div>
                     {% endif %}
