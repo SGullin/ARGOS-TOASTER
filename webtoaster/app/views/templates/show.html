@@ -1,0 +1,67 @@
+{% extends 'layouts/app.html' %}
+
+{% block content %}
+
+<div class="navbar">
+  <div class="navbar-inner">
+    <a class="brand" href="">{{template.filename}}:</a>
+    <!--<ul class="nav">
+      <li class="dropdown"> 
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tims <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li><a href="#">Upload</a></li>
+            <li><a href="#">View Master TOAs</a></li>
+            <!--
+            <li class="divider"></li>
+            <li class="nav-header">Nav header</li>
+            <li><a href="#">Separated link</a></li>
+            <li><a href="#">One more separated link</a></li>
+            
+          </ul>-->
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- 
+  'add_time', 'backend', 'clock', 'comments', 'email_address', 'filename', 'filepath', 'frontend', 'mtempid', 'nbin', 'obssys_name', 'obssystem_id', 'pulsar_name', 'real_name', 'telescope_name', 'template_id'
+-->
+<table class="pulsar-info">
+  <tr> 
+    <td><b>File Name</b> </td><td>{{template.filename}}</td>
+  </tr>
+  <tr> 
+    <td><b>MTEMPID</b> </td><td>{{template.mtempid}}</td>
+  </tr>
+  <tr> 
+    <td><b>File Name</b> </td><td>{{template.filename}}</td>
+  </tr>
+  <tr> 
+    <td><b>File Path</b> </td><td>{{template.filepath}}</td>
+  </tr>
+  <tr> 
+    <td><b>Obs. System </br> Name</b> <br/> </td><td>{{template.obssys_name}}</td>
+  </tr>  
+  <tr> 
+    <td><b>Front-end</b> </td><td>{{template.frontend}}</td>
+  </tr>  
+  <tr> 
+    <td><b>Back-end</b> </td><td>{{template.backend}}</td>
+  </tr>
+  <tr> 
+    <td><b>Uploader</b> </td><td>{{template.real_name}} <a href="mailto:{{email_address}}">email</a></td>
+  </tr>
+  <tr> 
+    <td><b>Add Time</b> </td><td>{{template.add_time}}</td>
+  </tr>
+  <tr> 
+    <td><b>Comments</b> </td><td>{{template.comments}}</td>
+  </tr>
+  <tr> 
+    <td><b>Telescope Name</b> </td><td>{{template.telescope_name}}</td>
+  </tr>
+  <tr> 
+    <td><b>Clock</b> </td><td>{{template.clock}}</td>
+  </tr>
+</table>
+{% endblock %}

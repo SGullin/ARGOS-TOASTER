@@ -39,7 +39,8 @@ urlpatterns = patterns('',
 
 
     (r'^templates/?$','app.controllers.templates_controller.index'),
-    (r'^templates/(?P<parfile_id>\d+)/destroy/?$','app.controllers.templates_controller.destroy'),
+    (r'^templates/(?P<template_id>\d+)/?$','app.controllers.templates_controller.show'),
+    (r'^templates/(?P<template_id>\d+)/destroy/?$','app.controllers.templates_controller.destroy'),
     (r'^templates/new/?$','app.controllers.templates_controller.new'),
 
     (r'^rawfiles/?$','app.controllers.rawfiles_controller.index'),

@@ -4,6 +4,8 @@ import  os, sys
 import sys
 
 
+import toolkit
+
 from toolkit.pulsars.show_pulsars import get_pulsarinfo
 from toolkit.pulsars.add_pulsar import add_pulsar
 
@@ -18,7 +20,8 @@ from toolkit.templates.load_template import load_template
 
 from toolkit.rawfiles.load_rawfile import load_rawfile
 from toolkit.rawfiles.get_rawfile_id import get_rawfiles
- 
+
+from toolkit.templates.remove_template import remove_template_entry
 
 from add_telescope import add_telescope
 import utils
@@ -123,21 +126,22 @@ class Timfiles:
   def show(cls, timfile_id=None):
     if timfile_id == None:
       timfiles = get_timfiles()
-      print "here"
     else:
       timfiles = get_timfiles('%', parid=timfile_id)
-    print timfiles
     return timfiles
 
 
 class Templates:
   @classmethod
-  def show(cls):
-    parser = utils.DefaultArguments(description='DESCRIPTION')
-    add_arguments(parser)
+  def show(cls, template_id=None):
+    parser = utils.DefaultArguments(description='DESCRIPTION')    
+    toolkit.templates.get_template_id.add_arguments(parser)
+    if template_id:
+       args = parser.parse_args( [ '--template-id', "%s" % template_id ] )
+    else:
+      my_args = { 'template_id': template_id}
     args = parser.parse_args()
     templates = get_templates(args)
-    print templates
     return templates
 
   @classmethod
@@ -149,11 +153,11 @@ class Templates:
     return response
 
   @classmethod
-  def destroy(cls, parfile_id):
+  def destroy(cls, template_id):
     def my_function():
       return username;
     utils.get_current_username = my_function
-    response=remove_parfile_entry( parfile_id )
+    response= remove_template_entry( template_id )
     return response
 
 class RawFiles:
