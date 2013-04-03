@@ -17,6 +17,7 @@ modes = [('syscalls', 'Print commands being executed as system calls.'), \
                         "un-committed changes."), \
          ('config', "Display what config files are loaded."), \
          ('database', "Display DB connection/transaction info."), \
+         ('toaparse', "Display info when parsing TOAs from timfiles."), \
          ('timfile', None), 
             ]
 
