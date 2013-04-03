@@ -6,6 +6,7 @@ Patrick Lazarus, Apr. 2, 2013
 import re
 
 import utils
+import errors
 
 # The following dictionary specifies the data type for
 # expected flags. All keys should be lower case.
@@ -29,26 +30,43 @@ def tempo2_reader(line):
         Output:
             toainfo: A dictionary of TOA information.
     """
-    tempo2_toa_re = re.compile(r'^ *(?P<bad>(#|(C )))? *(?P<file>[^ ]+) +' \
-                               r'(?P<freq>[^ ]+) +(?P<imjd>[^. ]+)(?P<fmjd>\.[^ ]+) +' \
-                               r'(?P<err>[^ ]+) +(?P<site>[^ ]+)')
+    tempo2_toa_re = re.compile(r'^ *(?P<bad>(#|(C ))(?P<comment1>.*?))? *' \
+                               r'(?P<file>[^ ]+) +' \
+                               r'(?P<freq>\d+(\.\d+)?) +(?P<imjd>\d+)(?P<fmjd>\.\d+) +' \
+                               r'(?P<err>\d+(\.\d+)?) +(?P<site>[^ ]+)')
+    comment_re = re.compile(r'#(?P<comment>.*)$')
     tempo2_flag_re = re.compile(r'-(?P<flagkey>[^ ]+) +(?P<flagval>[^ ]+)')
     match = tempo2_toa_re.search(line)
-    grp = match.groupdict()
+    if match is None:
+        toainfo = None
+        utils.print_debug("Line is not a Tempo2 TOA:\n    %s" % line, 'toaparse')
+    else:
+        grp = match.groupdict()
+     
+        toainfo = {}
+        toainfo['is_bad'] = (grp['bad'] is not None)
+        toainfo['file'] = grp['file']
+        toainfo['freq'] = float(grp['freq'])
+        toainfo['imjd'] = int(grp['imjd'])
+        toainfo['fmjd'] = float(grp['fmjd'])
+        toainfo['toa_unc_us'] = float(grp['err'])
+        toainfo['telescope_id'] = utils.get_telescope_info(grp['site'])['telescope_id']
+        comments = []
+        if grp['comment1']:
+            comments.append(grp['comment1'].strip())
+        match2 = comment_re.search(line[match.end():])
+        if match2:
+            grp2 = match2.groupdict()
+            if grp2['comment']:
+                comments.append(grp2['comment'].strip())
+        toainfo['comment'] = " -- ".join(comments)
+                
+            
+        toainfo['flags'] = {}
+        for key, val in tempo2_flag_re.findall(line[match.end():]):
+            key = key.lower()
+            key = KNOWN_FLAG_ALIASES.get(key, key)
+            caster = KNOWN_FLAG_TYPES.get(key, str)
+            toainfo['flags'][key] = caster(val)
 
-    toainfo = {}
-    toainfo['is_bad'] = (grp['bad'] is not None)
-    toainfo['file'] = grp['file']
-    toainfo['freq'] = float(grp['freq'])
-    toainfo['imjd'] = int(grp['imjd'])
-    toainfo['fmjd'] = float(grp['fmjd'])
-    toainfo['toa_unc_us'] = float(grp['err'])
-    toainfo['telescope_id'] = utils.get_telescope_info(grp['site'])['telescope_id']
-
-    toainfo['flags'] = {}
-    for key, val in tempo2_flag_re.findall(line[match.end():]):
-        key = key.lower()
-        key = KNOWN_FLAG_ALIASES.get(key, key)
-        caster = KNOWN_FLAG_TYPES.get(key, str)
-        toainfo['flags'][key] = caster(val)
     return toainfo
