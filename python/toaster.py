@@ -259,7 +259,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
             ti['template_id'] = template_id
             ti['rawfile_id'] = rawfile_id
             ti['pulsar_id'] = rawfile_info['pulsar_id']
-            ti['obsystem_id'] = rawfile_info['obssystem_id']
+            ti['obssystem_id'] = rawfile_info['obssystem_id']
         toa_ids = utils.load_toas(toainfo, db)
                  
         # Create processing diagnostics

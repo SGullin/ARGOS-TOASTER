@@ -1823,7 +1823,7 @@ def get_rawfile_info(rawfile_id, existdb=None):
                         db.rawfiles.c.filepath, \
                         db.rawfiles.c.md5sum, \
                         db.rawfiles.c.pulsar_id, \
-                        db.rawfiles.c.obsystem_id]).\
+                        db.rawfiles.c.obssystem_id]).\
                 where(db.rawfiles.c.rawfile_id==rawfile_id)
     result = db.execute(select)
     rows = result.fetchall()
