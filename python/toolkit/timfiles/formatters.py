@@ -3,8 +3,9 @@ TOA formatter functions.
 
 Patrick Lazarus, Dec 9, 2012
 """
+import config
 
-def princeton_formatter(toas, flags=""):
+def princeton_formatter(toas, flags=[]):
     """Return timfile lines in princeton format.
         
         Inputs:
@@ -26,7 +27,7 @@ def princeton_formatter(toas, flags=""):
     return timlines
         
 
-def tempo2_formatter(toas, flags=""):
+def tempo2_formatter(toas, flags=[]):
     """Return timfile lines in TEMPO2 format.
         
         Inputs:
@@ -43,8 +44,15 @@ def tempo2_formatter(toas, flags=""):
         toastr = "%s %.3f %s %.3f %s" % \
                     (toa['rawfile'], toa['freq'], mjd, \
                         toa['toa_unc_us'], toa['telescope_code'])
-        flagstr = flags % toa
-        timlines.append("%s %s" % (toastr, flagstr))
+        flagstrs = []
+        for name, valuetag in flags:
+            try:
+                value = valuetag % toa
+            except TypeError:
+                value = config.cfg.missing_flag_value
+            if value is not None:
+                flagstrs.append("-%s %s" % (name, value))
+        timlines.append("%s %s" % (toastr, " ".join(flagstrs)))
     return timlines
 
 

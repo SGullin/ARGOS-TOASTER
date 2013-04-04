@@ -163,7 +163,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
             rawfile_id: The ID number of the raw data file to generate TOAs from.
             parfile_id: The ID number of the parfile to install into the
                 raw file. If this is None, then no new parfile will be installed.
-            tempalte_id: The ID number of the template to use.
+            template_id: The ID number of the template to use.
             existdb: An existing database connection object.
                 (Default: establish a new DB connection)
 
@@ -252,8 +252,15 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         # Parse pat output
         toainfo = utils.parse_pat_output(patout)
 
+        rawfile_info = utils.get_rawfile_info(rawfile_id)
         # Insert TOAs into DB
-        toa_ids = utils.load_toas(toainfo, process_id, template_id, rawfile_id, db)
+        for ti in toainfo:
+            ti['process_id'] = process_id
+            ti['template_id'] = template_id
+            ti['rawfile_id'] = rawfile_id
+            ti['pulsar_id'] = rawfile_info['pulsar_id']
+            ti['obssystem_id'] = rawfile_info['obssystem_id']
+        toa_ids = utils.load_toas(toainfo, db)
                  
         # Create processing diagnostics
         utils.print_info("Generating processing diagnostics", 1)

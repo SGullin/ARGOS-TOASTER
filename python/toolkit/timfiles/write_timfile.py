@@ -30,32 +30,36 @@ def add_arguments(parser):
                         default='-', type=str, \
                         help="Output timfile's name. NOTE: This is "
                             "required.")
-    parser.add_argument('--format', dest='format', \
+    parser.add_argument('-f', '--format', dest='format', \
                         default='tempo2', type=str, \
                         help="Output format for the timfile. " \
                             "Available formats: '%s'. (Default: " \
                             "tempo2)" % "', '".join(sorted(FORMATTERS)))
     flags = parser.add_mutually_exclusive_group(required=False)
-    flags.add_argument('--flags', dest='flags', type=str, \
-                        default='', \
-                        help="Flags to include for each TOA. Both the " \
-                            "flag and value-tag should be included in a " \
-                            "quoted string. Value-tags should be in " \
+    flags.add_argument('-F', '--flag', dest='flags', action='append', \
+                        default=[], nargs=2, type=str, \
+                        help="A flag to include for each TOA. Two arguments " \
+                            "are required: The first is the name of the flag; " \
+                            "the second is the value-tag. Value-tags may be in " \
                             "%%(<tag-name>)<fmt> format. Where <tag-name> " \
                             "is the name of the column in the DB, and " \
                             "<fmt> is a C/python-style format code " \
-                            "(without the leading '%%'). NOTE: If multiple " \
-                            "flags are desired they should all be included " \
-                            "in the same quoted string. (Default: no flags)")
+                            "(without the leading '%%'). Multiple instances " \
+                            "of -F/--flag may be provided to include " \
+                            "multiple flags per TOA. (Default: no flags)")
     flags.add_argument('--ipta-exchange', dest='flags', action='store_const', \
-                        default='', \
-                        const="-fe %(frontend)s -be %(backend)s " \
-                            "-B %(band_descriptor)s -bw %(bw).1f " \
-                            "-tobs %(length).1f " \
-                            "-proc TOASTER_verID%(version_id)d " \
-                            "-tmplt %(template)s -gof %(goodness_of_fit).3f " \
-                            "-nbin %(nbin)d -nch %(nchan)d " \
-                            "-f %(frontend)s_%(backend)s", \
+                        default=[], \
+                        const=[("fe", "%(frontend)s"), \
+                               ("be", "%(backend)s"), \
+                               ("B", "%(band_descriptor)s"), \
+                               ("bw", "%(bw).1f"), \
+                               ("tobs", "%(length).1f"), \
+                               ("proc", "TOASTER_verID%(version_id)d"), \
+                               ("tmplt", "%(template)s"), \
+                               ("gof", "%(goodness_of_fit).3f"), \
+                               ("nbin", "%(nbin)d"), \
+                               ("nch", "%(nchan)d"), \
+                               ("f", "%(frontend)s_%(backend)s")], \
                         help="Set flags appropriate for the IPTA exchange " \
                             "format.")
     parser.add_argument('--sort', dest='sortkeys', metavar='SORTKEY', \
@@ -127,8 +131,7 @@ def get_toas(timfile_id, existdb=None):
                         db.toas.c.bw, \
                         db.toas.c.length, \
                         db.toas.c.nbin, \
-                        database.sa.func.ifnull(db.toas.c.goodness_of_fit, 0).\
-                                label('goodness_of_fit'), \
+                        db.toas.c.goodness_of_fit, \
                         db.obssystems.c.name.label('obssystem'), \
                         db.obssystems.c.backend, \
                         db.obssystems.c.frontend, \

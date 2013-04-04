@@ -20,6 +20,9 @@ class BadColumnNameError(FatalToasterError):
     pass
 
 
+class BadTOAFormat(FatalToasterError):
+    pass
+
 # Regular TOASTER errors. These might be caught and dealt with.
 class ToasterError(Exception):
     def __str__(self):

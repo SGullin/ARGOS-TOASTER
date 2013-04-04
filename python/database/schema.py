@@ -36,13 +36,13 @@ sa.Table('toas', metadata, \
                     autoincrement=True, nullable=False), \
         sa.Column('process_id', sa.Integer, \
                     sa.ForeignKey("process.process_id", name="fk_toas_proc"), \
-                    nullable=False), \
+                    nullable=True), \
         sa.Column('template_id', sa.Integer, \
                     sa.ForeignKey("templates.template_id", name="fk_toas_temp"), \
-                    nullable=False), \
+                    nullable=True), \
         sa.Column('rawfile_id', sa.Integer, \
                     sa.ForeignKey("rawfiles.rawfile_id", name="fk_toas_raw"), \
-                    nullable=False), \
+                    nullable=True), \
         sa.Column('pulsar_id', sa.Integer, \
                     sa.ForeignKey("pulsars.pulsar_id", name="fk_toas_psr"), \
                     nullable=False), \
@@ -53,9 +53,9 @@ sa.Table('toas', metadata, \
         sa.Column('fmjd', sa.Float(53), nullable=False), \
         sa.Column('freq', sa.Float(24), nullable=False), \
         sa.Column('toa_unc_us', sa.Float(24), nullable=False), \
-        sa.Column('bw', sa.Float(24), nullable=False), \
-        sa.Column('length', sa.Float(24), nullable=False), \
-        sa.Column('nbin', sa.Integer, nullable=False), \
+        sa.Column('bw', sa.Float(24), nullable=True), \
+        sa.Column('length', sa.Float(24), nullable=True), \
+        sa.Column('nbin', sa.Integer, nullable=True), \
         sa.Column('goodness_of_fit', sa.Float(24), nullable=True), \
         mysql_engine='InnoDB', mysql_charset='ascii')
 
