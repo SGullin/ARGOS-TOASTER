@@ -3,6 +3,7 @@ TOA conflict handlers to use when selecting TOAs for timfiles.
 
 Patrick Lazarus, Dec 9, 2012
 """
+import warnings
 
 import errors
 
@@ -27,12 +28,15 @@ def strict_conflict_handler(toas):
             raise errors.ConflictingToasError("Rawfile (ID: %d) has been " \
                     "replaced (by rawfile_id=%d)!" % \
                     (toa['rawfile_id'], toa['replacement_rawfile_id']))
-        rawfile_ids.setdefault(toa['rawfile_id'], set()).\
-                                add(toa['process_id'])
-        obssystem_ids.setdefault(toa['obssystem_id'], set()).\
-                                add(toa['template_id'])
-        pulsar_ids.setdefault(toa['pulsar_id'], set()).\
-                                add(toa['parfile_id'])
+        if toa['process_id'] is not None:
+            rawfile_ids.setdefault(toa['rawfile_id'], set()).\
+                                    add(toa['process_id'])
+        if toa['template_id'] is not None:
+            obssystem_ids.setdefault(toa['obssystem_id'], set()).\
+                                    add(toa['template_id'])
+        if toa['parfile_id'] is not None:
+            pulsar_ids.setdefault(toa['pulsar_id'], set()).\
+                                    add(toa['parfile_id'])
     # Respond to any conflicts
     if len(pulsar_ids) > 1:
         raise errors.ConflictingToasError("All TOAs must be for the same " \
@@ -76,12 +80,15 @@ def tolerant_conflict_handler(toas):
                     "rawfile_id=%d)!" % \
                     (toa['rawfile_id'], toa['replacement_rawfile_id']), \
                     errors.ToasterWarning)
-        rawfile_ids.setdefault(toa['rawfile_id'], set()).\
-                                add(toa['process_id'])
-        obssystem_ids.setdefault(toa['obssystem_id'], set()).\
-                                add(toa['template_id'])
-        pulsar_ids.setdefault(toa['pulsar_id'], set()).\
-                                add(toa['parfile_id'])
+        if toa['process_id'] is not None:
+            rawfile_ids.setdefault(toa['rawfile_id'], set()).\
+                                    add(toa['process_id'])
+        if toa['template_id'] is not None:
+            obssystem_ids.setdefault(toa['obssystem_id'], set()).\
+                                    add(toa['template_id'])
+        if toa['parfile_id'] is not None:
+            pulsar_ids.setdefault(toa['pulsar_id'], set()).\
+                                    add(toa['parfile_id'])
     # Respond to any conflicts
     if len(pulsar_ids) > 1:
         raise errors.ConflictingToasError("All TOAs must be for the same " \
