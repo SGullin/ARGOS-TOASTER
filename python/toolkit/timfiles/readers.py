@@ -50,6 +50,7 @@ def tempo2_reader(line):
         toainfo['imjd'] = int(grp['imjd'])
         toainfo['fmjd'] = float(grp['fmjd'])
         toainfo['toa_unc_us'] = float(grp['err'])
+        toainfo['telescope'] = grp['site']
         toainfo['telescope_id'] = utils.get_telescope_info(grp['site'])['telescope_id']
         comments = []
         if grp['comment1']:
@@ -60,7 +61,6 @@ def tempo2_reader(line):
             if grp2['comment']:
                 comments.append(grp2['comment'].strip())
         toainfo['comment'] = " -- ".join(comments)
-                
             
         toainfo['flags'] = {}
         for key, val in tempo2_flag_re.findall(line[match.end():]):

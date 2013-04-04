@@ -428,7 +428,8 @@ def get_obssystemid_cache(existdb=None, update=False):
                                     db.telescope_aliases.c.telescope_id).\
                         outerjoin(db.obssystems, \
                             onclause=db.telescopes.c.telescope_id == \
-                                    db.obssystems.c.telescope_id)])
+                                    db.obssystems.c.telescope_id)]).\
+                    where(db.obssystems.c.obssystem_id != None)
         result = db.execute(select)
         rows = result.fetchall()
         result.close()
@@ -456,12 +457,12 @@ def get_obssysid(obssys_key):
         Output:
             obssys_id: The corresponding observing system's ID.
     """
-    cache = get_obssysid_cache()
+    cache = get_obssystemid_cache()
     if obssys_key not in cache:
         raise errors.UnrecognizedValueError("The observing system (%s) " \
                                 "does not appear in the obssysid_cache!" % \
-                                key)
-    return cache[key]
+                                obssys_key)
+    return cache[obssys_key]
 
 
 def get_obssysinfo_cache(existdb=None, update=False):
@@ -1802,6 +1803,41 @@ def get_rawfile_from_id(rawfile_id, existdb=None, verify_md5=True):
     return fullpath
 
 
+def get_rawfile_info(rawfile_id, existdb=None):
+    """Get and return a dictionary of rawfile info for the
+        given rawfile_id.
+
+        Input:
+            rawfile_id: The ID number of the rawfile entry to get info about.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Output:
+            rawfile_info: A dictionary-like object of info.
+    """
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existdb or database.Database()
+    db.connect()
+    
+    select = db.select([db.rawfiles.c.filename, \
+                        db.rawfiles.c.filepath, \
+                        db.rawfiles.c.md5sum, \
+                        db.rawfiles.c.pulsar_id, \
+                        db.rawfiles.c.obsystem_id]).\
+                where(db.rawfiles.c.rawfile_id==rawfile_id)
+    result = db.execute(select)
+    rows = result.fetchall()
+    result.close()
+    if not existdb:
+        # Close the DB connection we opened
+        db.close()
+
+    if len(rows) != 1:
+        raise errors.InconsistentDatabaseError("Bad number of rawfiles " \
+                                "(%d) with ID=%d!" % (len(rows), rawfile_id))
+    return rows[0]
+
+
 def parse_pat_output(patout):
     """Parse the output from 'pat'.
         
@@ -1856,15 +1892,12 @@ def parse_pat_output(patout):
     return toainfo
 
 
-def load_toas(toainfo, process_id, template_id, rawfile_id, existdb=None):
+def load_toas(toainfo, existdb=None):
     """Upload a TOA to the database.
 
         Inputs:
             toainfo: A list of dictionaries, each with
                 information for a TOA.
-            process_id: The ID of the processing run that generated the TOA.
-            template_id: The ID of the template used for generating the TOA.
-            rawfile_id: The ID of the raw data file the TOA is derived from.
             existdb: A (optional) existing database connection object.
                 (Default: Establish a db connection)
 
@@ -1877,46 +1910,20 @@ def load_toas(toainfo, process_id, template_id, rawfile_id, existdb=None):
     # Use the exisitng DB connection, or open a new one if None was provided
     db = existdb or database.Database()
     db.connect()
-    
     db.begin() # Open a transaction
-    select = db.select([db.rawfiles.c.pulsar_id, \
-                        db.rawfiles.c.obssystem_id]).\
-                where(db.rawfiles.c.rawfile_id==rawfile_id)
-    result = db.execute(select)
-    rows = result.fetchall()
-    result.close()
     
-    if len(rows) > 1:
-        db.rollback()
-        raise errors.InconsistentDatabaseError("Too many (%d) matches " \
-                                "for rawfile_id=%d." % (len(rows), rawfile_id))
-    elif len(rows) == 0:
-        db.rollback()
-        raise errors.BadInputError("Weird! rawfile_id=%d has no matches " \
-                                "in DB. How is it being used to generate " \
-                                "TOAs? Wrong value passed to function?" % \
-                                rawfile_id)
+    # Write values to the toa table
+    ins = db.toas.insert()
+    toa_ids = []
+    for values in toainfo:
+        result = db.execute(ins, values)
+        toa_ids.append(result.inserted_primary_key[0])
+        result.close()
+    db.commit()
+    if len(toa_ids) > 1:
+        print_info("Added %d TOAs to DB." % len(toa_ids), 2)
     else:
-        pulsar_id = rows[0]['pulsar_id']
-        obssystem_id = rows[0]['obssystem_id']
-        # Writes values to the toa table
-        ins = db.toas.insert()
-        idinfo = {'process_id':process_id, \
-                  'template_id':template_id, \
-                  'rawfile_id':rawfile_id, \
-                  'pulsar_id':pulsar_id, \
-                  'obssystem_id':obssystem_id}
-        toa_ids = []
-        for values in toainfo:
-            values.update(idinfo)
-            result = db.execute(ins, values)
-            toa_ids.append(result.inserted_primary_key[0])
-            result.close()
-        db.commit()
-        if len(toa_ids) > 1:
-            print_info("Added (%d) TOAs to DB." % len(toa_ids), 2)
-        else:
-            print_info("Added TOA to DB.", 2)
+        print_info("Added TOA to DB.", 2)
     
     if not existdb:
         # Close the DB connection we opened
