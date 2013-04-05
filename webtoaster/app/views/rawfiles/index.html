@@ -8,25 +8,28 @@
 
 {% block content %}
 
-<h2>Listing Raw files <button class='btn btn-success' onclick="window.location='/webtoaster/rawfiles/new'">+&nbspUpload</button> </h2>
-
+<legend>Listing Raw files <button class='btn btn-success' onclick="window.location='/webtoaster/rawfiles/new'">+&nbspUpload</button> </legend>
+<!-- 
+   'add_time', 'backend', 'band_descriptor', 'bw', 'clock', 'dm', 'email_address', 'filename', 'filepath', 'filesize', 'freq', 'frontend', 'length', 'mjd', 'nbin', 'nchan', 'npol', 'nsub', 'obssystem', 'obssystem_id', 'pulsar_name', 'rawfile_id', 'real_name', 'replacement_rawfile_id', 'telescope_name'
+ -->
 {% if rawfiles != list %}
   <table class="table table-bordered" id="pulsars_table">
     <tr>
       <th>File Name</th>
-      <th>MPAR Id</th>
-      <th>Pulsar</th>
+      <th>Front-End</th>
+      <th>Back-End</th>
       <th>Added On</th>
       <th></th>
     </tr>
     {% for rawfile in rawfiles %}
       <tr>
-        <td>{{rawfile.filename}}</td>
-        <td>{{rawfile.mparid}}</td>       
-        <td><a href="/webtoaster/pulsars/{{parfile.pulsar_id}}">{{rawfile.pulsar_name}}</a></td>
+        <td><a href="/webtoaster/rawfiles/{{rawfile.rawfile_id}}/download" >{{rawfile.filename}} </a></td>
+        <td>{{rawfile.backend}}</td>       
+        <td>{{rawfile.frontend}}</td>
         <td>{{rawfile.add_time}}</td>
         <td>
-          <button type="button" class="btn btn-danger" onclick="delete_file({{rawfile.rawfile_id}}, '{{rawfile.filename}}');"> Delete </button>
+          <button type="button" class="btn btn-info" onclick="location.href='/webtoaster/rawfiles/{{rawfile.rawfile_id}}/'"> Details </button>
+          <!--<button type="button" class="btn btn-danger" onclick="delete_file({{rawfile.rawfile_id}}, '{{rawfile.filename}}');"> Delete </button>-->
           <div class="confirmmodalcontainer"></div>
         </td>
       </tr>
@@ -36,10 +39,10 @@
 <script>
   function delete_file(id, name){
     $('.confirmmodalcontainer').confirmModal({
-      heading:'Deleting Parfile',
+      heading:'Deleting Raw file',
       body:'<p class="text-error">Please confirm that you want to delete '+name+'</p>',
       callback: function() {
-        window.location = "/webtoaster/templates/"+id+"/destroy?after=/webtoaster/templates";
+        window.location = "/webtoaster/rawfiles/"+id+"/destroy?after=/webtoaster/rawfiles";
        }
     });
   }

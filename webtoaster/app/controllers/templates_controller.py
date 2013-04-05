@@ -36,6 +36,15 @@ def index(request):
     })
   return HttpResponse(t.render(c))
 
+def show(request, template_id):
+  template_id = int( template_id )
+  template = Templates.show( template_id=template_id)[0]
+  t = loader.get_template('templates/show.html')
+  c = RequestContext(request, {
+    'template': template,
+    })
+  return HttpResponse(t.render(c))
+
 def new(request):
   import os
   if request.method == 'POST' and request.FILES.get('templatefile'):
@@ -60,11 +69,10 @@ def new(request):
   c.update(csrf(request))
   return HttpResponse(t.render(c))
 
-def destroy(request, parfile_id):
-  parfile_id = int( parfile_id )
-  
-  try:
-    response = Templates.destroy( parfile_id )
+def destroy(request, template_id):
+  template_id = int( template_id )
+  try:    
+    response = Templates.destroy( template_id )
     request.session['flash'] = { 'type': 'success', 'message': 'Template file was deleted.'}
   except Exception as e:
     request.session['flash'] = { 'type': 'error', 'message': 'Toaster produced an error while deleting Template file. Message: %s' % str(e) }

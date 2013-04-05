@@ -18,7 +18,6 @@ div#app-header div#title {
 
 
 div#messages {
-	height: 40px;
 	margin-top: 10px;
   z-index: 100;
 }

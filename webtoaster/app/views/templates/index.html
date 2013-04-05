@@ -8,25 +8,39 @@
 
 {% block content %}
 
-<h2>Listing Template files <button class='btn btn-success' onclick="window.location='/webtoaster/templates/new'">+&nbspUpload</button> </h2>
+<legend>Listing Template files <button class='btn btn-success' onclick="window.location='/webtoaster/templates/new'">+&nbspUpload</button> </legend>
 
-{% if parfiles != list %}
+{% if templates != list %}
   <table class="table table-bordered" id="pulsars_table">
     <tr>
-      <th>File Name</th>
-      <th>MPAR Id</th>
       <th>Pulsar</th>
+      <th>Master</th>
+      <th>Telescope</th>
+      <th>Front-End</th>
+      <th>Back-End</th>
       <th>Added On</th>
       <th></th>
     </tr>
-    {% for parfile in parfiles %}
-      <tr>
-        <td>{{parfile.filename}}</td>
-        <td>{{parfile.mparid}}</td>       
-        <td><a href="/webtoaster/pulsars/{{parfile.pulsar_id}}">{{parfile.pulsar_name}}</a></td>
-        <td>{{parfile.add_time}}</td>
+    {% for template in templates %}
+      <tr>       
+        <td>{{template.pulsar_name}}</td>
+        <td>{% if template.mtempid == None %}
+              Not Set
+            {% else %}
+              {% if template.mtempid == 1 %}
+                Yes
+              {% else %}
+                No
+              {% endif %}
+            {% endif%}
+        </td>
+        <td>{{template.telescope_name}}</td>
+        <td>{{template.frontend}}</td>
+        <td>{{template.backend}}</td>
+        <td>{{template.add_time}}</td>
         <td>
-          <button type="button" class="btn btn-danger" onclick="delete_file({{parfile.parfile_id}}, '{{parfile.filename}}');"> Delete </button>
+          <button type="button" class="btn btn-info" onclick="location.href='/webtoaster/templates/{{template.template_id}}/'"> Details </button>
+          <!--<button type="button" class="btn btn-danger" onclick="delete_file({{template.template_id}}, '{{template.filename}}');"> Delete </button>-->
           <div class="confirmmodalcontainer"></div>
         </td>
       </tr>
@@ -36,7 +50,7 @@
 <script>
   function delete_file(id, name){
     $('.confirmmodalcontainer').confirmModal({
-      heading:'Deleting Parfile',
+      heading:'Deleting Template',
       body:'<p class="text-error">Please confirm that you want to delete '+name+'</p>',
       callback: function() {
         window.location = "/webtoaster/templates/"+id+"/destroy?after=/webtoaster/templates";
