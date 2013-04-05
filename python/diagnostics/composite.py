@@ -49,7 +49,7 @@ class CompositePlotDiagnostic(base.PlotDiagnostic):
 
     def __plot_profonly(self, tmpfn, params):
         info = self.__get_info(params)
-        utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' %s -D %s/PNG " \
+        utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' '%s' -D %s/PNG " \
                         "-p flux -c ':0:x:view=0.075:0.95," \
                                        "y:view=0.15:0.7," \
                                        "subint=I," \
@@ -61,7 +61,7 @@ class CompositePlotDiagnostic(base.PlotDiagnostic):
         
     def __plot_nofreq(self, tmpfn, params):
         info = self.__get_info(params)
-        utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' %s -D %s/PNG " \
+        utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' '%s' -D %s/PNG " \
                         "-p flux -c ':0:x:view=0.075:0.95," \
                                        "y:view=0.5:0.7," \
                                        "subint=I," \
@@ -80,7 +80,7 @@ class CompositePlotDiagnostic(base.PlotDiagnostic):
         
     def __plot_notime(self, tmpfn, params):
         info = self.__get_info(params)
-        utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' %s -D %s/PNG " \
+        utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' '%s' -D %s/PNG " \
                         "-p flux -c ':0:x:view=0.075:0.95," \
                                        "y:view=0.5:0.7," \
                                        "subint=I," \
@@ -99,7 +99,7 @@ class CompositePlotDiagnostic(base.PlotDiagnostic):
         
     def __plot_all(self, tmpfn, params):
         info = self.__get_info(params)
-        utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' %s -D %s/PNG " \
+        utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' '%s' -D %s/PNG " \
                         "-p flux -c ':0:x:view=0.575:0.95," \
                                        "y:view=0.7:0.9," \
                                        "subint=I," \
