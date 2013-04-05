@@ -3,6 +3,7 @@ import os.path
 import traceback
 import copy
 import shlex
+import sys
 
 import utils
 import database

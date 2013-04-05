@@ -13,6 +13,7 @@ import database
 import errors
 
 toolkit = ['comment_toa', \
+           'load_toa', \
           ]
 
 

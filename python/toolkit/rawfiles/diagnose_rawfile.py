@@ -8,6 +8,7 @@ import os.path
 import argparse
 import textwrap
 import sys
+import shlex
 
 import utils
 import errors
@@ -40,11 +41,7 @@ def add_arguments(parser):
     diaggroup.add_argument('--value', dest='value', type=float, \
                         default=None, \
                         help="Diagnostic (floating-point) value to upload.")
-    parser.add_argument('--from-file', dest='from_file', \
-                        type=str, default=None, \
-                        help="A list of diagnostics (one per line) to " \
-                            "load. (Default: load a diagnostic provided " \
-                            "on the cmd line.)")
+
 
 class ListDiagnosticsAction(argparse.Action):
     def __call__(self, parser, namespace, values, option_string):

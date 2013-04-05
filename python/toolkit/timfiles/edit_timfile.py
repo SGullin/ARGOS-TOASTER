@@ -158,9 +158,6 @@ def __update_comments(timfile_id, comments, existdb=None):
         Outputs:
             None
     """
-    if (comments is None) and (not toas_to_add) and (not toas_to_remove):
-        errors.BadInputError("No edits provided. Please either provide " \
-                    "a comment, TOAs to add, or TOAs to remove.")
     if comments is not None and not comments:
         errors.BadInputError("The timfile's comment cannot be blank.")
     
