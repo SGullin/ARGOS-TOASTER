@@ -83,3 +83,21 @@ def destroy(request, template_id):
     redirect_url = '/webtoaster/templates'
 
   return redirect( redirect_url )
+
+def download(request, template_id):
+  from django.http import HttpResponse
+  from django.core.servers.basehttp import FileWrapper
+  import os 
+  template = Templates.show(template_id=int(template_id) )[0]
+
+  file_name = template.filename
+  file_path = os.path.join(template.filepath, template.filename)
+  try:
+    myfile = file(os.path.join(template.filepath, template.filename) )
+  except:
+    request.session['flash'] = { 'type': 'error', 'message': "Could not open the requested file: %s" % file_path}
+    return redirect( '/webtoaster/templates' )
+
+  response = HttpResponse(myfile, content_type='application/std')
+  response['Content-Disposition'] = "attachment; filename=%s" % file_name
+  return response
