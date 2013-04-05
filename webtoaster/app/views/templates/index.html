@@ -8,7 +8,7 @@
 
 {% block content %}
 
-<h2>Listing Template files <button class='btn btn-success' onclick="window.location='/webtoaster/templates/new'">+&nbspUpload</button> </h2>
+<legend>Listing Template files <button class='btn btn-success' onclick="window.location='/webtoaster/templates/new'">+&nbspUpload</button> </legend>
 
 {% if templates != list %}
   <table class="table table-bordered" id="pulsars_table">
@@ -40,7 +40,7 @@
         <td>{{template.add_time}}</td>
         <td>
           <button type="button" class="btn btn-info" onclick="location.href='/webtoaster/templates/{{template.template_id}}/'"> Details </button>
-          <button type="button" class="btn btn-danger" onclick="delete_file({{template.template_id}}, '{{template.filename}}');"> Delete </button>
+          <!--<button type="button" class="btn btn-danger" onclick="delete_file({{template.template_id}}, '{{template.filename}}');"> Delete </button>-->
           <div class="confirmmodalcontainer"></div>
         </td>
       </tr>

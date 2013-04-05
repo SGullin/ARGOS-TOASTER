@@ -44,6 +44,8 @@ urlpatterns = patterns('',
     (r'^templates/new/?$','app.controllers.templates_controller.new'),
 
     (r'^rawfiles/?$','app.controllers.rawfiles_controller.index'),
+    (r'^rawfiles/(?P<rawfile_id>\d+)/?$','app.controllers.rawfiles_controller.show'),
+    (r'^rawfiles/(?P<rawfile_id>\d+)/download/?$','app.controllers.rawfiles_controller.download'),
     (r'^rawfiles/(?P<rawfile_id>\d+)/destroy/?$','app.controllers.rawfiles_controller.destroy'),
     (r'^rawfiles/new/?$','app.controllers.rawfiles_controller.new'),
 

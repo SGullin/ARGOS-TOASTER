@@ -20,6 +20,7 @@ from toolkit.templates.load_template import load_template
 
 from toolkit.rawfiles.load_rawfile import load_rawfile
 from toolkit.rawfiles.get_rawfile_id import get_rawfiles
+from toolkit.rawfiles.get_rawfile_id import add_arguments as raw_files_add_arguments
 
 from toolkit.templates.remove_template import remove_template_entry
 
@@ -162,10 +163,13 @@ class Templates:
 
 class RawFiles:
   @classmethod
-  def show(cls):
+  def show(cls, rawfile_id=None):
     parser = utils.DefaultArguments(description='DESCRIPTION')
-    add_arguments(parser)
-    args = parser.parse_args()
+    raw_files_add_arguments(parser)
+    if rawfile_id:
+       args = parser.parse_args( [ '--rawfile-id', "%s" % rawfile_id ] )
+    else:
+      args = parser.parse_args()
     rawfiles = get_rawfiles(args)
     print rawfiles
     return rawfiles
@@ -179,7 +183,7 @@ class RawFiles:
     return response
 
   @classmethod
-  def destroy(cls, parfile_id):
+  def destroy(cls, rawfile_id):
     def my_function():
       return username;
     utils.get_current_username = my_function

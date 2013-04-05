@@ -32,6 +32,15 @@ def index(request):
     })
   return HttpResponse(t.render(c))
 
+def show(request, rawfile_id):
+  rawfile_id = int( rawfile_id )
+  rawfile = RawFiles.show( rawfile_id=rawfile_id)[0]
+  t = loader.get_template('rawfiles/show.html')
+  c = RequestContext(request, {
+    'rawfile': rawfile,
+    })
+  return HttpResponse(t.render(c))
+
 def new(request):
   import os
   if request.method == 'POST' and request.FILES.get('rawfile'):
@@ -71,3 +80,21 @@ def destroy(request, rawfile_id):
     redirect_url = '/webtoaster/rawfiles'
 
   return redirect( redirect_url )
+
+def download(request, rawfile_id):
+  from django.http import HttpResponse
+  from django.core.servers.basehttp import FileWrapper
+  import os 
+  rawfile = RawFiles.show(rawfile_id=int(rawfile_id) )[0]
+
+  file_name = rawfile.filename
+  file_path = os.path.join(rawfile.filepath, rawfile.filename)
+  try:
+    myfile = file(os.path.join(rawfile.filepath, rawfile.filename) )
+  except:
+    request.session['flash'] = { 'type': 'error', 'message': "Could not open the requested file: %s" % file_path}
+    return redirect( '/webtoaster/rawfiles' )
+
+  response = HttpResponse(myfile, content_type='application/F64')
+  response['Content-Disposition'] = "attachment; filename=%s" % file_name
+  return response
