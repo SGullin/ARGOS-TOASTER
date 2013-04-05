@@ -1737,6 +1737,43 @@ def set_as_master_template(template_id, existdb=None):
             db.close()
 
 
+def get_rawfile_diagnostics(rawfile_id, existdb=None):
+    """Given a rawfile ID number return information about the 
+        diagnostics.
+
+        Inputs:
+            rawfile_id: The ID number of the raw file to get
+                a path for.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Output:
+            float_diagnostics: A list of floating-point valued diagnostic info.
+            plot_diagnostics: A list of plot diagnostic info.
+    """
+    db = existdb or database.Database()
+    db.connect()
+    
+    select = db.select([db.raw_diagnostics.c.type, \
+                        db.raw_diagnostics.c.value]).\
+                where(db.raw_diagnostics.c.rawfile_id == \
+                            rawfile_id)
+    result = db.execute(select)
+    diags = result.fetchall()
+    result.close()
+    select = db.select([db.raw_diagnostic_plots.c.plot_type, \
+                        db.raw_diagnostic_plots.c.filepath, \
+                        db.raw_diagnostic_plots.c.filename]).\
+                where(db.raw_diagnostic_plots.c.rawfile_id == \
+                            rawfile_id)
+    result = db.execute(select)
+    diag_plots = result.fetchall()
+    result.close()
+    if not existdb:
+        db.close()
+    return diags, diag_plots
+
+
 def get_rawfile_from_id(rawfile_id, existdb=None, verify_md5=True):
     """Return the path to the raw file that has the given ID number.
         Optionally double check the file's MD5 sum, to make sure
