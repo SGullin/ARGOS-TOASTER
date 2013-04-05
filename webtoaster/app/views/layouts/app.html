@@ -5,9 +5,9 @@
         <meta http-equiv="expires" content="0"> <!-- says that the cache expires 'now' -->
         <meta http-equiv="pragma" content="no-cache"> <!-- says not to use cached stuff, if there is any -->
         
-        <link href="/webtoaster/media/css/base.css?111111111" media="screen" rel="stylesheet" type="screen" />
-        <link href="/webtoaster/media/css/bootstrap/bootstrap.min.css" rel="stylesheet" media="screen">        
-        <link href="/webtoaster/media/css/style.css?111111111" media="screen" rel="stylesheet" type="screen" />
+        <link href="/webtoaster/media/css/base.css?111111111" media="screen" rel="stylesheet" />
+        <link href="/webtoaster/media/css/bootstrap/bootstrap.min.css" rel="stylesheet" media="screen"/>        
+        <link href="/webtoaster/media/css/style.css?111111111" media="screen" rel="stylesheet" />
         {% block css %}
         {% endblock %}
         <script type="text/javascript" src="/webtoaster/media/js/jquery-latest.min.js"></script> 
@@ -86,7 +86,7 @@
                 </div>
             </div>
             <div class="row">
-                <div class="content-container span12">
+                <div class="content-container span">
          	      {% block content %}{% endblock %}
                 </div>
             </div>
