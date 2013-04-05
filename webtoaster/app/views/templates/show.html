@@ -2,27 +2,7 @@
 
 {% block content %}
 
-<div class="navbar">
-  <div class="navbar-inner">
-    <a class="brand" href="">{{template.filename}}:</a>
-    <!--<ul class="nav">
-      <li class="dropdown"> 
-        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tims <b class="caret"></b></a>
-          <ul class="dropdown-menu">
-            <li><a href="#">Upload</a></li>
-            <li><a href="#">View Master TOAs</a></li>
-            <!--
-            <li class="divider"></li>
-            <li class="nav-header">Nav header</li>
-            <li><a href="#">Separated link</a></li>
-            <li><a href="#">One more separated link</a></li>
-            
-          </ul>-->
-      </li>
-    </ul>
-  </div>
-</div>
-
+<legend>{{template.filename}} &nbsp&nbsp <button type="button" class="btn btn-info" onclick="location.href='/webtoaster/templates/{{template.template_id}}/download'"> Download </button></legend>
 <!-- 
   'add_time', 'backend', 'clock', 'comments', 'email_address', 'filename', 'filepath', 'frontend', 'mtempid', 'nbin', 'obssys_name', 'obssystem_id', 'pulsar_name', 'real_name', 'telescope_name', 'template_id'
 -->
