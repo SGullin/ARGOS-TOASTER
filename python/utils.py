@@ -600,7 +600,7 @@ def get_header_vals(fn, hdritems):
     if '=' in hdrstr:
         raise ValueError("'hdritems' passed to 'get_header_vals' " \
                          "should not perform and assignments!")
-    cmd = "vap -n -c '%s' '%s'" % (hdrstr, fn)
+    cmd = "/bin/bash -l -c vap -n -c '%s' '%s'" % (hdrstr, fn)
     outstr, errstr = execute(cmd)
     outvals = outstr.split()[(0-len(hdritems)):] # First value is filename (we don't need it)
     if errstr:
