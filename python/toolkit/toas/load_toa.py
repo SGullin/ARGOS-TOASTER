@@ -103,7 +103,7 @@ def __parse_timfile(timfn, reader=readers.tempo2_reader, \
         line = line.strip()
         if line.startswith("INCLUDE"):
             # Recursively parse included files
-            toas.extend(parse_timfile(line.split()[1], reader=reader, \
+            toas.extend(__parse_timfile(line.split()[1], reader=reader, \
                             **obssys_discovery_kwargs))
         try:
             toainfo = reader(line)
