@@ -107,15 +107,15 @@ def __parse_timfile(timfn, reader=readers.tempo2_reader, \
                             **obssys_discovery_kwargs))
         try:
             toainfo = reader(line)
+            if toainfo is not None:
+                toainfo['obssystem_id'] = __determine_obssystem(toainfo, \
+                                                **obssys_discovery_kwargs)
+                toas.append(toainfo)
         except Exception, e:
             raise errors.BadTOAFormat("Error occurred while parsing " \
                                     "TOA line (%s:%d):\n    %s\n\n" \
                                     "Original exception message:\n    %s" % \
                                     (timfn, ii+1, line, str(e)))
-        if toainfo is not None:
-            toainfo['obssystem_id'] = __determine_obssystem(toainfo, \
-                                            **obssys_discovery_kwargs)
-            toas.append(toainfo)
     utils.print_info("Finished parsing timfile (%s). Read %d TOAs." % \
                         (timfn, len(toas)), 2)
     return toas
