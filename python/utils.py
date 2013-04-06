@@ -1953,9 +1953,14 @@ def load_toas(toainfo, existdb=None):
     ins = db.toas.insert()
     toa_ids = []
     for values in toainfo:
+        if 'toa_id' in values:
+            raise errors.BadTOAFormat("TOA has already been loaded? " \
+                                    "TOA ID: %d" % values['toa_id']) 
         result = db.execute(ins, values)
-        toa_ids.append(result.inserted_primary_key[0])
+        toa_id = result.inserted_primary_key[0]
         result.close()
+        toa_ids.append(toa_id)
+        values['toa_id'] = toa_id
     db.commit()
     if len(toa_ids) > 1:
         print_info("Added %d TOAs to DB." % len(toa_ids), 2)

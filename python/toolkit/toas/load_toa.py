@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import os.path
+import types
 
 import utils
 import errors
@@ -68,7 +69,8 @@ def add_arguments(parser):
                             'the obssystem name (see --obssystem-flag)')
 
 
-def parse_timfile(timfn, reader=readers.tempo2_reader, **obssys_discovery_kwargs):
+def __parse_timfile(timfn, reader=readers.tempo2_reader, \
+                    **obssys_discovery_kwargs):
     """Read the input timfile and parse the TOAs contained.
 
         Inputs:
@@ -87,6 +89,13 @@ def parse_timfile(timfn, reader=readers.tempo2_reader, **obssys_discovery_kwargs
     if not os.path.exists(timfn):
         raise errors.FileError("The input timfile (%s) does not " \
                         "appear to exist." % timfn)
+    if type(reader) is types.StringType:
+        # Assume reader is actually the name of the reader.
+        if reader not in READERS:
+            raise errors.UnrecognizedValueError("Requested reader (%s) is " \
+                        "not recognized!" % reader)
+        else:
+            reader = READERS[reader]
     utils.print_info("Starting to parse timfile (%s)" % timfn, 2)
     toas = []
     timfile = open(timfn, 'r')
@@ -102,16 +111,17 @@ def parse_timfile(timfn, reader=readers.tempo2_reader, **obssys_discovery_kwargs
             raise errors.BadTOAFormat("Error occurred while parsing " \
                                     "TOA line (%s:%d):\n    %s\n\n" \
                                     "Original exception message:\n    %s" % \
-                                    (timfn, ii, line, str(e)))
+                                    (timfn, ii+1, line, str(e)))
         if toainfo is not None:
-            toainfo['obssystem_id'] = determine_obssystem(toainfo, **obssys_discovery_kwargs)
+            toainfo['obssystem_id'] = __determine_obssystem(toainfo, \
+                                            **obssys_discovery_kwargs)
             toas.append(toainfo)
     utils.print_info("Finished parsing timfile (%s). Read %d TOAs." % \
                         (timfn, len(toas)), 2)
     return toas
 
 
-def determine_obssystem(toainfo, obssystem_name=None, obssystem_flags=[], \
+def __determine_obssystem(toainfo, obssystem_name=None, obssystem_flags=[], \
                                  frontend_name=None, frontend_flags=[], \
                                  backend_name=None, backend_flags=[]):
     """Given a TOA determine its observing system, either
@@ -165,7 +175,7 @@ def determine_obssystem(toainfo, obssystem_name=None, obssystem_flags=[], \
     else:
         raise errors.BadTOAFormat("Too many obssystem flags match " \
                             "TOA line (%s:%d):\n    %s" % \
-                            (timfn, ii, line))
+                            (timfn, ii+1, line))
     # Check consistency with telescope code
     if obssysname is not None:
         obssysid = utils.get_obssysid(obssysname)
@@ -173,7 +183,7 @@ def determine_obssystem(toainfo, obssystem_name=None, obssystem_flags=[], \
         if toainfo['telescope_id'] != obssysinfo['telescope_id']:
             raise errors.BadTOAFormat("Telescope from obs code doesn't "
                                     "match observing system! TOA line " \
-                                    "(%s:%d):\n    %s" % (timfn, ii, line))
+                                    "(%s:%d):\n    %s" % (timfn, ii+1, line))
 
     # Now use frontend/backend/telescope
     # Get frontend
@@ -185,12 +195,12 @@ def determine_obssystem(toainfo, obssystem_name=None, obssystem_flags=[], \
     else:
         raise errors.BadTOAFormat("Too many frontend flags match " \
                             "TOA line (%s:%d):\n    %s" % \
-                            (timfn, ii, line))
+                            (timfn, ii+1, line))
     if (fename is not None) and (obssysname is not None):
         if fename != obssysinfo['frontend']:
             raise errors.BadTOAFormat("Frontend from flag doesn't match " \
                                     "observing system! TOA line " \
-                                    "(%s:%d):\n    %d" % (timfn, ii, line))
+                                    "(%s:%d):\n    %d" % (timfn, ii+1, line))
     # Get backend
     matching_keys = [key for key in toainfo['flags'] if key in backend_flags]
     if len(matching_keys) == 1:
@@ -200,16 +210,44 @@ def determine_obssystem(toainfo, obssystem_name=None, obssystem_flags=[], \
     else:
         raise errors.BadTOAFormat("Too many backend flags match " \
                             "TOA line (%s:%d):\n    %s" % \
-                            (timfn, ii, line))
+                            (timfn, ii+1, line))
     if (bename is not None) and (obssysname is not None):
         if bename != obssysinfo['backend']:
             raise errors.BadTOAFormat("Backend from flag doesn't match " \
                                     "observing system! TOA line " \
-                                    "(%s:%d):\n    %d" % (timfn, ii, line))
+                                    "(%s:%d):\n    %d" % (timfn, ii+1, line))
 
     if (bename is not None) and (fename is not None):
         obssysid = utils.get_obssysid((toainfo['telescope'], fename, bename))
     return obssysid
+
+
+def load_from_timfile(timfile, pulsar_id, reader='tempo2', \
+                        **obssystem_discovery_args):
+    """Load TOAs from a timfile.
+
+        Inputs:
+            timfile: The timfile to parse TOAs out of.
+            pulsar_id: The ID number of the pulsar the
+                TOAs belong to.
+            reader: The reader function to use, or the
+                key from the READERS dictionary corresponding
+                to the function to use.
+            
+            ** Additional keyword arguments are directly passed on 
+                to determine_obssystem(...) for observing system 
+                discovery **
+
+        Outputs:
+            toas: The TOAs that were loaded into the DB.
+    """
+    # Parse input file
+    toas = __parse_timfile(timfile, reader=reader, \
+                            **obssystem_discovery_args)
+    for ti in toas:
+        ti['pulsar_id'] = pulsar_id
+    utils.load_toas(toas)
+    return toas
 
 
 def main(args):
@@ -220,7 +258,6 @@ def main(args):
                         "'%s' is not recognized. Available formats: '%s'." % \
                         (args.format, "', '".join(sorted(READERS.keys()))))
     pulsar_id = utils.get_pulsarid(args.pulsar_name)
-    reader = READERS[args.format]
    
     obssystem_discovery_args = {'obssystem_name':args.obssystem, \
                                 'obssystem_flags':args.obssystem_flags, \
@@ -229,16 +266,16 @@ def main(args):
                                 'frontend_name':args.frontend, \
                                 'frontend_flags':args.frontend_flags}
 
-    # Parse input file
-    toas = parse_timfile(args.timfile, reader=reader, \
-                            **obssystem_discovery_args)
     if args.dry_run:
-        print len(toas)
+        # Parse input file
+        toas = __parse_timfile(args.timfile, reader=args.format, \
+                                **obssystem_discovery_args)
+        print "%d TOAs parsed" % len(toas)
     else:
-        for ti in toas:
-            ti['pulsar_id'] = pulsar_id
-        utils.load_toas(toas)
-
+        load_from_timfile(args.timfile, pulsar_id=pulsar_id, \
+                                reader=args.format, \
+                                **obssystem_discovery_args)
+        
 
 if __name__=='__main__':
     parser = utils.DefaultArguments(description=DESCRIPTION)
