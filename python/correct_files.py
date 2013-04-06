@@ -69,7 +69,7 @@ def main():
       
         # Correct receiver
         if (args.receiver is not None) and \
-                (args.force or (params['rcvr'] == args.old_receiver)):
+                (args.force or (params['rcvr'].lower() == args.old_receiver.lower())):
             new_receiver = args.receiver
             print "    rcvr -- %s -> %s" % (params['rcvr'], args.receiver)
         else:
@@ -77,7 +77,7 @@ def main():
         
         # Correct backend
         if (args.backend is not None) and \
-                (args.force or (params['backend'] == args.old_backend)):
+                (args.force or (params['backend'].lower() == args.old_backend.lower())):
             new_backend = args.backend
             print "    backend -- %s -> %s" % (params['backend'], args.backend)
         else:
