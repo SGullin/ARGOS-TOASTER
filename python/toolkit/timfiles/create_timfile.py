@@ -88,6 +88,7 @@ def toa_select(args, existdb=None):
             select: The SQLAlchemy select construct.
     """
     db = existdb or database.Database()
+    db.connect()
     whereclause = db.pulsar_aliases.c.pulsar_alias.like(args.pulsar_name)
     tmp = False
     for tel in args.telescopes:
