@@ -28,29 +28,29 @@ def strict_conflict_handler(toas):
             raise errors.ConflictingToasError("Rawfile (ID: %d) has been " \
                     "replaced (by rawfile_id=%d)!" % \
                     (toa['rawfile_id'], toa['replacement_rawfile_id']))
-        if toa['process_id'] is not None:
-            rawfile_ids.setdefault(toa['rawfile_id'], set()).\
-                                    add(toa['process_id'])
-        if toa['template_id'] is not None:
-            obssystem_ids.setdefault(toa['obssystem_id'], set()).\
-                                    add(toa['template_id'])
-        if toa['parfile_id'] is not None:
-            pulsar_ids.setdefault(toa['pulsar_id'], set()).\
-                                    add(toa['parfile_id'])
+        rawfile_ids.setdefault(toa['rawfile_id'], set()).\
+                                add(toa['process_id'])
+        obssystem_ids.setdefault(toa['obssystem_id'], set()).\
+                                add(toa['template_id'])
+        pulsar_ids.setdefault(toa['pulsar_id'], set()).\
+                                add(toa['parfile_id'])
     # Respond to any conflicts
     if len(pulsar_ids) > 1:
         raise errors.ConflictingToasError("All TOAs must be for the same " \
                                 "pulsar!")
-    for procids in rawfile_ids.values():
+    for procids in [procid for procid in rawfile_ids.values() \
+                                    if procid is not None]:
         if len(procids) > 1:
             raise errors.ConflictingToasError("Some TOAs come from the same " \
                                 "data file, but different processing jobs!")
-    for tempids in obssystem_ids.values():
+    for tempids in [tempid for tempid in obssystem_ids.values() \
+                                    if tempid is not None]:
         if len(tempids) > 1:
             raise errors.ConflictingToasError("Some TOAs are from the same " \
                                 "observing system, but have been generated " \
                                 "with different templates!")
-    for parids in pulsar_ids.values():
+    for parids in [parid for parid in pulsar_ids.values() \
+                                    if parid is not None]:
         if len(parids) > 1:
             raise errors.ConflictingToasError("Some TOAs are from the same " \
                                 "pulsar, but have a different ephemeris " \
@@ -80,29 +80,29 @@ def tolerant_conflict_handler(toas):
                     "rawfile_id=%d)!" % \
                     (toa['rawfile_id'], toa['replacement_rawfile_id']), \
                     errors.ToasterWarning)
-        if toa['process_id'] is not None:
-            rawfile_ids.setdefault(toa['rawfile_id'], set()).\
-                                    add(toa['process_id'])
-        if toa['template_id'] is not None:
-            obssystem_ids.setdefault(toa['obssystem_id'], set()).\
-                                    add(toa['template_id'])
-        if toa['parfile_id'] is not None:
-            pulsar_ids.setdefault(toa['pulsar_id'], set()).\
-                                    add(toa['parfile_id'])
+        rawfile_ids.setdefault(toa['rawfile_id'], set()).\
+                                add(toa['process_id'])
+        obssystem_ids.setdefault(toa['obssystem_id'], set()).\
+                                add(toa['template_id'])
+        pulsar_ids.setdefault(toa['pulsar_id'], set()).\
+                                add(toa['parfile_id'])
     # Respond to any conflicts
     if len(pulsar_ids) > 1:
         raise errors.ConflictingToasError("All TOAs must be for the same " \
                                 "pulsar!")
-    for procids in rawfile_ids.values():
+    for procids in [procid for procid in rawfile_ids.values() \
+                                    if procid is not None]:
         if len(procids) > 1:
             raise errors.ConflictingToasError("Some TOAs come from the same " \
                                 "data file, but different processing jobs!")
-    for tempids in obssystem_ids.values():
+    for tempids in [tempid for tempid in obssystem_ids.values() \
+                                    if tempid is not None]:
         if len(tempids) > 1:
             warnings.warn("Some TOAs are from the same observing " \
                           "system, but have been generated with " \
                           "different templates!", errors.ToasterWarning)
-    for parids in pulsar_ids.values():
+    for parids in [parid for parid in pulsar_ids.values() \
+                                    if parid is not None]:
         if len(parids) > 1:
             warnings.warn("Some TOAs are from the same " \
                           "pulsar, but have a different ephemeris " \

@@ -88,17 +88,18 @@ def toa_select(args, existdb=None):
             select: The SQLAlchemy select construct.
     """
     db = existdb or database.Database()
+    db.connect()
     whereclause = db.pulsar_aliases.c.pulsar_alias.like(args.pulsar_name)
-    tmp = False
-    for tel in args.telescopes:
-        tmp |= (db.telescope_aliases.c.telescope_name.like(tel))
-    if tmp:
+    if args.telescopes:
+        tmp = db.telescope_aliases.c.telescope_name.like(args.telescopes[0])
+        for tel in args.telescopes[1:]:
+            tmp |= db.telescope_aliases.c.telescope_name.like(tel)
         whereclause &= (tmp)
     
-    tmp = False
-    for be in args.backends:
-        tmp |= (db.obssystems.c.backend.like(be))
-    if tmp:
+    if args.backends:
+        tmp = db.obssystems.c.backend.like(args.backends[0])
+        for be in args.backends[1:]:
+            tmp |= (db.obssystems.c.backend.like(be))
         whereclause &= (tmp)
     
     if args.manipulators:
@@ -249,6 +250,13 @@ def add_timfile_entry(toas, cmdline, comments, existdb=None):
         Output:
             timfile_id: The resulting ID of the timfile entry.
     """
+    # Check for / handle conflicts
+    conflict_handler = CONFLICT_HANDLERS[args.on_conflict]
+    toas = conflict_handler(toas)
+    if not toas:
+        raise errors.ToasterError("No TOAs match criteria provided!") 
+    
+    # Connect to DB, if not using an already-established connection
     db = existdb or database.Database()
     db.connect()
 
@@ -311,12 +319,10 @@ def main(args):
     try:
         cmdline = " ".join(sys.argv)
         toas = get_toas(args, db)
-        # Check for / handle conflicts
-        conflict_handler = CONFLICT_HANDLERS[args.on_conflict]
-        toas = conflict_handler(toas)
-        if not toas:
-            raise errors.ToasterError("No TOAs match criteria provided!") 
         if config.debug.TIMFILE:
+            # Check for / handle conflicts
+            conflict_handler = CONFLICT_HANDLERS[args.on_conflict]
+            toas = conflict_handler(toas)
             wt.write_timfile(toas, {'comments': args.comments, \
                                     'user_id': utils.get_userid(), \
                                     'add_time': "Not in DB!", \

@@ -187,7 +187,7 @@ def get_toas(timfile_id, existdb=None):
     return rows
 
 
-def write_timfile(toas, timfile, sortkeys=['freq', 'mjd'], flags="", \
+def write_timfile(toas, timfile, sortkeys=['freq', 'mjd'], flags=[], \
                     outname="-", formatter=formatters.tempo2_formatter):
     """Write TOAs to a timfile.
         
@@ -196,8 +196,8 @@ def write_timfile(toas, timfile, sortkeys=['freq', 'mjd'], flags="", \
             timfile: Information about the timfile from the DB.
             flags: A single string containing flags to add to each TOA.
             sortkeys: A list of keys to sort TOAs by.
-            comments: A user comment describing the timfile.
-            outname: The output file's name.
+            outname: The output file's name. (Default: stdout)
+            formatter: A formatter function.
 
         Outputs:
             None
