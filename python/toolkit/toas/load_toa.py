@@ -80,8 +80,8 @@ def __parse_timfile(timfn, reader=readers.tempo2_reader, \
                 of TOA info. (Default: a Tempo2 TOA format reader)
             
             ** Additional keyword arguments are directly passed on 
-                to determine_obssystem(...) for observing system 
-                discovery **
+                to __determine_obssystem(...) for observing system 
+                discovery
 
         Output:
             toas: A list of TOA info dictionaries.
@@ -235,8 +235,8 @@ def load_from_timfile(timfile, pulsar_id, reader='tempo2', \
                 to the function to use.
             
             ** Additional keyword arguments are directly passed on 
-                to determine_obssystem(...) for observing system 
-                discovery **
+                to __determine_obssystem(...) for observing system 
+                discovery
 
         Outputs:
             toas: The TOAs that were loaded into the DB.
