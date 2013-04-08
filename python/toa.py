@@ -14,6 +14,7 @@ import errors
 
 toolkit = ['comment_toa', \
            'load_toa', \
+           'toa_overview', \
           ]
 
 
