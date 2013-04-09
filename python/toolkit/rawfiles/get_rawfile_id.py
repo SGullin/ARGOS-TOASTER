@@ -468,25 +468,7 @@ def show_rawfiles(rawfiles, sortkeys=['rawfile_id']):
                      "Integration time (s): %g" % rawdict.length]
             utils.print_info("\n".join(lines), 2)
         if config.cfg.verbosity >= 3:
-            # Get diagnostics
-            db = database.Database()
-            db.connect()
-            select = db.select([db.raw_diagnostics.c.type, \
-                                db.raw_diagnostics.c.value]).\
-                        where(db.raw_diagnostics.c.rawfile_id == \
-                                    rawdict.rawfile_id)
-            result = db.execute(select)
-            diags = result.fetchall()
-            result.close()
-            select = db.select([db.raw_diagnostic_plots.c.plot_type, \
-                                db.raw_diagnostic_plots.c.filepath, \
-                                db.raw_diagnostic_plots.c.filename]).\
-                        where(db.raw_diagnostic_plots.c.rawfile_id == \
-                                    rawdict.rawfile_id)
-            result = db.execute(select)
-            diag_plots = result.fetchall()
-            result.close()
-            db.close()
+            diags, diag_plots = utils.get_rawfile_diagnostics(rawdict.rawfile_id)
             lines = []
             if diags:
                 lines.append("Diagnostics:")

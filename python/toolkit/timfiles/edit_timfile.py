@@ -93,7 +93,7 @@ def verify_timfile(timfile_id, existdb=None):
     finally:
         if not existdb:
             db.close()
-
+    
 
 def __add_toas(timfile_id, toas_to_add, existdb=None):
     """Add TOAs to timfile.
@@ -158,7 +158,7 @@ def __update_comments(timfile_id, comments, existdb=None):
         Outputs:
             None
     """
-    if comments is not None and not comments:
+    if not comments:
         errors.BadInputError("The timfile's comment cannot be blank.")
     
     db = existdb or database.Database()
@@ -185,7 +185,7 @@ def edit_timfile(timfile_id, toas_to_add=[], toas_to_remove=[], \
                 add any TOAs.)
             toas_to_remove: List of toa_ids to remove. (Default: 
                 Don't remove any TOAs.)
-            comment: The timfile's new comment. (Default: Don't update
+            comments: The timfile's new comment. (Default: Don't update
                 the timfile's comment.)
             existdb: A (optional) existing database connection object.
                 (Default: Establish a db connection)
@@ -214,7 +214,8 @@ def edit_timfile(timfile_id, toas_to_add=[], toas_to_remove=[], \
             __remove_toas(timfile_id, toas_to_remove, existdb=db)
         if toas_to_add:
             __add_toas(timfile_id, toas_to_add, existdb=db)
-        __update_comments(timfile_id, comments, existdb=db)
+        if comments is not None:
+            __update_comments(timfile_id, comments, existdb=db)
         verify_timfile(timfile_id, existdb=db)
         touch_timfile(timfile_id, existdb=db)
     except:
