@@ -1,0 +1,23 @@
+{% extends 'layouts/app.html' %}
+{% load mytags %}
+
+{% block css %}
+<link href="/webtoaster/media/css/bootstrap/bootstrap-fileupload.min.css?111111111" media="screen" rel="stylesheet" type="screen" />
+{% endblock %}
+{% block js %}
+<script src="/webtoaster/media/js/bootstrap/bootstrap-fileupload.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<legend>
+  Viewing {{filename}}
+</legend>
+
+<pre>
+  {{filecontent}}
+</pre>
+
+
+{% endblock %}
+

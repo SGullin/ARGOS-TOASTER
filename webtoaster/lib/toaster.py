@@ -23,6 +23,7 @@ from toolkit.rawfiles.get_rawfile_id import get_rawfiles
 from toolkit.rawfiles.get_rawfile_id import add_arguments as raw_files_add_arguments
 
 from toolkit.templates.remove_template import remove_template_entry
+from toolkit.toas.load_toa import load_from_timfile
 
 from add_telescope import add_telescope
 import utils
@@ -130,6 +131,20 @@ class Timfiles:
     else:
       timfiles = get_timfiles('%', parid=timfile_id)
     return timfiles
+
+
+class Toas:
+  @classmethod
+  def show(cls, toa_id=None):
+    return []
+
+  @classmethod
+  def upload(cls, username, path, pulsar_id):
+    def my_function():
+      return username;
+    utils.get_current_username = my_function
+    response=load_from_timfile(path, pulsar_id)
+    return response
 
 
 class Templates:

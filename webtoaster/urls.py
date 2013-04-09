@@ -26,12 +26,6 @@ urlpatterns = patterns('',
     (r'^telescopes/(?P<telescope_id>\d+)/?$','app.controllers.telescopes_controller.show'),
     (r'^telescopes/?$','app.controllers.telescopes_controller.index'),
 
-    (r'^parfiles/?$','app.controllers.parfiles_controller.index'),
-    (r'^parfiles/(?P<parfile_id>\d+)/destroy/?$','app.controllers.parfiles_controller.destroy'),
-    (r'^parfiles/new/?$','app.controllers.parfiles_controller.new'),
-    (r'^parfiles/(?P<parfile_id>\d+)/download/?$','app.controllers.parfiles_controller.download'),
-    (r'^parfiles/(?P<parfile_id>\d+)/view/?$','app.controllers.parfiles_controller.view'),
-
     (r'^timfiles/?$','app.controllers.timfiles_controller.index'),
     (r'^timfiles/(?P<timfile_id>\d+)/destroy/?$','app.controllers.timfiles_controller.destroy'),
     (r'^timfiles/new/?$','app.controllers.timfiles_controller.new'),
@@ -49,6 +43,14 @@ urlpatterns = patterns('',
     (r'^rawfiles/(?P<rawfile_id>\d+)/download/?$','app.controllers.rawfiles_controller.download'),
     (r'^rawfiles/(?P<rawfile_id>\d+)/destroy/?$','app.controllers.rawfiles_controller.destroy'),
     (r'^rawfiles/new/?$','app.controllers.rawfiles_controller.new'),
+
+
+    (r'^toas/?$','app.controllers.toas_controller.index'),
+    (r'^toas/new/?$','app.controllers.toas_controller.new'),
+    # (r'^toas/(?P<parfile_id>\d+)/destroy/?$','app.controllers.toas_controller.destroy'),
+    # (r'^toas/(?P<parfile_id>\d+)/download/?$','app.controllers.toas_controller.download'),
+    # (r'^toas/(?P<parfile_id>\d+)/view/?$','app.controllers.toas_controller.view'),
+
 
 
     (r'^help/','app.controllers.help_controller.index'),

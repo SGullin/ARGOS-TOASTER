@@ -1,0 +1,54 @@
+{% extends 'layouts/app.html' %}
+{% load mytags %}
+
+
+{% block js %}
+<script src="/webtoaster/media/js/bootstrap/bootstrap-confirm.js"></script>
+{% endblock %}
+
+
+{% block content %}
+
+<legend>Listing Toas <button class='btn btn-success' onclick="window.location='/webtoaster/toas/new'">+&nbspUpload</button> </legend>
+
+{% if toas == list %}
+  <table class="table table-bordered" id="pulsars_table">
+    <tr>
+      <th>File Name</th>
+      <th>MPAR Id</th>
+      <th>Pulsar</th>
+      <th>Added On</th>
+      <th></th>
+    </tr>
+    {% for toa in toas %}
+      <tr>
+        <td><a href="/webtoaster/parfiles/{{toa.toa_id}}/download"> {{toa.filename}}</a></td>
+        <td>{{toa.mparid}}</td>       
+        <td><a href="/webtoaster/pulsars/{{toa.toa_id}}">{{toa.pulsar_name}}</a></td>
+        <td>{{toa.add_time}}</td>
+        <td>
+          <button type="button" class="btn btn-info" onclick="view_toa({{toa.toa_id}});"> View </button>
+          <button type="button" class="btn btn-danger" onclick="delete_toa({{toa.toa_id}},'{{toa.filename}}');"> Delete </button>
+          <div class="confirmmodalcontainer"></div>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+{% endif %}
+<script>
+  function delete_parfile(parfile_id, filename ){
+    $('.confirmmodalcontainer').confirmModal({
+      heading:'Deleting Parfile',
+      body:'<p class="text-error">Please confirm that you want to delete '+filename+'</p>',
+      callback: function() {
+      window.location = "/webtoaster/toas/"+parfile_id+"/destroy?after=/webtoaster/toas";
+       }
+       });
+  }
+
+  function view_parfile(parfile_id){
+    window.location = "/webtoaster/toas/"+toa_id+"/view";
+  }
+</script>
+
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends 'layouts/app.html' %}
+{% load mytags %}
+
+{% block css %}
+<link href="/webtoaster/media/css/bootstrap/bootstrap-fileupload.min.css?111111111" media="screen" rel="stylesheet" >
+{% endblock %}
+{% block js %}
+<script src="/webtoaster/media/js/bootstrap/bootstrap-fileupload.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<legend>
+  Select Tim-file to Upload/Parse
+</legend>
+
+<form enctype="multipart/form-data" method="post" action="">{% csrf_token %}
+  
+  <label for="pulsar_select">Select Pulsar:</label>
+  <select name="pulsar_select">
+    <option value="-1">Select a Pulsar</option>
+    {% for pulsar in pulsars %}
+      <option value="{{pulsar.id}}">{{pulsar.name}}</option>
+    {% endfor %}
+  </select>
+
+  <label for="timfile">Select File to Parse:</label>
+  <div class="fileupload fileupload-new" data-provides="fileupload">
+  <div class="input-append">
+    <div class="uneditable-input span3">
+      <i class="icon-file fileupload-exists"></i> 
+      <span class="fileupload-preview"></span>
+    </div>
+    <span class="btn btn-file">
+      <span class="fileupload-new">Select file</span>
+      <span class="fileupload-exists">Change</span>
+      <input type="file" name="timfile" />
+    </span>
+    <a href="#" class="btn fileupload-exists" data-dismiss="fileupload">Remove</a>
+  </div>
+  </div>
+  <button type="submit" class="btn btn-primary">Upload</button>
+</form>
+
+{% endblock %}
+
