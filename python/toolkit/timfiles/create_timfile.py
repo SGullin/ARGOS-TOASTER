@@ -90,10 +90,11 @@ def toa_select(args, existdb=None):
     db = existdb or database.Database()
     db.connect()
     whereclause = db.pulsar_aliases.c.pulsar_alias.like(args.pulsar_name)
+
     if args.telescopes:
-        tmp = db.telescope_aliases.c.telescope_name.like(args.telescopes[0])
+        tmp = db.telescope_aliases.c.telescope_alias.like(args.telescopes[0])
         for tel in args.telescopes[1:]:
-            tmp |= db.telescope_aliases.c.telescope_name.like(tel)
+            tmp |= db.telescope_aliases.c.telescope_alias.like(tel)
         whereclause &= (tmp)
     
     if args.backends:
