@@ -68,7 +68,7 @@ def add_arguments(parser):
                             "don't actually create it.")
     parser.add_argument('--comments', dest='comments', \
                         type=str, \
-                        help="Provide comments describing the template.")
+                        help="Provide comments describing the timfile.")
     parser.add_argument("--from-file", dest='from_file', \
                         type=str, default=None, \
                         help="A file containing a list of command line " \
