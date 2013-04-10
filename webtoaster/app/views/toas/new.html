@@ -16,7 +16,8 @@
 
 <form enctype="multipart/form-data" method="post" action="">{% csrf_token %}
   
-  <label for="pulsar_select">Select Pulsar:</label>
+
+  <legend>Step 1</legend>
   <select name="pulsar_select">
     <option value="-1">Select a Pulsar</option>
     {% for pulsar in pulsars %}
@@ -24,7 +25,7 @@
     {% endfor %}
   </select>
 
-  <label for="obssys_select">Select an Obs. System:</label>
+  <legend>Step 2</legend>
   <select name="obssys_select">
     <option value="-1">Select an Obs. System</option>
     {% for key,info in obs_sys.iteritems %}
@@ -32,7 +33,7 @@
     {% endfor %}
   </select>
 
-  <label for="timfile">Select File to Parse:</label>
+  <legend>Step 3</legend>
   <div class="fileupload fileupload-new" data-provides="fileupload">
   <div class="input-append">
     <div class="uneditable-input span3">
@@ -40,9 +41,9 @@
       <span class="fileupload-preview"></span>
     </div>
     <span class="btn btn-file">
-      <span class="fileupload-new">Select file</span>
+      <span class="fileupload-new">Select file to parse</span>
       <span class="fileupload-exists">Change</span>
-      <input type="file" name="timfile" />
+      <input type="file" name="timfile"/>
     </span>
     <a href="#" class="btn fileupload-exists" data-dismiss="fileupload">Remove</a>
   </div>
