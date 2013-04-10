@@ -139,11 +139,11 @@ class Toas:
     return []
 
   @classmethod
-  def upload(cls, username, path, pulsar_id):
+  def upload(cls, username, path, pulsar_id, reader, obssys):
     def my_function():
       return username;
     utils.get_current_username = my_function
-    response=load_from_timfile(path, pulsar_id)
+    response=load_from_timfile(path, pulsar_id, reader=reader, **obssys)
     return response
 
 
@@ -215,6 +215,11 @@ class User:
     auth_user.userprofile.toaster_user_id = user_id
     auth_user.userprofile.save()
     return user_id
+
+class ObsSystems:
+  @classmethod
+  def show(cls):
+    return utils.get_obssysinfo_cache()
 
 class Pulsar:
 

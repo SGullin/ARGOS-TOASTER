@@ -24,6 +24,14 @@
     {% endfor %}
   </select>
 
+  <label for="obssys_select">Select an Obs. System:</label>
+  <select name="obssys_select">
+    <option value="-1">Select an Obs. System</option>
+    {% for key,info in obs_sys.iteritems %}
+      <option value="{{info.obssystem_id}}">{{info.name}}</option>
+    {% endfor %}
+  </select>
+
   <label for="timfile">Select File to Parse:</label>
   <div class="fileupload fileupload-new" data-provides="fileupload">
   <div class="input-append">

@@ -7,7 +7,7 @@ from django.template import loader
 from app.models import *
 from httplib import HTTPResponse
 from lib.toaster import Pulsars
-from lib.toaster import Toas
+from lib.toaster import Toas, ObsSystems
 
 from django.core.context_processors import csrf
 from django.conf import settings
@@ -38,32 +38,52 @@ def index(request):
 
 def new(request):
   import os
+  pulsars = Pulsars.show()
+  obs_sys = ObsSystems.show()
+  print "---"
+  print obs_sys.__class__
+  print "---"
+  for key, info in obs_sys.iteritems():
+    print "%s : %s" % (id, info.name)
 
   if request.method == 'POST':
     if request.POST['pulsar_select'] == "-1":
       request.session['flash'] = { 'type': 'error', 'message': 'You must specify a Pulsar to parse Tim-file for.' }
       return redirect('/webtoaster/toas/new')
 
-  if request.method == 'POST' and request.FILES.get('timfile'):
+    if request.POST['obssys_select'] == "-1":
+      request.session['flash'] = { 'type': 'error', 'message': 'You must specify an Ovservation System to parse Tim-file for.' }
+      return redirect('/webtoaster/toas/new')
 
+    if not request.FILES.get('timfile'):      
+      request.session['flash'] = { 'type': 'error', 'message': 'Seems you forgot to attach a Time-File to parse.' }
+      return redirect('/webtoaster/toas/new')
+
+  if request.method == 'POST' and request.FILES.get('timfile'):
     try:
       uf = request.FILES['timfile']
       temp_path = settings.TEMP_DIR
       fn = uf.name
       file_path = os.path.join( temp_path, fn )
       open( file_path, 'w' ).write( uf.read() )
-      load_status = Toas.upload( username=request.user.username, path=file_path, pulsar_id=request.POST['pulsar_select'] )
+
+      obs = obs_sys[int(request.POST['obssys_select'])]
+      obs_args ={'obssystem_name':obs.name}
+
+      load_status = Toas.upload( username=request.user.username, path=file_path, pulsar_id=request.POST['pulsar_select'], reader='tempo2', obssys=obs_args )
+
       request.session['flash'] = { 'type': 'success', 'message': 'Tim file was parse.'}
     except Exception as e:
       request.session['flash'] = { 'type': 'error', 'message': 'There was an error parsing Tim file. Message: %s' % str(e) }
       return redirect('/webtoaster/toas/new')
     return redirect('/webtoaster/toas')
 
-  pulsars = Pulsars.show()
+  
 
   t = loader.get_template('toas/new.html')
   c = RequestContext(request, {
     'pulsars': pulsars,
+    'obs_sys': obs_sys
     })
   c.update(csrf(request))
   return HttpResponse(t.render(c))
