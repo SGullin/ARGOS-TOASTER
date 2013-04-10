@@ -70,18 +70,22 @@ def index(request):
   return HttpResponse(t.render(c))
 
 def add(request):
-
+  users = ToasterUser.objects.all()
   if request.method == 'GET':    
     form = PulsarForm()
     aliases = list()
   elif request.method == 'POST':
     aliases = request.POST.getlist('aliases[]')
+    curator_id = request.POST.get('curator_id')
     form = PulsarForm(request.POST)
     if form.is_valid():
       new_pulsar_name = form.cleaned_data['name']
       new_aliases = aliases
       try:
         response = Pulsars.add(new_pulsar_name, aliases)
+        if curator_id != '':
+          curator_id = int(curator_id)
+          curator_response = Pulsars.update_curators(response, to_add_ids=[curator_id])
         request.session['flash'] = { 'type': 'success', 'message': 'Pulsar was succesfully added with iD: %i' % response }
         return redirect("/webtoaster/pulsars/%i/" % response)
       except Exception, e:
@@ -94,6 +98,7 @@ def add(request):
     'welcome_message': 'Welcome to Web-Toaster, friend!',
     'form': form,
     'aliases': aliases,
+    'users': users
     })
   return HttpResponse(t.render(c))
 

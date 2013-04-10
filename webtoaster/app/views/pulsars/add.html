@@ -6,15 +6,29 @@
 
   <form class="form-horizontal" method="POST">{% csrf_token %}
     <fieldset>
-      <legend>Information</legend>
+      <legend>Name it</legend>
+        <!--<label class="control-label" for="name">Name: &nbsp</label>-->
+         <input class="input-medium text-center" name="name" type="text" value="{% if form.name.data %}{{form.name.data}}{% endif%}" placeholder="Pulsar's name">{{form.name.errors}}
+       </br></br>
+
+      <legend>Assign Curator</legend>
       <div class="control-group">
-        <label class="control-label" for="name">Name: &nbsp</label> <input class="input-medium text-center" name="name" type="text" value="{% if form.name.data %}{{form.name.data}}{% endif%}" placeholder="Pulsar's name"/>{{form.name.errors}}
+        <select name="curator_id">
+          <option value="">Choose a curator</option>
+          {% if users %}
+            {% for user in users %}
+            <option value="{{user.user_id}}">{{user.real_name}}</option>
+            {% endfor %}
+          {% endif %}
+        </select>
       </div>
+      </br>
+
+      <legend>Assign Alias(es)</legend>
 
       <div id="aliases">
 
       </div>
-
       <div class="control-group">        
          <label class="control-label" for="aliases"></label> <button class="btn btn-info" type="button" id="add_aliases"><b>+</b>&nbsp&nbspAdd Alias</button>
       </div>
@@ -32,7 +46,7 @@
   $(document).ready(function(){
     $('#add_aliases').click(function(){
       $('#aliases').append( $('<div class="control-group">'
-                              +'<label class="control-label" for="name">Alias: &nbsp</label> <input class="input-medium text-center" name="aliases[]" type="text" value="" placeholder="name"/>'
+                              +'<input class="input-medium text-center" name="aliases[]" type="text" value="" placeholder="Alias Name"/>'
                               +'</div>') );
     });
   });

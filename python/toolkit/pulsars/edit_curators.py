@@ -7,6 +7,7 @@ Patrick Lazarus, Jan 13, 2012.
 """
 import config
 import utils
+import database
 
 SHORTNAME = 'curators'
 DESCRIPTION = "Edit the list of curators for a pulsar. Note: If " \
@@ -83,14 +84,15 @@ def update_curators(pulsar_id, to_add_ids=[], to_rm_ids=[], existdb=None):
         select = db.select([db.curators.c.user_id]).\
                     where(db.curators.c.pulsar_id==pulsar_id)
         result = db.execute(select)
-        rows = results.fetchall()
+        rows = result.fetchall()
         result.close()
         # Don't re-add existing curators
         curators = [row['user_id'] for row in rows]
         to_add_ids.difference_update(curators)
         # Add curators
         ins = db.curators.insert()
-        for add_id in to_add_id:
+        values=list()
+        for add_id in to_add_ids:
             values.append({'pulsar_id':pulsar_id, \
                       'user_id':add_id})
         result = db.execute(ins, values)
@@ -99,8 +101,8 @@ def update_curators(pulsar_id, to_add_ids=[], to_rm_ids=[], existdb=None):
         to_rm_ids.intersection_update(curators)
         # Remove curators
         delete = db.curators.delete().\
-                    where(db.curators.c.pulsar_id==pulsar_id & \
-                            db.curators.c.user_id.in_(to_rm_ids))
+                    where( (db.curators.c.pulsar_id==pulsar_id) & \
+                            (db.curators.c.user_id.in_(to_rm_ids)) )
         result = db.execute(delete)
         result.close()
     except:

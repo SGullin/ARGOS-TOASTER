@@ -8,6 +8,7 @@ import toolkit
 
 from toolkit.pulsars.show_pulsars import get_pulsarinfo
 from toolkit.pulsars.add_pulsar import add_pulsar
+from toolkit.pulsars.edit_curators import update_curators
 
 from toolkit.parfiles.get_parfile_id import get_parfiles
 from toolkit.parfiles.load_parfile import load_parfile
@@ -57,6 +58,11 @@ class Pulsars:
     get_pulsaralias_cache(update=True)
     get_pulsarid_cache(update=True)
     response = add_pulsar(name, aliases)
+    return response
+
+  @classmethod
+  def update_curators(cls, pulsar_id, to_add_ids=[],to_rm_ids=[]):
+    response = update_curators(pulsar_id, to_add_ids=to_add_ids, to_rm_ids=to_rm_ids)
     return response
 
   @classmethod
