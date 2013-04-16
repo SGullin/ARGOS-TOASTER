@@ -13,13 +13,13 @@ DESCRIPTION = "Provide an overview of TOAs"
 
 
 def add_arguments(parser):
-    parser.add_argument("--output-style", default='plot', \
+    parser.add_argument("--output-style", default='histogram', \
                         dest='output_style', type=str, \
                         help="The following options control how " \
                         "the matching rawfiles are presented. Recognized " \
-                        "modes: 'plot' - display a plot; 'summary' - " \
-                        "Provide a short summary of the matching rawfiles. "
-                        "(Default: plot).")
+                        "modes: 'histogram' - display a histogram plots; " \
+                        "'cadence' - display a plot of observing cadence." \
+                        "(Default: histogram).")
     parser.add_argument('-p', '--psr', dest='pulsar_name', \
                         type=str, default='%', \
                         help='Pulsar name, or alias. NOTE: This option ' \
@@ -53,9 +53,41 @@ def add_arguments(parser):
                             "(Default: match all manipulators).")
 
 
-def plot_toas(toas):
+def plot_cadence(toas):
     """Given a list of TOAs (as returned by create_timfile.get_toas(...)
-        make an overview plot.
+        make a plot of observing cadence.
+
+        Input:
+            toas: A list of TOAs.
+
+        Output:
+            fig: The newly created matplotlib Figure object.
+    """
+    import matplotlib.pyplot as plt
+    fig = plt.figure(figsize=(10,6))
+
+    # Summarize TOA info
+    pulsars = {}
+    for toa in toas:
+        psr = pulsars.setdefault(toa['pulsar_id'], [])
+        psr.append(toa['mjd'])
+    indices = []
+    labels = []
+    ax = plt.axes()
+    for ii, (psrid, mjds) in enumerate(pulsars.iteritems()):
+        indices.append(ii)
+        labels.append(utils.get_pulsarname(psrid))
+        ax.plot(mjds, ii*np.ones_like(mjds), 'k.')
+    ax.set_xlabel("MJD")
+    ax.yaxis.set_ticklabels(labels)
+    ax.yaxis.set_ticks(np.array(indices))
+    ax.set_ylim(-0.5, len(pulsars)-0.5)
+    return fig
+
+
+def plot_toa_histogram(toas):
+    """Given a list of TOAs (as returned by create_timfile.get_toas(...)
+        make histogram plots.
 
         Input:
             toas: A list of TOAs.
@@ -137,12 +169,16 @@ def main(args):
     toas = create_timfile.get_toas(args)
     if not len(toas):
         raise errors.ToasterError("No TOAs to give an overview of.")
-    if args.output_style=='plot':
+    if args.output_style=='histogram':
         import matplotlib.pyplot as plt
-        fig = plot_toas(toas)
+        fig = plot_toa_histogram(toas)
         plt.show()
-    elif args.output_style=='summary':
-        summarize_toas(toas)
+    elif args.output_style=='cadence':
+        import matplotlib.pyplot as plt
+        fig = plot_cadence(toas)
+        plt.show()
+    #elif args.output_style=='summary':
+    #    summarize_toas(toas)
     else:
         raise errors.UnrecognizedValueError("The output style '%s' " \
                         "is not recognized." % args.output_style)
