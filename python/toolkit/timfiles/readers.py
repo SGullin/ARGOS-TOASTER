@@ -62,11 +62,59 @@ def tempo2_reader(line):
                 comments.append(grp2['comment'].strip())
         toainfo['comment'] = " -- ".join(comments)
             
-        toainfo['flags'] = {}
+        toainfo['extras'] = {}
         for key, val in tempo2_flag_re.findall(line[match.end():]):
             key = key.lower()
             key = KNOWN_FLAG_ALIASES.get(key, key)
             caster = KNOWN_FLAG_TYPES.get(key, str)
-            toainfo['flags'][key] = caster(val)
+            toainfo['extras'][key] = caster(val)
 
+    return toainfo
+
+
+def parkes_reader(line):
+    """Parse line, assuming it is a TOA in parkes format.
+        Return a dictionary of information.
+
+        Input:
+            line: A single TOA line in parkes format.
+
+        Output:
+            toainfo: A dictionary of TOA information.
+    """
+    parkes_toa_re = re.compile(r'^ *?(?P<bad>(#|(C ))(?P<comment1>.*?))?' \
+                               r' (?P<info>.{24})(?P<freq>.{9})(?P<imjd>.{7})(?P<fmjd>\..{12}) ' \
+                               r'(?P<phaseoffset>.{8}) (?P<err>.{7})(?P<info2>.{7}) '\
+                               r'(?P<site>.)(?P<dmcorr>[^#]*)')
+    comment_re = re.compile(r'#(?P<comment>.*)$')
+    
+    match = parkes_toa_re.search(line.rstrip())
+    if match is None:
+        toainfo = None
+        utils.print_debug("Line is not a Parkes-format TOA:\n    %s" % line, 'toaparse')
+    else:
+        grp = match.groupdict()
+        toainfo = {}
+        toainfo['is_bad'] = (grp['bad'] is not None)
+        toainfo['freq'] = float(grp['freq'])
+        toainfo['imjd'] = int(grp['imjd'])
+        toainfo['fmjd'] = float(grp['fmjd'])
+        toainfo['toa_unc_us'] = float(grp['err'])
+        toainfo['telescope'] = grp['site']
+        toainfo['telescope_id'] = utils.get_telescope_info(grp['site'])['telescope_id']
+        toainfo['extras'] = {'phaseoffset': float(grp['phaseoffset']), \
+                             'infostr': grp['info'].strip() + ' -- ' + grp['info2'].strip()}
+        if grp['dmcorr']:
+            toainfo['extras']['dmcorr'] = float(grp['dmcorr'])
+
+        comments = []
+        if grp['comment1']:
+            comments.append(grp['comment1'].strip())
+        match2 = comment_re.search(line[match.end():])
+        if match2:
+            grp2 = match2.groupdict()
+            if grp2['comment']:
+                comments.append(grp2['comment'].strip())
+        toainfo['comment'] = " -- ".join(comments)
+            
     return toainfo

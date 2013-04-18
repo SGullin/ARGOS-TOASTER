@@ -12,6 +12,7 @@ DESCRIPTION = "Load a TOA created outside of TOASTER."
 
 # Reader function
 READERS = {'tempo2': readers.tempo2_reader, \
+           'parkes': readers.parkes_reader, \
             }
 
 def add_arguments(parser):
@@ -100,7 +101,7 @@ def __parse_timfile(timfn, reader=readers.tempo2_reader, \
     toas = []
     timfile = open(timfn, 'r')
     for ii, line in enumerate(timfile):
-        line = line.strip()
+        line = line.rstrip()
         if line.startswith("INCLUDE"):
             # Recursively parse included files
             toas.extend(__parse_timfile(line.split()[1], reader=reader, \
@@ -167,55 +168,51 @@ def __determine_obssystem(toainfo, obssystem_name=None, obssystem_flags=[], \
 
     # Determine observing system
     # First try to determine obssystem directly
-    matching_keys = [key for key in toainfo['flags'] if key in obssystem_flags]
+    matching_keys = [key for key in toainfo['extras'] if key in obssystem_flags]
     if len(matching_keys) == 1:
-        obssysname = toainfo['flags'][matching_keys[0]]
+        obssysname = toainfo['extras'][matching_keys[0]]
     elif len(matching_keys) == 0:
         obssysname = obssystem_name
     else:
-        raise errors.BadTOAFormat("Too many obssystem flags match " \
-                            "TOA line (%s:%d):\n    %s" % \
-                            (timfn, ii+1, line))
+        raise errors.BadTOAFormat("Too many matching obssystem flags " \
+                                "found ('%s')!" % ("', '".join(matching_keys)))
     # Check consistency with telescope code
     if obssysname is not None:
         obssysid = utils.get_obssysid(obssysname)
         obssysinfo = utils.get_obssysinfo(obssysid)
         if toainfo['telescope_id'] != obssysinfo['telescope_id']:
             raise errors.BadTOAFormat("Telescope from obs code doesn't "
-                                    "match observing system! TOA line " \
-                                    "(%s:%d):\n    %s" % (timfn, ii+1, line))
+                                    "match observing system!")
 
     # Now use frontend/backend/telescope
     # Get frontend
-    matching_keys = [key for key in toainfo['flags'] if key in frontend_flags]
+    matching_keys = [key for key in toainfo['extras'] if key in frontend_flags]
     if len(matching_keys) == 1:
-        fename = toainfo['flags'][matching_keys[0]]
+        fename = toainfo['extras'][matching_keys[0]]
     elif len(matching_keys) == 0:
         fename = frontend_name
     else:
-        raise errors.BadTOAFormat("Too many frontend flags match " \
-                            "TOA line (%s:%d):\n    %s" % \
-                            (timfn, ii+1, line))
+        raise errors.BadTOAFormat("Too many matching frontend flags " \
+                                "found ('%s')!" % ("', '".join(matching_keys)))
     if (fename is not None) and (obssysname is not None):
         if fename != obssysinfo['frontend']:
-            raise errors.BadTOAFormat("Frontend from flag doesn't match " \
-                                    "observing system! TOA line " \
-                                    "(%s:%d):\n    %d" % (timfn, ii+1, line))
+            raise errors.BadTOAFormat("Frontend from flag (%s) doesn't match " \
+                                    "observing system frontend (%s)!" % \
+                                    (fename, obssysinfo['frontend']))
     # Get backend
-    matching_keys = [key for key in toainfo['flags'] if key in backend_flags]
+    matching_keys = [key for key in toainfo['extras'] if key in backend_flags]
     if len(matching_keys) == 1:
-        bename = toainfo['flags'][matching_keys[0]]
+        bename = toainfo['extras'][matching_keys[0]]
     elif len(matching_keys) == 0:
         bename = backend_name
     else:
-        raise errors.BadTOAFormat("Too many backend flags match " \
-                            "TOA line (%s:%d):\n    %s" % \
-                            (timfn, ii+1, line))
+        raise errors.BadTOAFormat("Too many matching backend flags " \
+                                "found ('%s')!" % ("', '".join(matching_keys)))
     if (bename is not None) and (obssysname is not None):
         if bename != obssysinfo['backend']:
-            raise errors.BadTOAFormat("Backend from flag doesn't match " \
-                                    "observing system! TOA line " \
-                                    "(%s:%d):\n    %d" % (timfn, ii+1, line))
+            raise errors.BadTOAFormat("Backend from flag (%s) doesn't match " \
+                                    "observing system backend (%s)!" % \
+                                    (bename, obssysinfo['backend']))
 
     if (bename is not None) and (fename is not None):
         obssysid = utils.get_obssysid((toainfo['telescope'], fename, bename))
@@ -271,6 +268,10 @@ def main(args):
         toas = __parse_timfile(args.timfile, reader=args.format, \
                                 **obssystem_discovery_args)
         print "%d TOAs parsed" % len(toas)
+        msg = []
+        for toa in toas:
+            msg.append("TOA info: %s" % "\n    ".join(["%s: %s" % xx for xx in toa.iteritems()]))
+        utils.print_info("\n".join(msg), 3)
     else:
         load_from_timfile(args.timfile, pulsar_id=pulsar_id, \
                                 reader=args.format, \
