@@ -3,6 +3,7 @@ import os
 import shutil
 
 import utils
+import errors
 import base
 
 class TimeVsPhasePlotDiagnostic(base.PlotDiagnostic):
