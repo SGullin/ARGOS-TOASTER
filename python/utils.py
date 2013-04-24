@@ -609,14 +609,14 @@ def get_header_vals(fn, hdritems):
     if '=' in hdrstr:
         raise ValueError("'hdritems' passed to 'get_header_vals' " \
                          "should not perform and assignments!")
-    cmd = "/bin/bash -l -c \"vap -n -c '%s' '%s'\"" % (hdrstr, fn)
+    cmd = ["vap", "-n", "-c", hdrstr, fn]
     outstr, errstr = execute(cmd)
     outvals = outstr.split()[(0-len(hdritems)):] # First value is filename (we don't need it)
     if errstr:
         raise errors.SystemCallError("The command: %s\nprinted to stderr:\n%s" % \
                                 (cmd, errstr))
     elif len(outvals) != len(hdritems):
-        raise errors.SystemCallError("The command: %s\nreturn the wrong " \
+        raise errors.SystemCallError("The command: %s\nreturned the wrong " \
                             "number of values. (Was expecting %d, got %d.)" % \
                             (cmd, len(hdritems), len(outvals)))
     params = HeaderParams(fn)
@@ -652,7 +652,7 @@ def parse_psrfits_header(fn, hdritems):
     if '=' in hdrstr:
         raise ValueError("'hdritems' passed to 'parse_psrfits_header' " \
                          "should not perform and assignments!")
-    cmd = "psredit -q -Q -c '%s' %s" % (hdrstr, fn)
+    cmd = ["psredit", "-q", "-Q", "-c", hdrstr, fn]
     outstr, errstr = execute(cmd)
     outvals = outstr.split()
     if errstr:
@@ -861,7 +861,8 @@ def is_gitrepo(repodir):
     """
     print_info("Checking if directory '%s' contains a Git repo..." % repodir, 2)
     try:
-        stdout, stderr = execute("git rev-parse", dir=repodir, \
+        cmd = ["git", "rev-parse"]
+        stdout, stderr = execute(cmd, dir=repodir, \
                                     stderr=open(os.devnull))
     except errors.SystemCallError:
         # Exit code is non-zero
@@ -882,7 +883,8 @@ def is_gitrepo_dirty(repodir):
     """
     print_info("Checking if Git repo at '%s' is dirty..." % repodir, 2)
     try:
-        stdout, stderr = execute("git diff --quiet", dir=repodir)
+        cmd = ["git", "diff", "--quiet"]
+        stdout, stderr = execute(cmd, dir=repodir)
     except errors.SystemCallError:
         # Exit code is non-zero
         return True
@@ -903,7 +905,8 @@ def get_githash(repodir):
     if is_gitrepo_dirty(repodir):
         warnings.warn("Git repository has uncommitted changes!", \
                         errors.ToasterWarning)
-    stdout, stderr = execute("git rev-parse HEAD", dir=repodir)
+    cmd = ["git", "rev-parse", "HEAD"]
+    stdout, stderr = execute(cmd, dir=repodir)
     githash = stdout.strip()
     return githash
 
@@ -931,7 +934,8 @@ def get_version_id(existdb=None):
                         "Falling back to 'psrchive --version' for version " \
                         "information." % config.cfg.psrchive_dir, \
                         errors.ToasterWarning)
-        stdout, stderr = execute("psrchive --version")
+        cmd = ["psrchive", "--version"]
+        stdout, stderr = execute(cmd)
         psrchive_githash = stdout.strip()
     
     # Use the exisitng DB connection, or open a new one if None was provided
@@ -1256,9 +1260,9 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, \
     """
     # Log command to stdout
     if dir is not None:
-        msg = "(In %s)\n%s" % (dir, cmd)
+        msg = "(In %s)\n%s" % (dir, str(cmd))
     else:
-        msg = cmd
+        msg = str(cmd)
     print_debug(msg, "syscalls", stepsback=2)
 
     stdoutfile = False
@@ -1274,13 +1278,13 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, \
         print_debug("Sending the following to cmd's stdin: %s" % stdinstr, \
                         "syscalls")
         # Run (and time) the command. Check for errors.
-        pipe = subprocess.Popen(cmd, shell=True, cwd=dir, \
+        pipe = subprocess.Popen(cmd, shell=False, cwd=dir, \
                             stdin=subprocess.PIPE, 
                             stdout=stdout, stderr=stderr)
         (stdoutdata, stderrdata) = pipe.communicate(stdinstr)
     else:
         # Run (and time) the command. Check for errors.
-        pipe = subprocess.Popen(cmd, shell=True, cwd=dir , \
+        pipe = subprocess.Popen(cmd, shell=False, cwd=dir , \
                             stdout=stdout)#, stderr=stderr)
         (stdoutdata, stderrdata) = pipe.communicate()
     retcode = pipe.returncode

@@ -37,14 +37,14 @@ def correct_header(fn, rcvr=None, backend=None):
         Outputs:
             None
     """
-    cmd = "pam -m %s" % fn
+    cmd = ["pam", "-m", fn]
     if rcvr:
         rcvr_file = tempfile.NamedTemporaryFile(suffix='.rcvr')
         rcvr_file.write("%s\n" % rcvr)
         rcvr_file.flush()
-        cmd += " --receiver %s" % (rcvr_file.name)
+        cmd += ["--receiver", rcvr_file.name]
     if backend:
-        cmd += " --inst %s" % (backend)
+        cmd += ["--inst", backend]
     if not rcvr and not backend:
         warnings.warn("Trying to correct file %s, but didn't provide " \
                         "any new header values." % fn, \

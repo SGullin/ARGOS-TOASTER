@@ -207,7 +207,7 @@ def show_templates(templates):
            
             try:
                 # Show the template if verbosity is >= 2
-                cmd = "psrtxt %s" % fn
+                cmd = ["psrtxt", fn]
                 psrtxtout, stderr = utils.execute(cmd)
 
                 gnuplotcode = """set term dumb
@@ -223,7 +223,7 @@ def show_templates(templates):
                                  %s
                                  end
                             """ % (tdict.nbin-1, psrtxtout)
-                plot, stderr = utils.execute("gnuplot", \
+                plot, stderr = utils.execute(["gnuplot"], \
                                 stderr=open(os.devnull), stdinstr=gnuplotcode)
                 utils.print_info(plot, 2)
             except errors.SystemCallError:

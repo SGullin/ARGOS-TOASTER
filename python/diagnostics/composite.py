@@ -49,39 +49,42 @@ class CompositePlotDiagnostic(base.PlotDiagnostic):
 
     def __plot_profonly(self, tmpfn, params):
         info = self.__get_info(params)
-        utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' '%s' -D %s/PNG " \
-                        "-p flux -c ':0:x:view=0.075:0.95," \
-                                       "y:view=0.15:0.7," \
-                                       "subint=I," \
-                                       "chan=I," \
-                                       "pol=I," \
-                                       "below:l=," \
-                                       "%s'" % \
-                            (self.fn, tmpfn, info))
+        cmd = ["psrplot", "-O", "-j", "D", "-c", "above:c=,x:range=0:2", \
+                self.fn, "-D", "%s/PNG" % tmpfn, \
+                "-p", "flux", "-c", ":0:x:view=0.075:0.95," \
+                                         "y:view=0.15:0.7," \
+                                         "subint=I," \
+                                         "chan=I," \
+                                         "pol=I," \
+                                         "below:l=," \
+                                         "%s" % info]
+        utils.execute(cmd)
         
     def __plot_nofreq(self, tmpfn, params):
         info = self.__get_info(params)
-        utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' '%s' -D %s/PNG " \
-                        "-p flux -c ':0:x:view=0.075:0.95," \
-                                       "y:view=0.5:0.7," \
-                                       "subint=I," \
-                                       "chan=I," \
-                                       "pol=I," \
-                                       "x:opt=BCTS," \
-                                       "x:lab=," \
-                                       "below:l=," \
-                                       "%s' " \
-                        "-p time -c ':1:x:view=0.075:0.95," \
-                                       "y:view=0.15:0.5," \
-                                       "chan=I," \
-                                       "pol=I," \
-                                       "cmap:map=plasma'" % \
-                            (self.fn, tmpfn, info))
+        cmd = ["psrplot", "-O", "-j", "D", "-c", "above:c=,x:range=0:2", \
+                self.fn, "-D", "%s/PNG" % tmpfn, \
+                "-p", "flux", "-c", ":0:x:view=0.075:0.95," \
+                                        "y:view=0.5:0.7," \
+                                        "subint=I," \
+                                        "chan=I," \
+                                        "pol=I," \
+                                        "x:opt=BCTS," \
+                                        "x:lab=," \
+                                        "below:l=," \
+                                        "%s" % info, \
+                "-p", "time", "-c", ":1:x:view=0.075:0.95," \
+                                        "y:view=0.15:0.5," \
+                                        "chan=I," \
+                                        "pol=I," \
+                                        "cmap:map=plasma"]
+        utils.execute(cmd)
         
     def __plot_notime(self, tmpfn, params):
         info = self.__get_info(params)
-        utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' '%s' -D %s/PNG " \
-                        "-p flux -c ':0:x:view=0.075:0.95," \
+        cmd = ["psrplot", "-O", "-j", "D", "-c", "above:c=,x:range=0:2", \
+                self.fn, "-D", "%s/PNG" % tmpfn, \
+                "-p", "flux", "-c", ":0:x:view=0.075:0.95," \
                                        "y:view=0.5:0.7," \
                                        "subint=I," \
                                        "chan=I," \
@@ -89,37 +92,38 @@ class CompositePlotDiagnostic(base.PlotDiagnostic):
                                        "x:opt=BCTS," \
                                        "x:lab=," \
                                        "below:l=," \
-                                       "%s' " \
-                        "-p freq -c ':1:x:view=0.075:0.95," \
+                                       "%s" % info, \
+                "-p", "freq", "-c", ":1:x:view=0.075:0.95," \
                                        "y:view=0.15:0.5," \
                                        "subint=I," \
                                        "pol=I," \
-                                       "cmap:map=plasma'" % \
-                            (self.fn, tmpfn, info))
+                                       "cmap:map=plasma"]
+        utils.execute(cmd)
         
     def __plot_all(self, tmpfn, params):
         info = self.__get_info(params)
-        utils.execute("psrplot -O -j 'D' -c 'above:c=,x:range=0:2' '%s' -D %s/PNG " \
-                        "-p flux -c ':0:x:view=0.575:0.95," \
+        cmd = ["psrplot", "-O", "-j", "D", "-c", "above:c=,x:range=0:2", \
+                self.fn, "-D", "%s/PNG" % tmpfn, \
+                "-p", "flux", "-c", ":0:x:view=0.575:0.95," \
                                        "y:view=0.7:0.9," \
                                        "subint=I," \
                                        "chan=I," \
                                        "pol=I," \
                                        "x:opt=BCTS," \
                                        "x:lab=," \
-                                       "below:l=' " \
-                        "-p freq -c ':1:x:view=0.075:0.45," \
+                                       "below:l=", \
+                "-p", "freq", "-c", ":1:x:view=0.075:0.45," \
                                        "y:view=0.15:0.7," \
                                        "subint=I," \
                                        "pol=I," \
                                        "%s," \
-                                       "cmap:map=plasma' " \
-                        "-p time -c ':2:x:view=0.575:0.95," \
+                                       "cmap:map=plasma" % info, \
+                "-p", "time", "-c", ":2:x:view=0.575:0.95," \
                                        "y:view=0.15:0.7," \
                                        "chan=I," \
                                        "pol=I," \
-                                       "cmap:map=plasma'" % \
-                            (self.fn, tmpfn, info))
+                                       "cmap:map=plasma"]
+        utils.execute(cmd)
 
 
 Diagnostic = CompositePlotDiagnostic

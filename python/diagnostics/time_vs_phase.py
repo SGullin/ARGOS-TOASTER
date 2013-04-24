@@ -18,9 +18,10 @@ class TimeVsPhasePlotDiagnostic(base.PlotDiagnostic):
     
         handle, tmpfn = tempfile.mkstemp(suffix=".png")
         os.close(handle)
-        utils.execute("psrplot -p time -j DFp -c 'above:c=%s' " \
-                                    "-D %s/PNG %s" % \
-                        (os.path.split(self.fn)[-1], tmpfn, self.fn))
+        cmd = ["psrplot", "-p", "time", "-j", "DFp", "-c", \
+                "above:c=%s" % os.path.split(self.fn)[-1], \
+                "-D", "%s/PNG" % tmpfn, "%s" % self.fn]
+        utils.execute(cmd)
         tmpdir = os.path.split(tmpfn)[0]
         pngfn = os.path.join(tmpdir, self.fn+".time.png")
         shutil.move(tmpfn, pngfn) 

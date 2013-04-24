@@ -205,7 +205,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
             # Get ephemeris from parfile_id and verify MD5SUM
             parfile = utils.get_parfile_from_id(parfile_id, db, verify_md5=True)
   
-            cmd = "pam -m -E '%s' --update_dm %s" % (parfile, adjustfn)
+            cmd = ["pam", "-m", "-E", parfile, "--update_dm", adjustfn]
             utils.execute(cmd)
         
         # Create a temporary file for the manipulated results
@@ -224,11 +224,11 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         os.close(tmpfile)
         # Generate TOAs with pat
         utils.print_info("Computing TOAs", 0)
-        patout, paterr = utils.execute("pat -f tempo2 -A %s -s %s " \
-                                "-C 'gof length bw nbin nchan nsubint' " \
-                                "-t -K %s/PNG  %s" % \
-                    (config.cfg.toa_fitting_method, template, toadiagfn, manipfn))
- 
+        cmd = ["pat", "-f", "tempo2", "-A", config.cfg.toa_fitting_method, \
+                "-s", template, "-C",  "gof length bw nbin nchan nsubint", \
+                "-t", "-K", "%s/PNG" % toadiagfn, manipfn]
+        patout, paterr = utils.execute(cmd)
+
         # Check version ID is still the same. Just in case.
         new_version_id = utils.get_version_id(db)
         if version_id != new_version_id:

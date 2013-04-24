@@ -14,9 +14,10 @@ class ProfilePlotDiagnostic(base.PlotDiagnostic):
         params = utils.prep_file(self.fn)
         handle, tmpfn = tempfile.mkstemp(suffix=".png")
         os.close(handle)
-        utils.execute("psrplot -p flux -j TDFp -c 'above:c=%s' " \
-                                    "-D %s/PNG %s" % \
-                        (os.path.split(archivefn)[-1], tmpfn, archivefn))
+        cmd = ["psrplot", "-p", "flux", "-j", "TDFp", "-c", \
+                "above:c=%s" % os.path.split(archivefn)[-1], \
+                "-D", "%s/PNG" % tmpfn, archivefn]
+        utils.execute(cmd)
         tmpdir = os.path.split(tmpfn)[0]
         pngfn = os.path.join(tmpdir, self.fn+".flux.png")
         shutil.move(tmpfn, pngfn) 
