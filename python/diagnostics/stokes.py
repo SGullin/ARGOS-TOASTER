@@ -16,8 +16,8 @@ class StokesPlotDiagnostic(base.PlotDiagnostic):
         handle, tmpfn = tempfile.mkstemp(suffix=".png")
         os.close(handle)
         cmd = ["psrplot", "-p", "stokes", "-j", "TDF", "-c", \
-                "above:c=%s" % os.path.split(archivefn)[-1], \
-                "-D", "%s/PNG" % tmpfn, archivefn]
+                "above:c=%s" % os.path.split(self.fn)[-1], \
+                "-D", "%s/PNG" % tmpfn, self.fn]
         utils.execute(cmd)
         tmpdir = os.path.split(tmpfn)[0]
         pngfn = os.path.join(tmpdir, self.fn+".stokes.png")
