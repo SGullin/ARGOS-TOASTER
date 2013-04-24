@@ -21,6 +21,8 @@ import colour
 
 import database
 
+from toolkit.pulsars import add_pulsar
+
 ##############################################################################
 # GLOBAL DEFENITIONS
 ##############################################################################
@@ -380,21 +382,28 @@ def get_prefname(alias):
     return get_pulsarname(get_pulsarid(alias))
 
 
-def get_pulsarid(alias):
+def get_pulsarid(alias, autoadd=False):
     """Given a pulsar name/alias return its pulsar_id number,
         or raise an error.
 
         Input:
             alias: The name/alias of the pulsar.
+            autoadd: Automatically add pulsar if it doesn't already exist.
+                (Default: False)
 
         Output:
             pulsar_id: The corresponding pulsar_id value.
     """
     cache = get_pulsarid_cache()
-    if alias not in cache:
-        raise errors.UnrecognizedValueError("The pulsar name/alias '%s' does " \
-                                    "not appear in the pulsarid_cache!" % alias)
-    return cache[alias]
+    if alias in cache:
+        pulsar_id = cache[alias]
+    else:
+        if autoadd:
+            pulsar_id = add_pulsar.add_pulsar(alias)
+        else:
+            raise errors.UnrecognizedValueError("The pulsar name/alias '%s' does " \
+                                       "not appear in the pulsarid_cache!" % alias)
+    return pulsar_id
 
 
 def get_obssystemid_cache(existdb=None, update=False):
@@ -738,13 +747,16 @@ def prep_parfile(fn):
 
         params[key.lower()] = val
     if "psrj" in params:
-        params['pulsar_id'] = get_pulsarid(params['psrj'])
+        params['pulsar_id'] = get_pulsarid(params['psrj'], \
+                    autoadd=config.cfg.auto_add_pulsars)
         params['name'] = params['psrj']
     elif "psrb" in params:
-        params['pulsar_id'] = get_pulsarid(params['psrb'])
+        params['pulsar_id'] = get_pulsarid(params['psrb'], \
+                    autoadd=config.cfg.auto_add_pulsars)
         params['name'] = params['psrb']
     else:
-        params['pulsar_id'] = get_pulsarid(params['psr'])
+        params['pulsar_id'] = get_pulsarid(params['psr'], \
+                    autoadd=config.cfg.auto_add_pulsars)
         params['name'] = params['psr']
     
     # Translate a few parameters
@@ -820,7 +832,8 @@ def prep_file(fn):
     
     # Check if pulsar_id is found
     try:
-        psr_id = get_pulsarid(params['name'])
+        psr_id = get_pulsarid(params['name'], \
+                    autoadd=config.cfg.auto_add_pulsars)
     except errors.UnrecognizedValueError:
         raise errors.FileError("The pulsar name %s (from file %s) is not " \
                             "recognized." % (params['name'], fn))

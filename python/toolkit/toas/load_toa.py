@@ -254,7 +254,8 @@ def main(args):
         raise errors.UnrecognizedValueError("The requested timfile format " \
                         "'%s' is not recognized. Available formats: '%s'." % \
                         (args.format, "', '".join(sorted(READERS.keys()))))
-    pulsar_id = utils.get_pulsarid(args.pulsar_name)
+    pulsar_id = utils.get_pulsarid(args.pulsar_name, \
+                        autoadd=config.cfg.auto_add_pulsars)
    
     obssystem_discovery_args = {'obssystem_name':args.obssystem, \
                                 'obssystem_flags':args.obssystem_flags, \
