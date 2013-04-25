@@ -46,7 +46,7 @@ def add_arguments(parser):
                         type=str, default=None, \
                         help="A file containing a list of command line " \
                             "arguments use.")
-    parser.add_argument("--output-style", default='text', \
+    parser.add_argument("-O", "--output-style", default='text', \
                         dest='output_style', type=str, \
                         help="The following options control how " \
                         "the matching processing jobs are presented. " \

@@ -91,7 +91,7 @@ def add_arguments(parser):
                         help="Don't match files that have been replaced. " \
                             "NOTE: The replacement file will only be " \
                             "included if it matches the search criteria.")
-    parser.add_argument("--output-style", default='text', \
+    parser.add_argument("-O", "--output-style", default='text', \
                         dest='output_style', type=str, \
                         help="The following options control how " \
                         "the matching rawfiles are presented. Recognized " \

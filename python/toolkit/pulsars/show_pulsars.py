@@ -24,7 +24,7 @@ def add_arguments(parser):
     parser.add_argument('--pulsar-id', dest='pulsar_ids', \
                         type=int, default=[], action='append', \
                         help="IDs of pulsars to grab info for.")
-    parser.add_argument("--output-style", default='text', \
+    parser.add_argument("-O", "--output-style", default='text', \
                         dest='output_style', type=str, \
                         help="The following options control how " \
                         "pulsars are displayed. Recognized " \
