@@ -265,14 +265,14 @@ def plot_rawfiles(rawfiles):
     plt.rc('font', family='sans-serif')
 
     fig = plt.figure(figsize=(10,8))
-    titletext = plt.figtext(0.025,0.975, "Raw file Summary", \
+    titletext = plt.figtext(0.025, 0.975, "Raw file Summary", \
                             size='xx-large', ha='left', va='top')
     db = database.Database() # Get database info, but don't connect
     dbtext = plt.figtext(0.025, 0.025, "Database (%s): %s" % \
                             (db.engine.name, db.engine.url.database), \
                             size='x-small', ha='left', va='bottom')
-    timetext = plt.figtext(0.975, 0.025, utils.Give_UTC_now(), \
-                            size='x-small', ha='right', va='bottom')
+    timetext = plt.figtext(0.0275, 0.9425, utils.Give_UTC_now(), \
+                            size='xx-small', ha='left', va='top')
 
     # Compute data for plotting
     numfiles = 0
@@ -308,7 +308,7 @@ def plot_rawfiles(rawfiles):
         pulsars[psr] = (psrcnt+1, psrhr+secs/3600.0)
     add_times = np.asarray(sorted(add_times+[datetime.datetime.utcnow()]))
 
-    plt.figtext(0.05, 0.91, "Total number of files archived: %d" % numfiles, \
+    plt.figtext(0.05, 0.9, "Total number of files archived: %d" % numfiles, \
                 ha='left', size='medium')
     unit = 's'
     thresh = 60.0
@@ -318,7 +318,7 @@ def plot_rawfiles(rawfiles):
         length /= thresh
         thresh = other_thresh.pop()
         unit = other_units.pop()
-    plt.figtext(0.05, 0.885, "Total integration time: %.2g %s" % \
+    plt.figtext(0.05, 0.875, "Total integration time: %.2g %s" % \
                         (length, unit), \
                 ha='left', size='medium')
     unit = 'bytes'
@@ -326,7 +326,7 @@ def plot_rawfiles(rawfiles):
     while size >= 1024.0 and len(other_units) > 1:
         size /= 1024.0
         unit = other_units.pop()
-    plt.figtext(0.05, 0.86, "Total disk space used: %.2f %s" % \
+    plt.figtext(0.05, 0.85, "Total disk space used: %.2f %s" % \
                         (size, unit), \
                 ha='left', size='medium')
 
@@ -410,7 +410,7 @@ def plot_rawfiles(rawfiles):
         hours.append(hr)
     ipsr = np.arange(len(psrs))
 
-    psrtime_ax = plt.axes((0.83, 0.15, 0.12, 0.7))
+    psrtime_ax = plt.axes((0.83, 0.05, 0.12, 0.9))
     psrtime_bar = plt.barh(ipsr, hours, \
                     align='center', lw=0, fc='#B22222', \
                     alpha=0.7, ec='k')
@@ -419,14 +419,14 @@ def plot_rawfiles(rawfiles):
     plt.setp(psrtime_ax.yaxis.get_ticklabels(), visible=False)
     plt.title("Obs. time", size='small') 
     
-    psrcnt_ax = plt.axes((0.7, 0.15, 0.12, 0.7), sharey=psrtime_ax)
+    psrcnt_ax = plt.axes((0.7, 0.05, 0.12, 0.9), sharey=psrtime_ax)
     psrcnt_bar = plt.barh(ipsr, counts, \
                     align='center', lw=0, fc='#008080', \
                     alpha=0.7, ec='k')
     plt.xlim(0, np.max(counts)*1.1)
     plt.ylim(-0.5,len(psrs)-0.5)
-    plt.yticks(ipsr, psrs, rotation=30, \
-                    va='top', ha='right')
+    plt.yticks(ipsr, psrs, rotation=0, \
+                    va='center', ha='right')
     plt.title("# of archives", size='small') 
 
 
