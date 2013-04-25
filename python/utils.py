@@ -400,6 +400,8 @@ def get_pulsarid(alias, autoadd=False):
     else:
         if autoadd:
             pulsar_id = add_pulsar.add_pulsar(alias)
+            # Add to cache, for next time
+            cache[alias] = pulsar_id
         else:
             raise errors.UnrecognizedValueError("The pulsar name/alias '%s' does " \
                                        "not appear in the pulsarid_cache!" % alias)
