@@ -404,8 +404,9 @@ def plot_rawfiles(rawfiles):
     psrs = []
     counts = []
     hours = []
-    for p, (cnt, hr) in pulsars.iteritems():
-        psrs.append(p)
+    for pp in sorted(pulsars.keys(), reverse=True):
+        cnt, hr = pulsars[pp]
+        psrs.append(pp)
         counts.append(cnt)
         hours.append(hr)
     ipsr = np.arange(len(psrs))
