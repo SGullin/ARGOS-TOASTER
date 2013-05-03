@@ -2205,7 +2205,13 @@ class FancyParams(dict):
         if key not in self:
             params = self._generate_value(key)
             self.update(params)
-        return super(FancyParams, self).__getitem__(key)
+        try:
+            val = super(FancyParams, self).__getitem__(key)
+        except KeyError:
+            raise errors.BadColumnNameError("Unrecognized parameter " \
+                    "name (%s). Recognized parameters: '%s'" % \
+                    (key, "', '".join(sorted(self.keys()))))
+        return val
 
     def _generate_value(self, key):
         """To generate a missing value, if it is not contained in
