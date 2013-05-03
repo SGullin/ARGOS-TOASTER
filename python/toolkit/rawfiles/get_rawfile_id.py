@@ -114,10 +114,13 @@ def add_arguments(parser):
 
 def main(args):
     rawfiles = get_rawfiles(args)
+    # Sort rawfiles
+    utils.sort_by_keys(rawfiles, args.sortkeys)
+
     if not len(rawfiles):
         raise errors.ToasterError("No rawfiles match parameters provided!")
     if args.output_style=='text':
-        show_rawfiles(rawfiles, args.sortkeys)
+        show_rawfiles(rawfiles)
     elif args.output_style=='plot':
         import matplotlib.pyplot as plt
         plot_rawfiles(rawfiles)
@@ -220,7 +223,10 @@ def get_rawfiles(args):
     rows = result.fetchall()
     result.close()
     db.close()
-    return rows 
+    rawfiles = []
+    for row in rows:
+        rawfiles.append(RawfileParams(row['rawfile_id'], row))
+    return rawfiles 
 
 
 class RawfileParams(utils.FancyParams):
@@ -243,7 +249,6 @@ class RawfileParams(utils.FancyParams):
 
 def custom_show_rawfiles(rawfiles, fmt="%(rawfile_id)d"):
     for rawfile in rawfiles:
-        rawfile = RawfileParams(rawfile['rawfile_id'], rawfile)
         print fmt.decode('string-escape') % rawfile
 
 
@@ -450,13 +455,9 @@ def plot_rawfiles(rawfiles):
     plt.title("# of archives", size='small') 
 
 
-def show_rawfiles(rawfiles, sortkeys=['rawfile_id']):
-    # Sort rawfiles
-    utils.sort_by_keys(rawfiles, sortkeys)
-
+def show_rawfiles(rawfiles):
     print "--"*25
-    for rawfile in rawfiles:
-        rawdict = RawfileParams(rawfile['rawfile_id'], rawfile)
+    for rawdict in rawfiles:
         print colour.cstring("Rawfile ID:", underline=True, bold=True) + \
                 colour.cstring(" %d" % rawdict.rawfile_id, bold=True)
         fn = os.path.join(rawdict['filepath'], rawdict['filename'])
