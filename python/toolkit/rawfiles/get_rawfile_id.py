@@ -223,8 +223,27 @@ def get_rawfiles(args):
     return rows 
 
 
+class RawfileParams(utils.FancyParams):
+    def __init__(self, rawfile_id, *args, **kwargs):
+        self.rawfile_id = rawfile_id
+        super(RawfileParams, self).__init__(*args, **kwargs)
+        
+    def _generate_value(self, key):
+        params = {'diags': []}
+        diags, diag_plots = utils.get_rawfile_diagnostics(self.rawfile_id)
+        for dd in diags:
+            params['diags'].append(dd['type'])
+            params['diag_%s' % dd['type'].lower()] = dd['value']
+        for dd in diag_plots:
+            params['diags'].append(dd['plot_type'])
+            params['diag_%s' % dd['plot_type'].lower()] = \
+                    os.path.join(dd['filepath'], dd['filename'])
+        return params
+        
+
 def custom_show_rawfiles(rawfiles, fmt="%(rawfile_id)d"):
     for rawfile in rawfiles:
+        rawfile = RawfileParams(rawfile['rawfile_id'], rawfile)
         print fmt.decode('string-escape') % rawfile
 
 
@@ -436,50 +455,46 @@ def show_rawfiles(rawfiles, sortkeys=['rawfile_id']):
     utils.sort_by_keys(rawfiles, sortkeys)
 
     print "--"*25
-    for rawdict in rawfiles:
+    for rawfile in rawfiles:
+        rawdict = RawfileParams(rawfile['rawfile_id'], rawfile)
         print colour.cstring("Rawfile ID:", underline=True, bold=True) + \
                 colour.cstring(" %d" % rawdict.rawfile_id, bold=True)
-        fn = os.path.join(rawdict.filepath, rawdict.filename)
+        fn = os.path.join(rawdict['filepath'], rawdict['filename'])
         print "\nRawfile: %s" % fn
-        print "Pulsar name: %s" % rawdict.pulsar_name
+        print "Pulsar name: %s" % rawdict['pulsar_name']
         print "Uploaded by: %s (%s)" % \
-                    (rawdict.real_name, rawdict.email_address)
-        print "Date and time rawfile was added: %s" % rawdict.add_time.isoformat(' ')
-        if rawdict.replacement_rawfile_id is not None:
+                    (rawdict['real_name'], rawdict['email_address'])
+        print "Date and time rawfile was added: %s" % rawdict['add_time'].isoformat(' ')
+        if rawdict['replacement_rawfile_id'] is not None:
             colour.cprint("Rawfile has been superseded by rawfile_id=%d" % \
-                    rawdict.replacement_rawfile_id, 'warning')
+                    rawdict['replacement_rawfile_id'], 'warning')
         if config.cfg.verbosity >= 1:
-            lines = ["Observing system ID: %d" % rawdict.obssystem_id, \
-                     "Observing system name: %s" % rawdict.obssystem, \
-                     "Observing band: %s" % rawdict.band_descriptor, \
-                     "Telescope: %s" % rawdict.telescope_name, \
-                     "Frontend: %s" % rawdict.frontend, \
-                     "Backend: %s" % rawdict.backend, \
-                     "Clock: %s" % rawdict.clock]
+            lines = ["Observing system ID: %d" % rawdict['obssystem_id'], \
+                     "Observing system name: %s" % rawdict['obssystem'], \
+                     "Observing band: %s" % rawdict['band_descriptor'], \
+                     "Telescope: %s" % rawdict['telescope_name'], \
+                     "Frontend: %s" % rawdict['frontend'], \
+                     "Backend: %s" % rawdict['backend'], \
+                     "Clock: %s" % rawdict['clock']]
             utils.print_info("\n".join(lines), 1)
         if config.cfg.verbosity >= 2:
-            lines = ["MJD: %.6f" % rawdict.mjd, \
-                     "Number of phase bins: %d" % rawdict.nbin, \
-                     "Number of channels: %d" % rawdict.nchan, \
-                     "Number of polarisations: %d" % rawdict.npol, \
-                     "Number of sub-integrations: %d" % rawdict.nsub, \
-                     "Centre frequency (MHz): %g" % rawdict.freq, \
-                     "Bandwidth (MHz): %g" % rawdict.bw, \
-                     "Dispersion measure (pc cm^-3): %g" % rawdict.dm, \
-                     "Integration time (s): %g" % rawdict.length]
+            lines = ["MJD: %.6f" % rawdict['mjd'], \
+                     "Number of phase bins: %d" % rawdict['nbin'], \
+                     "Number of channels: %d" % rawdict['nchan'], \
+                     "Number of polarisations: %d" % rawdict['npol'], \
+                     "Number of sub-integrations: %d" % rawdict['nsub'], \
+                     "Centre frequency (MHz): %g" % rawdict['freq'], \
+                     "Bandwidth (MHz): %g" % rawdict['bw'], \
+                     "Dispersion measure (pc cm^-3): %g" % rawdict['dm'], \
+                     "Integration time (s): %g" % rawdict['length']]
             utils.print_info("\n".join(lines), 2)
         if config.cfg.verbosity >= 3:
             diags, diag_plots = utils.get_rawfile_diagnostics(rawdict.rawfile_id)
             lines = []
-            if diags:
-                lines.append("Diagnostics:")
-                for diag in diags:
-                    lines.append("    %s: %g" % (diag['type'], diag['value']))
-            if diag_plots:
-                lines.append("Diagnostic plots:")
-                for diag_plot in diag_plots:
-                    lines.append("    %s: %s" % (diag_plot['plot_type'], \
-                                os.path.join(diag_plot['filepath'], diag_plot['filename'])))
+                
+            lines.append("Diagnostics:")
+            for diag in rawdict['diags']:
+                lines.append("    %s: %s" % (diag, rawdict['diag_%s' % diag.lower()]))
             utils.print_info("\n".join(lines), 3)
         print "--"*25
 

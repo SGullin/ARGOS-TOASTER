@@ -2162,10 +2162,9 @@ class DefaultArguments(argparse.ArgumentParser):
 
 
 null = lambda x: x
-class HeaderParams(dict):
-    def __init__(self, fn, *args, **kwargs):
-        self.fn = fn
-        super(HeaderParams, self).__init__(*args, **kwargs)
+class FancyParams(dict):
+    def __init__(self, *args, **kwargs):
+        super(FancyParams, self).__init__(*args, **kwargs)
 
     def __getitem__(self, key):
         if (type(key) in (type('str'), type(u'str'))) and key.endswith("_L"):
@@ -2201,9 +2200,34 @@ class HeaderParams(dict):
                     return filterfunc(val)
                 else:
                     return val
-
+    
     def get_value(self, key):
         if key not in self:
-            params = get_header_vals(self.fn, [key])
+            params = self._generate_value(key)
             self.update(params)
-        return super(self.__class__, self).__getitem__(key)
+        return super(FancyParams, self).__getitem__(key)
+
+    def _generate_value(self, key):
+        """To generate a missing value, if it is not contained in
+            the Params object.
+
+            NOTE: This method must be implemented by child classes.
+    
+            Input:
+                key: The key of the value to generate.
+
+            Outputs:
+                param: The generated (formerly missing) value.
+        """
+        raise NotImplementedError("Cannot generate value (key: %s). " \
+                        "'%s' class of should provide an implementation " \
+                        "of '_generate_value" % (key, self.__class__.__name__))
+
+
+class HeaderParams(FancyParams):
+    def __init__(self, fn, *args, **kwargs):
+        self.fn = fn
+        super(HeaderParams, self).__init__(*args, **kwargs)
+
+    def _generate_value(self, key):
+        return get_header_vals(self.fn, [key])
