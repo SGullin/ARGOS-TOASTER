@@ -9,6 +9,8 @@ import argparse
 import textwrap
 import sys
 import shlex
+import warnings
+import copy
 
 import utils
 import errors
@@ -22,8 +24,14 @@ DESCRIPTION = "Add a diagnostic value, or plot, for a rawfile."
 
 def add_arguments(parser):
     parser.add_argument('-r', "--rawfile-id", dest='rawfile_id', type=int, \
+                        default=None, \
                         help="Rawfile ID number of the data file the " \
                             "diagnostic describes.")
+    parser.add_argument('--from-file', dest='from_file', \
+                        type=str, default=None, \
+                        help="A list of rawfiles (one per line) to " \
+                            "diagnose. (Default: diagnose a raw file provided " \
+                            "on the cmd line.)")
     parser.add_argument('-D', '--diagnostic', dest='diagnostic', type=str, \
                         help="Name of a diagnostic to add.")
     parser.add_argument('--list-diagnostics', nargs=0, \
@@ -35,8 +43,8 @@ def add_arguments(parser):
                             "of inserting into the DB. (Default: Insert into " \
                             "DB.)")
     diaggroup = parser.add_mutually_exclusive_group(required=False)
-    diaggroup.add_argument('--plot', dest='plot', type=str, \
-                        default=None, \
+    diaggroup.add_argument('--plot', metavar="PLOT", dest='value', \
+                        type=str, default=None, \
                         help="Diagnostic plot to upload.")
     diaggroup.add_argument('--value', dest='value', type=float, \
                         default=None, \
@@ -57,6 +65,52 @@ class ListDiagnosticsAction(argparse.Action):
             if diagcls.description is not None:
                 print descwrapper.fill(diagcls.description)
         sys.exit(1)
+
+
+def diagnose_rawfile(rawfile_id, diagnostic, value=None, existdb=None):
+    """Diagnose a rawfile (specified by its ID number).
+
+        Inputs:
+            rawfile_id: The ID number of the rawfile to diagnose.
+            diagnostic: The name of the diagnostic.
+            value: The value of the diagnostic.
+                    - If the value provided is None, try to compute 
+                        a pre-defined diagnostic. 
+                    - If the value provided is a string, assume it 
+                        is a plot-diagnostic. 
+                    - If the value provided is a floating-point 
+                        number, assume it is a numeric-diagnostic.
+            existdb: An (optional) existing database connection object.
+                (Default: Establish a db connection)
+        
+        Outputs:
+            diag: The Diagnostic object.
+    """
+    db = existdb or database.Database()
+    db.connect()
+    
+    fn = utils.get_rawfile_from_id(rawfile_id, existdb=db)
+    if value is None:
+        # Pre-defined diagnostic
+        diagcls = diagnostics.get_diagnostic_class(diagnostic)
+        # Pre-check if a diagnostic with this name already exists for
+        # the rawfile provided
+        check_rawfile_diagnostic_existence(rawfile_id, diagcls.name, \
+                                            existdb=db)
+        diag = diagcls(fn)
+    elif type(value) == types.FloatType:
+        # Numeric diagnostic
+        utils.print_info("Custom floating-point rawfile diagnostic provided", 2)
+        diag = diagnostics.get_custom_float_diagnostic(fn, diagnostic, \
+                                        value)
+    else:
+        # Plot diagnostic
+        utils.print_info("Custom rawfile diagnostic plot provided", 2)
+        diag = diagnostics.get_custom_diagnostic_plot(fn, diagnostic, \
+                                        value)
+    if existdb is None:
+        db.close()
+    return diag
 
 
 def check_rawfile_diagnostic_existence(rawfile_id, diagname, existdb=None):
@@ -258,44 +312,86 @@ def __insert_rawfile_diagnostic_plot(rawfile_id, diag, existdb=None):
 
 
 def main(args):
-    if not args.rawfile_id:
-        raise ValueError("A rawfile ID number must be provided!")
-    
+    if (args.rawfile_id is None) and (args.from_file is None):
+        warnings.warn("No input file or --from-file argument given " \
+                        "will read from stdin.", \
+                        errors.ToasterWarning)
+        args.rawfile = None # In case it was set to '-'
+        args.from_file = '-'
     # Connect to the database
     db = database.Database()
     db.connect()
 
-    fn = utils.get_rawfile_from_id(args.rawfile_id, existdb=db)
-    if args.plot is not None:
-        utils.print_info("Custom rawfile diagnostic plot provided", 2)
-        diag = diagnostics.get_custom_diagnostic_plot(fn, args.diagnostic, \
-                                        args.plot)
-    elif args.value is not None:
-        utils.print_info("Custom floating-point rawfile diagnostic provided", 2)
-        diag = diagnostics.get_custom_float_diagnostic(fn, args.diagnostic, \
-                                        args.value)
-    else:
-        diagcls = diagnostics.get_diagnostic_class(args.diagnostic)
-        # Pre-check if a diagnostic with this name already exists for
-        # the rawfile provided
-        check_rawfile_diagnostic_existence(args.rawfile_id, diagcls.name, \
-                                            existdb=db)
-        diag = diagcls(fn)
+    print args.from_file
 
-    if args.insert:
-        trans = db.begin()
-        try:
-            insert_rawfile_diagnostics(args.rawfile_id, \
-                                    [diag], existdb=db)
-        except:
-            trans.rollback()
-            raise
+    try:
+        if args.from_file is not None:
+            # Re-create parser, so we can read arguments from file
+            parser = utils.DefaultArguments()
+            add_arguments(parser)
+            if args.rawfile_id is not None:
+                raise errors.BadInputError("When diagnosing rawfiles " \
+                                "using a file, a rawfile should _not_ " \
+                                "be provided on the command line. (The " \
+                                "value %s was given on the command line)." % \
+                                args.rawfile_id)
+            if args.from_file == '-':
+                rawlist = sys.stdin
+            else:
+                if not os.path.exists(args.from_file):
+                    raise errors.FileError("The rawfile list (%s) does " \
+                                "not appear to exist." % args.from_file)
+                rawlist = open(args.from_file, 'r')
+            numfails = 0
+            numdiagnosed = 0
+            for line in rawlist:
+                # Strip comments
+                line = line.partition('#')[0].strip()
+                if not line:
+                    # Skip empty line
+                    continue
+                try:
+                    customargs = copy.deepcopy(args)
+                    arglist = shlex.split(line.strip())
+                    parser.parse_args(arglist, namespace=customargs)
+                    diag = diagnose_rawfile(customargs.rawfile_id, \
+                                customargs.diagnostic, customargs.value, \
+                                existdb=db)
+                        
+                    if customargs.insert:
+                        insert_rawfile_diagnostics(customargs.rawfile_id, \
+                                                [diag], existdb=db)
+                    else:
+                        print str(diag)
+                except errors.ToasterError:
+                    numfails += 1
+                    traceback.print_exc()
+            if args.from_file != '-':
+                rawlist.close()
+            if numdiagnosed:
+                utils.print_success("\n\n===================================\n" \
+                                    "%d rawfiles successfully diagnosed\n" \
+                                    "===================================\n" % numadded)
+            if numfails:
+                raise errors.ToasterError(\
+                    "\n\n===================================\n" \
+                        "The diagnosis of %d rawfiles failed!\n" \
+                        "Please review error output.\n" \
+                        "===================================\n" % numfails)
         else:
-            trans.commit()
-        finally:
-            db.close()
-    else:
-        print str(diag)
+            if not args.rawfile_id:
+                raise ValueError("A rawfile ID number must be provided!")
+            diag = diagnose_rawfile(args.rawfile_id, \
+                        args.diagnostic, args.value, \
+                        existdb=db)
+                
+            if args.insert:
+                insert_rawfile_diagnostics(args.rawfile_id, \
+                                        [diag], existdb=db)
+            else:
+                print str(diag)
+    finally:
+        db.close()
 
 
 if __name__=='__main__':
