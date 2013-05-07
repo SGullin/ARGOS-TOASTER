@@ -32,10 +32,10 @@ def add_arguments(parser):
                             "the details of a single raw file, identified " \
                             "by its ID number. NOTE: No other raw files " \
                             "will match if this option is provided.")
-    parser.add_argument('-p', '--psr', dest='pulsar_name', \
-                        type=str, default='%', \
+    parser.add_argument('-p', '--psr', dest='pulsar_names', \
+                        type=str, action='append', \
                         help="The pulsar to grab rawfiles for. " \
-                            "NOTE: SQL regular expression syntax may be used")
+                            "NOTE: Multiple '-p'/'--psr' options may be given")
     parser.add_argument('-s', '--start-date', dest='start_date', \
                         type=str, default=None, \
                         help="Do not return rawfiles added to the DB " \
@@ -114,11 +114,12 @@ def add_arguments(parser):
 
 def main(args):
     rawfiles = get_rawfiles(args)
+    if not len(rawfiles):
+        raise errors.ToasterError("No rawfiles match parameters provided!")
+    
     # Sort rawfiles
     utils.sort_by_keys(rawfiles, args.sortkeys)
 
-    if not len(rawfiles):
-        raise errors.ToasterError("No rawfiles match parameters provided!")
     if args.output_style=='text':
         show_rawfiles(rawfiles)
     elif args.output_style=='plot':
@@ -144,7 +145,11 @@ def get_rawfiles(args):
     db = database.Database()
     db.connect()
 
-    whereclause = db.pulsar_aliases.c.pulsar_alias.like(args.pulsar_name)
+    if args.pulsar_names is None:
+        whereclause = db.pulsar_aliases.c.pulsar_alias.like('%')
+    else:
+        whereclause = db.pulsar_aliases.c.pulsar_alias.in_(args.pulsar_names)
+
     if args.rawfile_id is not None:
         whereclause &= (db.rawfiles.c.rawfile_id==args.rawfile_id)
     if args.start_date is not None:
@@ -453,7 +458,7 @@ def plot_rawfiles(rawfiles):
     plt.yticks(ipsr, psrs, rotation=0, \
                     va='center', ha='right')
     plt.title("# of archives", size='small') 
-
+    
 
 def show_rawfiles(rawfiles):
     print "--"*25
