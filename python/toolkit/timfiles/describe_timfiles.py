@@ -26,7 +26,7 @@ def add_arguments(parser):
                             "the details of a single timfile, identified " \
                             "by its ID number. NOTE: No other timfiles " \
                             "will match if this option is provided.")
-    parser.add_argument("--output-style", default='text', \
+    parser.add_argument("-O", "--output-style", default='text', \
                         dest='output_style', type=str, \
                         help="The following options control how " \
                         "the matching processing jobs are presented. " \

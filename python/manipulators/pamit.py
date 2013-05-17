@@ -45,11 +45,11 @@ class PamitManipulator(manipulators.BaseManipulator):
         # infns is a list of one (we ensure this above)
         shutil.copy(infns[0], outname)
 
-        cmd = "pam -m --setnchn %d --setnsub %d %s" % \
-                (nchan, nsub, outname)
+        cmd = ["pam", "-m", "--setnchn", str(nchan), \
+                "--setnsub", str(nsub), outname]
 
         if nbin is not None:
-            cmd += " --setnbin %d" % nbin
+            cmd += ["--setnbin", str(nbin)]
 
         # Scrunch the heck out of it
         utils.execute(cmd)

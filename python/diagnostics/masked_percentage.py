@@ -9,7 +9,7 @@ class MaskedPercentageDiagnostic(base.FloatDiagnostic):
 
     def _compute(self):
         utils.print_info("Calling psrstat to get weights for %s" % self.fn, 3)
-        cmd = "psrstat %s -c int:wt -Qq" % self.fn
+        cmd = ["psrstat", self.fn, "-c", "int:wt", "-Qq"]
         outstr, errstr = utils.execute(cmd)
         wtstrs = outstr.strip().split(',')
         weights = np.array([float(wt) for wt in wtstrs])

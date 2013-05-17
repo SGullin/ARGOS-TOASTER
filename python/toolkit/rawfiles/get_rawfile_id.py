@@ -91,7 +91,7 @@ def add_arguments(parser):
                         help="Don't match files that have been replaced. " \
                             "NOTE: The replacement file will only be " \
                             "included if it matches the search criteria.")
-    parser.add_argument("--output-style", default='text', \
+    parser.add_argument("-O", "--output-style", default='text', \
                         dest='output_style', type=str, \
                         help="The following options control how " \
                         "the matching rawfiles are presented. Recognized " \
@@ -114,10 +114,13 @@ def add_arguments(parser):
 
 def main(args):
     rawfiles = get_rawfiles(args)
+    # Sort rawfiles
+    utils.sort_by_keys(rawfiles, args.sortkeys)
+
     if not len(rawfiles):
         raise errors.ToasterError("No rawfiles match parameters provided!")
     if args.output_style=='text':
-        show_rawfiles(rawfiles, args.sortkeys)
+        show_rawfiles(rawfiles)
     elif args.output_style=='plot':
         import matplotlib.pyplot as plt
         plot_rawfiles(rawfiles)
@@ -220,8 +223,29 @@ def get_rawfiles(args):
     rows = result.fetchall()
     result.close()
     db.close()
-    return rows 
+    rawfiles = []
+    for row in rows:
+        rawfiles.append(RawfileParams(row['rawfile_id'], row))
+    return rawfiles 
 
+
+class RawfileParams(utils.FancyParams):
+    def __init__(self, rawfile_id, *args, **kwargs):
+        self.rawfile_id = rawfile_id
+        super(RawfileParams, self).__init__(*args, **kwargs)
+        
+    def _generate_value(self, key):
+        params = {'diags': []}
+        diags, diag_plots = utils.get_rawfile_diagnostics(self.rawfile_id)
+        for dd in diags:
+            params['diags'].append(dd['type'])
+            params['diag_%s' % dd['type'].lower()] = dd['value']
+        for dd in diag_plots:
+            params['diags'].append(dd['plot_type'])
+            params['diag_%s' % dd['plot_type'].lower()] = \
+                    os.path.join(dd['filepath'], dd['filename'])
+        return params
+        
 
 def custom_show_rawfiles(rawfiles, fmt="%(rawfile_id)d"):
     for rawfile in rawfiles:
@@ -265,14 +289,14 @@ def plot_rawfiles(rawfiles):
     plt.rc('font', family='sans-serif')
 
     fig = plt.figure(figsize=(10,8))
-    titletext = plt.figtext(0.025,0.975, "Raw file Summary", \
+    titletext = plt.figtext(0.025, 0.975, "Raw file Summary", \
                             size='xx-large', ha='left', va='top')
     db = database.Database() # Get database info, but don't connect
     dbtext = plt.figtext(0.025, 0.025, "Database (%s): %s" % \
                             (db.engine.name, db.engine.url.database), \
                             size='x-small', ha='left', va='bottom')
-    timetext = plt.figtext(0.975, 0.025, utils.Give_UTC_now(), \
-                            size='x-small', ha='right', va='bottom')
+    timetext = plt.figtext(0.0275, 0.9425, utils.Give_UTC_now(), \
+                            size='xx-small', ha='left', va='top')
 
     # Compute data for plotting
     numfiles = 0
@@ -308,7 +332,7 @@ def plot_rawfiles(rawfiles):
         pulsars[psr] = (psrcnt+1, psrhr+secs/3600.0)
     add_times = np.asarray(sorted(add_times+[datetime.datetime.utcnow()]))
 
-    plt.figtext(0.05, 0.91, "Total number of files archived: %d" % numfiles, \
+    plt.figtext(0.05, 0.9, "Total number of files archived: %d" % numfiles, \
                 ha='left', size='medium')
     unit = 's'
     thresh = 60.0
@@ -318,7 +342,7 @@ def plot_rawfiles(rawfiles):
         length /= thresh
         thresh = other_thresh.pop()
         unit = other_units.pop()
-    plt.figtext(0.05, 0.885, "Total integration time: %.2g %s" % \
+    plt.figtext(0.05, 0.875, "Total integration time: %.2g %s" % \
                         (length, unit), \
                 ha='left', size='medium')
     unit = 'bytes'
@@ -326,7 +350,7 @@ def plot_rawfiles(rawfiles):
     while size >= 1024.0 and len(other_units) > 1:
         size /= 1024.0
         unit = other_units.pop()
-    plt.figtext(0.05, 0.86, "Total disk space used: %.2f %s" % \
+    plt.figtext(0.05, 0.85, "Total disk space used: %.2f %s" % \
                         (size, unit), \
                 ha='left', size='medium')
 
@@ -404,13 +428,14 @@ def plot_rawfiles(rawfiles):
     psrs = []
     counts = []
     hours = []
-    for p, (cnt, hr) in pulsars.iteritems():
-        psrs.append(p)
+    for pp in sorted(pulsars.keys(), reverse=True):
+        cnt, hr = pulsars[pp]
+        psrs.append(pp)
         counts.append(cnt)
         hours.append(hr)
     ipsr = np.arange(len(psrs))
 
-    psrtime_ax = plt.axes((0.83, 0.15, 0.12, 0.7))
+    psrtime_ax = plt.axes((0.83, 0.05, 0.12, 0.9))
     psrtime_bar = plt.barh(ipsr, hours, \
                     align='center', lw=0, fc='#B22222', \
                     alpha=0.7, ec='k')
@@ -419,66 +444,58 @@ def plot_rawfiles(rawfiles):
     plt.setp(psrtime_ax.yaxis.get_ticklabels(), visible=False)
     plt.title("Obs. time", size='small') 
     
-    psrcnt_ax = plt.axes((0.7, 0.15, 0.12, 0.7), sharey=psrtime_ax)
+    psrcnt_ax = plt.axes((0.7, 0.05, 0.12, 0.9), sharey=psrtime_ax)
     psrcnt_bar = plt.barh(ipsr, counts, \
                     align='center', lw=0, fc='#008080', \
                     alpha=0.7, ec='k')
     plt.xlim(0, np.max(counts)*1.1)
     plt.ylim(-0.5,len(psrs)-0.5)
-    plt.yticks(ipsr, psrs, rotation=30, \
-                    va='top', ha='right')
+    plt.yticks(ipsr, psrs, rotation=0, \
+                    va='center', ha='right')
     plt.title("# of archives", size='small') 
 
 
-def show_rawfiles(rawfiles, sortkeys=['rawfile_id']):
-    # Sort rawfiles
-    utils.sort_by_keys(rawfiles, sortkeys)
-
+def show_rawfiles(rawfiles):
     print "--"*25
     for rawdict in rawfiles:
         print colour.cstring("Rawfile ID:", underline=True, bold=True) + \
                 colour.cstring(" %d" % rawdict.rawfile_id, bold=True)
-        fn = os.path.join(rawdict.filepath, rawdict.filename)
+        fn = os.path.join(rawdict['filepath'], rawdict['filename'])
         print "\nRawfile: %s" % fn
-        print "Pulsar name: %s" % rawdict.pulsar_name
+        print "Pulsar name: %s" % rawdict['pulsar_name']
         print "Uploaded by: %s (%s)" % \
-                    (rawdict.real_name, rawdict.email_address)
-        print "Date and time rawfile was added: %s" % rawdict.add_time.isoformat(' ')
-        if rawdict.replacement_rawfile_id is not None:
+                    (rawdict['real_name'], rawdict['email_address'])
+        print "Date and time rawfile was added: %s" % rawdict['add_time'].isoformat(' ')
+        if rawdict['replacement_rawfile_id'] is not None:
             colour.cprint("Rawfile has been superseded by rawfile_id=%d" % \
-                    rawdict.replacement_rawfile_id, 'warning')
+                    rawdict['replacement_rawfile_id'], 'warning')
         if config.cfg.verbosity >= 1:
-            lines = ["Observing system ID: %d" % rawdict.obssystem_id, \
-                     "Observing system name: %s" % rawdict.obssystem, \
-                     "Observing band: %s" % rawdict.band_descriptor, \
-                     "Telescope: %s" % rawdict.telescope_name, \
-                     "Frontend: %s" % rawdict.frontend, \
-                     "Backend: %s" % rawdict.backend, \
-                     "Clock: %s" % rawdict.clock]
+            lines = ["Observing system ID: %d" % rawdict['obssystem_id'], \
+                     "Observing system name: %s" % rawdict['obssystem'], \
+                     "Observing band: %s" % rawdict['band_descriptor'], \
+                     "Telescope: %s" % rawdict['telescope_name'], \
+                     "Frontend: %s" % rawdict['frontend'], \
+                     "Backend: %s" % rawdict['backend'], \
+                     "Clock: %s" % rawdict['clock']]
             utils.print_info("\n".join(lines), 1)
         if config.cfg.verbosity >= 2:
-            lines = ["MJD: %.6f" % rawdict.mjd, \
-                     "Number of phase bins: %d" % rawdict.nbin, \
-                     "Number of channels: %d" % rawdict.nchan, \
-                     "Number of polarisations: %d" % rawdict.npol, \
-                     "Number of sub-integrations: %d" % rawdict.nsub, \
-                     "Centre frequency (MHz): %g" % rawdict.freq, \
-                     "Bandwidth (MHz): %g" % rawdict.bw, \
-                     "Dispersion measure (pc cm^-3): %g" % rawdict.dm, \
-                     "Integration time (s): %g" % rawdict.length]
+            lines = ["MJD: %.6f" % rawdict['mjd'], \
+                     "Number of phase bins: %d" % rawdict['nbin'], \
+                     "Number of channels: %d" % rawdict['nchan'], \
+                     "Number of polarisations: %d" % rawdict['npol'], \
+                     "Number of sub-integrations: %d" % rawdict['nsub'], \
+                     "Centre frequency (MHz): %g" % rawdict['freq'], \
+                     "Bandwidth (MHz): %g" % rawdict['bw'], \
+                     "Dispersion measure (pc cm^-3): %g" % rawdict['dm'], \
+                     "Integration time (s): %g" % rawdict['length']]
             utils.print_info("\n".join(lines), 2)
         if config.cfg.verbosity >= 3:
             diags, diag_plots = utils.get_rawfile_diagnostics(rawdict.rawfile_id)
             lines = []
-            if diags:
-                lines.append("Diagnostics:")
-                for diag in diags:
-                    lines.append("    %s: %g" % (diag['type'], diag['value']))
-            if diag_plots:
-                lines.append("Diagnostic plots:")
-                for diag_plot in diag_plots:
-                    lines.append("    %s: %s" % (diag_plot['plot_type'], \
-                                os.path.join(diag_plot['filepath'], diag_plot['filename'])))
+                
+            lines.append("Diagnostics:")
+            for diag in rawdict['diags']:
+                lines.append("    %s: %s" % (diag, rawdict['diag_%s' % diag.lower()]))
             utils.print_info("\n".join(lines), 3)
         print "--"*25
 

@@ -21,6 +21,8 @@ import colour
 
 import database
 
+from toolkit.pulsars import add_pulsar
+
 ##############################################################################
 # GLOBAL DEFENITIONS
 ##############################################################################
@@ -380,21 +382,30 @@ def get_prefname(alias):
     return get_pulsarname(get_pulsarid(alias))
 
 
-def get_pulsarid(alias):
+def get_pulsarid(alias, autoadd=False):
     """Given a pulsar name/alias return its pulsar_id number,
         or raise an error.
 
         Input:
             alias: The name/alias of the pulsar.
+            autoadd: Automatically add pulsar if it doesn't already exist.
+                (Default: False)
 
         Output:
             pulsar_id: The corresponding pulsar_id value.
     """
     cache = get_pulsarid_cache()
-    if alias not in cache:
-        raise errors.UnrecognizedValueError("The pulsar name/alias '%s' does " \
-                                    "not appear in the pulsarid_cache!" % alias)
-    return cache[alias]
+    if alias in cache:
+        pulsar_id = cache[alias]
+    else:
+        if autoadd:
+            pulsar_id = add_pulsar.add_pulsar(alias)
+            # Add to cache, for next time
+            cache[alias] = pulsar_id
+        else:
+            raise errors.UnrecognizedValueError("The pulsar name/alias '%s' does " \
+                                       "not appear in the pulsarid_cache!" % alias)
+    return pulsar_id
 
 
 def get_obssystemid_cache(existdb=None, update=False):
@@ -600,14 +611,14 @@ def get_header_vals(fn, hdritems):
     if '=' in hdrstr:
         raise ValueError("'hdritems' passed to 'get_header_vals' " \
                          "should not perform and assignments!")
-    cmd = "/bin/bash -l -c \"vap -n -c '%s' '%s'\"" % (hdrstr, fn)
+    cmd = ["vap", "-n", "-c", hdrstr, fn]
     outstr, errstr = execute(cmd)
     outvals = outstr.split()[(0-len(hdritems)):] # First value is filename (we don't need it)
     if errstr:
         raise errors.SystemCallError("The command: %s\nprinted to stderr:\n%s" % \
                                 (cmd, errstr))
     elif len(outvals) != len(hdritems):
-        raise errors.SystemCallError("The command: %s\nreturn the wrong " \
+        raise errors.SystemCallError("The command: %s\nreturned the wrong " \
                             "number of values. (Was expecting %d, got %d.)" % \
                             (cmd, len(hdritems), len(outvals)))
     params = HeaderParams(fn)
@@ -643,7 +654,7 @@ def parse_psrfits_header(fn, hdritems):
     if '=' in hdrstr:
         raise ValueError("'hdritems' passed to 'parse_psrfits_header' " \
                          "should not perform and assignments!")
-    cmd = "psredit -q -Q -c '%s' %s" % (hdrstr, fn)
+    cmd = ["psredit", "-q", "-Q", "-c", hdrstr, fn]
     outstr, errstr = execute(cmd)
     outvals = outstr.split()
     if errstr:
@@ -738,13 +749,16 @@ def prep_parfile(fn):
 
         params[key.lower()] = val
     if "psrj" in params:
-        params['pulsar_id'] = get_pulsarid(params['psrj'])
+        params['pulsar_id'] = get_pulsarid(params['psrj'], \
+                    autoadd=config.cfg.auto_add_pulsars)
         params['name'] = params['psrj']
     elif "psrb" in params:
-        params['pulsar_id'] = get_pulsarid(params['psrb'])
+        params['pulsar_id'] = get_pulsarid(params['psrb'], \
+                    autoadd=config.cfg.auto_add_pulsars)
         params['name'] = params['psrb']
     else:
-        params['pulsar_id'] = get_pulsarid(params['psr'])
+        params['pulsar_id'] = get_pulsarid(params['psr'], \
+                    autoadd=config.cfg.auto_add_pulsars)
         params['name'] = params['psr']
     
     # Translate a few parameters
@@ -820,7 +834,8 @@ def prep_file(fn):
     
     # Check if pulsar_id is found
     try:
-        psr_id = get_pulsarid(params['name'])
+        psr_id = get_pulsarid(params['name'], \
+                    autoadd=config.cfg.auto_add_pulsars)
     except errors.UnrecognizedValueError:
         raise errors.FileError("The pulsar name %s (from file %s) is not " \
                             "recognized." % (params['name'], fn))
@@ -848,7 +863,8 @@ def is_gitrepo(repodir):
     """
     print_info("Checking if directory '%s' contains a Git repo..." % repodir, 2)
     try:
-        stdout, stderr = execute("git rev-parse", dir=repodir, \
+        cmd = ["git", "rev-parse"]
+        stdout, stderr = execute(cmd, dir=repodir, \
                                     stderr=open(os.devnull))
     except errors.SystemCallError:
         # Exit code is non-zero
@@ -869,7 +885,8 @@ def is_gitrepo_dirty(repodir):
     """
     print_info("Checking if Git repo at '%s' is dirty..." % repodir, 2)
     try:
-        stdout, stderr = execute("git diff --quiet", dir=repodir)
+        cmd = ["git", "diff", "--quiet"]
+        stdout, stderr = execute(cmd, dir=repodir)
     except errors.SystemCallError:
         # Exit code is non-zero
         return True
@@ -890,7 +907,8 @@ def get_githash(repodir):
     if is_gitrepo_dirty(repodir):
         warnings.warn("Git repository has uncommitted changes!", \
                         errors.ToasterWarning)
-    stdout, stderr = execute("git rev-parse HEAD", dir=repodir)
+    cmd = ["git", "rev-parse", "HEAD"]
+    stdout, stderr = execute(cmd, dir=repodir)
     githash = stdout.strip()
     return githash
 
@@ -918,7 +936,8 @@ def get_version_id(existdb=None):
                         "Falling back to 'psrchive --version' for version " \
                         "information." % config.cfg.psrchive_dir, \
                         errors.ToasterWarning)
-        stdout, stderr = execute("psrchive --version")
+        cmd = ["psrchive", "--version"]
+        stdout, stderr = execute(cmd)
         psrchive_githash = stdout.strip()
     
     # Use the exisitng DB connection, or open a new one if None was provided
@@ -1243,9 +1262,9 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, \
     """
     # Log command to stdout
     if dir is not None:
-        msg = "(In %s)\n%s" % (dir, cmd)
+        msg = "(In %s)\n%s" % (dir, str(cmd))
     else:
-        msg = cmd
+        msg = str(cmd)
     print_debug(msg, "syscalls", stepsback=2)
 
     stdoutfile = False
@@ -1261,13 +1280,13 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr, \
         print_debug("Sending the following to cmd's stdin: %s" % stdinstr, \
                         "syscalls")
         # Run (and time) the command. Check for errors.
-        pipe = subprocess.Popen(cmd, shell=True, cwd=dir, \
+        pipe = subprocess.Popen(cmd, shell=False, cwd=dir, \
                             stdin=subprocess.PIPE, 
                             stdout=stdout, stderr=stderr)
         (stdoutdata, stderrdata) = pipe.communicate(stdinstr)
     else:
         # Run (and time) the command. Check for errors.
-        pipe = subprocess.Popen(cmd, shell=True, cwd=dir , \
+        pipe = subprocess.Popen(cmd, shell=False, cwd=dir , \
                             stdout=stdout)#, stderr=stderr)
         (stdoutdata, stderrdata) = pipe.communicate()
     retcode = pipe.returncode
@@ -2143,10 +2162,9 @@ class DefaultArguments(argparse.ArgumentParser):
 
 
 null = lambda x: x
-class HeaderParams(dict):
-    def __init__(self, fn, *args, **kwargs):
-        self.fn = fn
-        super(HeaderParams, self).__init__(*args, **kwargs)
+class FancyParams(dict):
+    def __init__(self, *args, **kwargs):
+        super(FancyParams, self).__init__(*args, **kwargs)
 
     def __getitem__(self, key):
         if (type(key) in (type('str'), type(u'str'))) and key.endswith("_L"):
@@ -2182,9 +2200,40 @@ class HeaderParams(dict):
                     return filterfunc(val)
                 else:
                     return val
-
+    
     def get_value(self, key):
         if key not in self:
-            params = get_header_vals(self.fn, [key])
+            params = self._generate_value(key)
             self.update(params)
-        return super(self.__class__, self).__getitem__(key)
+        try:
+            val = super(FancyParams, self).__getitem__(key)
+        except KeyError:
+            raise errors.BadColumnNameError("Unrecognized parameter " \
+                    "name (%s). Recognized parameters: '%s'" % \
+                    (key, "', '".join(sorted(self.keys()))))
+        return val
+
+    def _generate_value(self, key):
+        """To generate a missing value, if it is not contained in
+            the Params object.
+
+            NOTE: This method must be implemented by child classes.
+    
+            Input:
+                key: The key of the value to generate.
+
+            Outputs:
+                param: The generated (formerly missing) value.
+        """
+        raise NotImplementedError("Cannot generate value (key: %s). " \
+                        "'%s' class of should provide an implementation " \
+                        "of '_generate_value" % (key, self.__class__.__name__))
+
+
+class HeaderParams(FancyParams):
+    def __init__(self, fn, *args, **kwargs):
+        self.fn = fn
+        super(HeaderParams, self).__init__(*args, **kwargs)
+
+    def _generate_value(self, key):
+        return get_header_vals(self.fn, [key])

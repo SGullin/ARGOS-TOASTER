@@ -13,7 +13,7 @@ DESCRIPTION = "Provide an overview of TOAs"
 
 
 def add_arguments(parser):
-    parser.add_argument("--output-style", default='histogram', \
+    parser.add_argument("-O", "--output-style", default='histogram', \
                         dest='output_style', type=str, \
                         help="The following options control how " \
                         "the matching rawfiles are presented. Recognized " \
