@@ -399,6 +399,8 @@ def get_pulsarid(alias, autoadd=False):
         pulsar_id = cache[alias]
     else:
         if autoadd:
+            print_info("Automatically inserting pulsar with " \
+                        "name '%s'" % alias, 1)
             pulsar_id = add_pulsar.add_pulsar(alias)
             # Add to cache, for next time
             cache[alias] = pulsar_id

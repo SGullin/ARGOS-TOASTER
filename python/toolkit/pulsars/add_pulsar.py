@@ -85,7 +85,7 @@ def validate_aliases(aliases, existdb=None):
                                     "', '".join(aliases_in_use))
 
 
-def add_pulsar(pulsar_name, aliases=[], existdb=None):
+def add_pulsar(pulsar_name, aliases=None, existdb=None):
     """Add a new pulsar and its aliases to the database.
 
         Inputs:
@@ -97,6 +97,8 @@ def add_pulsar(pulsar_name, aliases=[], existdb=None):
         Output:
             pulsar_id: The ID number of the newly inserted pulsar.
     """
+    if aliases is None:
+        aliases = []
     # Connect to the database
     db = existdb or database.Database()
     db.connect()
@@ -117,6 +119,11 @@ def add_pulsar(pulsar_name, aliases=[], existdb=None):
         pulsar_id = result.inserted_primary_key[0]
         result.close()
         add_pulsar_aliases(pulsar_id, aliases, db)
+        # Update the caches
+        utils.pulsarname_cache[pulsar_id] = pulsar_name
+        utils.pulsaralias_cache[pulsar_id] = aliases
+        for alias in aliases:
+            utils.pulsarid_cache[alias] = pulsar_id
     except:
         trans.rollback()
         raise
