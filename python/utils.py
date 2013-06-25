@@ -470,11 +470,15 @@ def get_obssysid(obssys_key):
         Output:
             obssys_id: The corresponding observing system's ID.
     """
+    if type(obssys_key) is not types.StringType:
+        # Tuple of telescope, frontend, backend provided
+        # Cast all strings to lowercase
+        obssys_key = tuple([xx.lower() for xx in obssys_key])
     cache = get_obssystemid_cache()
     if obssys_key not in cache:
         raise errors.UnrecognizedValueError("The observing system (%s) " \
                                 "does not appear in the obssysid_cache!" % \
-                                obssys_key)
+                                str(obssys_key))
     return cache[obssys_key]
 
 

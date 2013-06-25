@@ -67,7 +67,13 @@ def tempo2_reader(line):
             key = key.lower()
             key = KNOWN_FLAG_ALIASES.get(key, key)
             caster = KNOWN_FLAG_TYPES.get(key, str)
-            toainfo['extras'][key] = caster(val)
+            try:
+                toainfo['extras'][key] = caster(val)
+            except:
+                utils.print_info("Couldn't cast %s:%s" % (key, val), 2)
+
+    utils.print_debug("TOA line: %s\nParsed info: %s" % (line, toainfo), \
+                    'toaparse')
 
     return toainfo
 
