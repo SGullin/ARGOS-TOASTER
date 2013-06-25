@@ -2,6 +2,7 @@
 import os.path
 import types
 
+import config
 import utils
 import errors
 
