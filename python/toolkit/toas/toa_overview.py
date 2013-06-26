@@ -120,7 +120,10 @@ def plot_toa_histogram(toas):
                          'Jodrell': '#CE1124', 
                          'Nancay': '#0055A4', 
                          'WSRT': '#FF7F00', 
-                         'Sardinia': '#007FFF'}
+                         'Sardinia': '#007FFF',
+                         'Parkes': '#EDC9AF',
+                         'GBT': '#22BB22', \
+                         'Arecibo': '#00BFFF'}
 
     indices = []
     labels = []
