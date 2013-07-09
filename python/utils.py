@@ -2013,6 +2013,8 @@ def sort_by_keys(tosort, keys):
         Outputs:
             None - sorting is done in-place.
     """
+    if not tosort:
+        return tosort
     print_info("Sorting by keys (%s)" % " then ".join(keys), 3)
     for sortkey in keys:
         if sortkey.endswith("_r"):
@@ -2184,6 +2186,7 @@ class FancyParams(dict):
         if self.has_key(key):
             val = self.get_value(key)
             if type(val) in (type('str'), type(u'str')):
+                val = str(val)
                 return filterfunc(val)
             else:
                 return val

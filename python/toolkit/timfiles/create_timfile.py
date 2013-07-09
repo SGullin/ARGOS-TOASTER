@@ -237,7 +237,7 @@ def print_summary(toas, comments):
     print "Number of manipulators: %d" % len(manipulators)
 
 
-def add_timfile_entry(toas, cmdline, comments, existdb=None):
+def add_timfile_entry(toas, cmdline, comments, conflict_handler, existdb=None):
     """Insert a timfile entry in the DB, and associate
         TOAs with it.
 
@@ -245,6 +245,7 @@ def add_timfile_entry(toas, cmdline, comments, existdb=None):
             toas: A list of row objects each representing a TOA.
             cmdline: the command line used when running the program.
             comments: User comments describing the timfile.
+            conflict_handler: A handler function to use.
             existdb: A (optional) existing database connection object.
                 (Default: Establish a db connection)
 
@@ -252,7 +253,6 @@ def add_timfile_entry(toas, cmdline, comments, existdb=None):
             timfile_id: The resulting ID of the timfile entry.
     """
     # Check for / handle conflicts
-    conflict_handler = CONFLICT_HANDLERS[args.on_conflict]
     toas = conflict_handler(toas)
     if not toas:
         raise errors.ToasterError("No TOAs match criteria provided!") 
@@ -331,7 +331,9 @@ def main(args):
         elif args.dry_run:
             print_summary(toas, args.comments)
         else:
-            timfile_id = add_timfile_entry(toas, cmdline, args.comments)
+            conflict_handler = CONFLICT_HANDLERS[args.on_conflict]
+            timfile_id = add_timfile_entry(toas, cmdline, args.comments, \
+                                            conflict_handler)
             utils.print_info("Created new timfile entry - timfile_id=%d (%s)" % \
                     (timfile_id, utils.Give_UTC_now()), 1)
     except:

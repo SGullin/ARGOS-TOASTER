@@ -77,7 +77,7 @@ def plot_cadence(toas):
     for ii, (psrid, mjds) in enumerate(pulsars.iteritems()):
         indices.append(ii)
         labels.append(utils.get_pulsarname(psrid))
-        ax.plot(mjds, ii*np.ones_like(mjds), 'k.')
+        ax.plot(mjds, ii*np.ones_like(mjds), 'k,')
     ax.set_xlabel("MJD")
     ax.yaxis.set_ticklabels(labels)
     ax.yaxis.set_ticks(np.array(indices))
