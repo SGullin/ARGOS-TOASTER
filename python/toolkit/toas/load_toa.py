@@ -2,6 +2,7 @@
 import os.path
 import types
 
+import config
 import utils
 import errors
 
@@ -113,6 +114,8 @@ def __parse_timfile(timfn, reader=readers.tempo2_reader, \
                                                 **obssys_discovery_kwargs)
                 toas.append(toainfo)
         except Exception, e:
+            if config.debug.TOAPARSE:
+                raise
             raise errors.BadTOAFormat("Error occurred while parsing " \
                                     "TOA line (%s:%d):\n    %s\n\n" \
                                     "Original exception message:\n    %s" % \
@@ -154,6 +157,7 @@ def __determine_obssystem(toainfo, obssystem_name=None, obssystem_flags=[], \
             raised.
 
     """
+    obssysid = None
     # Check that enough command line arguments are given to discover
     # The observing system
     if (obssystem_name or obssystem_flags) or \
@@ -213,9 +217,15 @@ def __determine_obssystem(toainfo, obssystem_name=None, obssystem_flags=[], \
             raise errors.BadTOAFormat("Backend from flag (%s) doesn't match " \
                                     "observing system backend (%s)!" % \
                                     (bename, obssysinfo['backend']))
+    
+    utils.print_info('Determined backend (%s) and frontend (%s)' % \
+                    (bename, fename), 1)
 
     if (bename is not None) and (fename is not None):
         obssysid = utils.get_obssysid((toainfo['telescope'], fename, bename))
+    if obssysid is None:
+        raise errors.BadTOAFormat("Not enough information to determine " \
+                                "observation system!")
     return obssysid
 
 
@@ -250,12 +260,15 @@ def load_from_timfile(timfile, pulsar_id, reader='tempo2', \
 def main(args):
     if args.timfile is None:
         raise errors.BadInputError("An input timfile is required.")
+    if args.pulsar_name is None:
+        raise errors.BadInputError("The pulsar name must be provided.")
     if args.format not in READERS:
         raise errors.UnrecognizedValueError("The requested timfile format " \
                         "'%s' is not recognized. Available formats: '%s'." % \
                         (args.format, "', '".join(sorted(READERS.keys()))))
+    # Pulsar must already included in DB
     pulsar_id = utils.get_pulsarid(args.pulsar_name, \
-                        autoadd=config.cfg.auto_add_pulsars)
+                        autoadd=False)
    
     obssystem_discovery_args = {'obssystem_name':args.obssystem, \
                                 'obssystem_flags':args.obssystem_flags, \

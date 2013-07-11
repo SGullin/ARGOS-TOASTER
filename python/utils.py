@@ -399,6 +399,8 @@ def get_pulsarid(alias, autoadd=False):
         pulsar_id = cache[alias]
     else:
         if autoadd:
+            print_info("Automatically inserting pulsar with " \
+                        "name '%s'" % alias, 1)
             pulsar_id = add_pulsar.add_pulsar(alias)
             # Add to cache, for next time
             cache[alias] = pulsar_id
@@ -468,11 +470,15 @@ def get_obssysid(obssys_key):
         Output:
             obssys_id: The corresponding observing system's ID.
     """
+    if type(obssys_key) is not types.StringType:
+        # Tuple of telescope, frontend, backend provided
+        # Cast all strings to lowercase
+        obssys_key = tuple([xx.lower() for xx in obssys_key])
     cache = get_obssystemid_cache()
     if obssys_key not in cache:
         raise errors.UnrecognizedValueError("The observing system (%s) " \
                                 "does not appear in the obssysid_cache!" % \
-                                obssys_key)
+                                str(obssys_key))
     return cache[obssys_key]
 
 
@@ -2007,6 +2013,8 @@ def sort_by_keys(tosort, keys):
         Outputs:
             None - sorting is done in-place.
     """
+    if not tosort:
+        return tosort
     print_info("Sorting by keys (%s)" % " then ".join(keys), 3)
     for sortkey in keys:
         if sortkey.endswith("_r"):
@@ -2178,6 +2186,7 @@ class FancyParams(dict):
         if self.has_key(key):
             val = self.get_value(key)
             if type(val) in (type('str'), type(u'str')):
+                val = str(val)
                 return filterfunc(val)
             else:
                 return val

@@ -77,7 +77,7 @@ def plot_cadence(toas):
     for ii, (psrid, mjds) in enumerate(pulsars.iteritems()):
         indices.append(ii)
         labels.append(utils.get_pulsarname(psrid))
-        ax.plot(mjds, ii*np.ones_like(mjds), 'k.')
+        ax.plot(mjds, ii*np.ones_like(mjds), 'k,')
     ax.set_xlabel("MJD")
     ax.yaxis.set_ticklabels(labels)
     ax.yaxis.set_ticks(np.array(indices))
@@ -120,7 +120,10 @@ def plot_toa_histogram(toas):
                          'Jodrell': '#CE1124', 
                          'Nancay': '#0055A4', 
                          'WSRT': '#FF7F00', 
-                         'Sardinia': '#007FFF'}
+                         'Sardinia': '#007FFF',
+                         'Parkes': '#EDC9AF',
+                         'GBT': '#22BB22', \
+                         'Arecibo': '#00BFFF'}
 
     indices = []
     labels = []
@@ -157,8 +160,8 @@ def plot_toa_histogram(toas):
     bandax.set_xlabel("Number of TOAs")
     telax.set_title("By telescope")
     bandax.set_title("By observing band")
-    handles, labels = zip(*telleg.items())
-    telax.legend(labels, handles, prop=dict(size='small'))
+    labels, handles = zip(*sorted(telleg.items()))
+    telax.legend(handles, labels, prop=dict(size='small'))
     handles, labels = zip(*bandleg.items())
     bandax.legend(labels, handles, prop=dict(size='small'))
     plt.setp(bandax.yaxis.get_ticklabels(), visible=False)
