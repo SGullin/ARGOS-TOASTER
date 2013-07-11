@@ -26,10 +26,9 @@ CONFLICT_HANDLERS = {'strict': conflict_handlers.strict_conflict_handler, \
 
 
 def add_arguments(parser):
-    parser.add_argument('-p', '--psr', dest='pulsar_name', \
-                        type=str, default='%', \
-                        help='Pulsar name, or alias. NOTE: This option ' \
-                            'must be provided.')
+    parser.add_argument('-p', '--psr', dest='pulsar_names', \
+                        type=str, action='append', \
+                        help="The pulsar to grab rawfiles for.")
     parser.add_argument('-P', '--process-id', dest='process_ids', \
                         type=int, default=[], action='append', \
                         help="A process ID. Multiple instances of " \
@@ -89,7 +88,7 @@ def toa_select(args, existdb=None):
     """
     db = existdb or database.Database()
     db.connect()
-    whereclause = db.pulsar_aliases.c.pulsar_alias.like(args.pulsar_name)
+    whereclause = db.pulsar_aliases.c.pulsar_alias.in_(args.pulsar_names)
 
     if args.telescopes:
         tmp = db.telescope_aliases.c.telescope_alias.like(args.telescopes[0])

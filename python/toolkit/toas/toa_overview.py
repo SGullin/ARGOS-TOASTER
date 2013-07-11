@@ -20,10 +20,10 @@ def add_arguments(parser):
                         "modes: 'histogram' - display a histogram plots; " \
                         "'cadence' - display a plot of observing cadence." \
                         "(Default: histogram).")
-    parser.add_argument('-p', '--psr', dest='pulsar_name', \
-                        type=str, default='%', \
-                        help='Pulsar name, or alias. NOTE: This option ' \
-                            'must be provided.')
+    parser.add_argument('-p', '--psr', dest='pulsar_names', \
+                        type=str, action='append', \
+                        help="The pulsar to grab rawfiles for. " \
+                            "NOTE: Multiple '-p'/'--psr' options may be given")
     parser.add_argument('-P', '--process-id', dest='process_ids', \
                         type=int, default=[], action='append', \
                         help="A process ID. Multiple instances of " \
