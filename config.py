@@ -2,9 +2,7 @@
 import os.path
 import glob
 
-import debug
-import errors
-import utils
+from toaster import debug
 
 class ToasterConfigs(dict):
     def __init__(self):
@@ -26,6 +24,7 @@ class ToasterConfigs(dict):
                         "ensure at least one file listed is accessible.")
         
     def __getattr__(self, key):
+        from toaster import errors
         if key not in self:
             raise errors.NoConfigError("There is no config param called '%s' " \
                                         "defined!" % key) 
@@ -56,6 +55,7 @@ def main():
 
 
 if __name__=='__main__':
+    from toaster import utils
     parser = utils.DefaultArguments(\
                 description="Print configurations to terminal.")
     args = parser.parse_args()

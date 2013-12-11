@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-A script to add a rawfile diagnostic to the database/
+A script to add a rawfile diagnostic to the database
 
 Patrick Lazarus, Jan. 28, 2013
 """
@@ -12,11 +12,14 @@ import shlex
 import warnings
 import copy
 
-import utils
-import errors
-import colour
-import database
-import diagnostics
+from toaster import utils
+from toaster import errors
+from toaster import colour
+from toaster import database
+from toaster import diagnostics
+from toaster.utils import notify
+from toaster.utils import datafile
+
 
 SHORTNAME = 'diagnose'
 DESCRIPTION = "Add a diagnostic value, or plot, for a rawfile."
@@ -100,12 +103,12 @@ def diagnose_rawfile(rawfile_id, diagnostic, value=None, existdb=None):
         diag = diagcls(fn)
     elif type(value) == types.FloatType:
         # Numeric diagnostic
-        utils.print_info("Custom floating-point rawfile diagnostic provided", 2)
+        notify.print_info("Custom floating-point rawfile diagnostic provided", 2)
         diag = diagnostics.get_custom_float_diagnostic(fn, diagnostic, \
                                         value)
     else:
         # Plot diagnostic
-        utils.print_info("Custom rawfile diagnostic plot provided", 2)
+        notify.print_info("Custom rawfile diagnostic plot provided", 2)
         diag = diagnostics.get_custom_diagnostic_plot(fn, diagnostic, \
                                         value)
     if existdb is None:
@@ -197,12 +200,12 @@ def insert_rawfile_diagnostics(rawfile_id, diags, existdb=None):
     db = existdb or database.Database()
     db.connect()
 
-    utils.print_info("Computing raw file diagnostics for " \
+    notify.print_info("Computing raw file diagnostics for " \
                         "rawfile (ID: %d)" % rawfile_id, 2)
 
     try:
         for diag in diags:
-            utils.print_info("Computing %s diagnostic" % diag.name, 3)
+            notify.print_info("Computing %s diagnostic" % diag.name, 3)
             
             trans = db.begin()
             try:
@@ -219,7 +222,7 @@ def insert_rawfile_diagnostics(rawfile_id, diags, existdb=None):
                     raise ValueError("Diagnostic is not a valid type (%s)!" % \
                                         type(diag))
             except errors.DiagnosticAlreadyExists, e:
-                print_info("Diagnostic already exists: %s. Skipping..." % \
+                notify.print_info("Diagnostic already exists: %s. Skipping..." % \
                                 str(e), 2)
                 trans.rollback()
             else:
@@ -255,7 +258,7 @@ def __insert_rawfile_float_diagnostic(rawfile_id, diag, existdb=None):
         result = db.execute(ins, values)
         diag_id = result.inserted_primary_key[0]
         result.close()
-        utils.print_info("Inserted rawfile diagnostic (type: %s)." % \
+        notify.print_info("Inserted rawfile diagnostic (type: %s)." % \
                     diag.name, 2)
     finally:
         if not existdb:
@@ -286,7 +289,7 @@ def __insert_rawfile_diagnostic_plot(rawfile_id, diag, existdb=None):
         # Put diagnostic plot next to the data file
         diagplot = os.path.abspath(diag.diagnostic)
         archivedir = os.path.split(os.path.abspath(diag.fn))[0]
-        diagpath = utils.archive_file(diagplot, archivedir)
+        diagpath = datafile.archive_file(diagplot, archivedir)
         diagdir, diagfn = os.path.split(os.path.abspath(diagpath))
     
         ins = db.raw_diagnostic_plots.insert()
@@ -297,7 +300,7 @@ def __insert_rawfile_diagnostic_plot(rawfile_id, diag, existdb=None):
         result = db.execute(ins, values)
         diag_id = result.inserted_primary_key[0]
         result.close()
-        utils.print_info("Inserted rawfile diagnostic plot (type: %s)." % \
+        notify.print_info("Inserted rawfile diagnostic plot (type: %s)." % \
                     diag.name, 2)
     except:
         # Move the diagnostic plot back if it has already been archived.
@@ -369,7 +372,7 @@ def main(args):
             if args.from_file != '-':
                 rawlist.close()
             if numdiagnosed:
-                utils.print_success("\n\n===================================\n" \
+                notify.print_success("\n\n===================================\n" \
                                     "%d rawfiles successfully diagnosed\n" \
                                     "===================================\n" % numadded)
             if numfails:

@@ -7,10 +7,11 @@ import traceback
 import copy
 import shlex
 
-import utils
-import database
-import errors
-
+from toaster import utils
+from toaster import database
+from toaster import errors
+from toaster.utils import notify
+from toaster.utils import cache
 
 SHORTNAME = 'add'
 DESCRIPTION = "Add a new pulsar to the DB"
@@ -120,10 +121,10 @@ def add_pulsar(pulsar_name, aliases=None, existdb=None):
         result.close()
         add_pulsar_aliases(pulsar_id, aliases, db)
         # Update the caches
-        utils.pulsarname_cache[pulsar_id] = pulsar_name
-        utils.pulsaralias_cache[pulsar_id] = aliases
+        cache.pulsarname_cache[pulsar_id] = pulsar_name
+        cache.pulsaralias_cache[pulsar_id] = aliases
         for alias in aliases:
-            utils.pulsarid_cache[alias] = pulsar_id
+            cache.pulsarid_cache[alias] = pulsar_id
     except:
         trans.rollback()
         raise
@@ -218,7 +219,7 @@ def main(args):
             if args.from_file != '-':
                 psrlist.close()
             if numadded:
-                utils.print_success("\n\n===================================\n" \
+                notify.print_success("\n\n===================================\n" \
                                     "%d pulsars successfully added\n" \
                                     "===================================\n" % numadded)
             if numfails:

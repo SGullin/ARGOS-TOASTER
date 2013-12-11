@@ -253,8 +253,53 @@ def load_from_timfile(timfile, pulsar_id, reader='tempo2', \
                             **obssystem_discovery_args)
     for ti in toas:
         ti['pulsar_id'] = pulsar_id
-    utils.load_toas(toas)
+    load_toas(toas)
     return toas
+
+
+def load_toas(toainfo, existdb=None):
+    """Upload a TOA to the database.
+
+        Inputs:
+            toainfo: A list of dictionaries, each with
+                information for a TOA.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
+
+        Outputs:
+            None
+    """
+    if not toainfo:
+        raise errors.BadInputError("No TOA info was provided!")
+
+    # Use the exisitng DB connection, or open a new one if None was provided
+    db = existdb or database.Database()
+    db.connect()
+    db.begin() # Open a transaction
+    
+    # Write values to the toa table
+    ins = db.toas.insert()
+    toa_ids = []
+    for values in toainfo:
+        if 'toa_id' in values:
+            raise errors.BadTOAFormat("TOA has already been loaded? " \
+                                    "TOA ID: %d" % values['toa_id']) 
+        result = db.execute(ins, values)
+        toa_id = result.inserted_primary_key[0]
+        result.close()
+        toa_ids.append(toa_id)
+        values['toa_id'] = toa_id
+    db.commit()
+    if len(toa_ids) > 1:
+        notify.print_info("Added %d TOAs to DB." % len(toa_ids), 2)
+    else:
+        notify.print_info("Added TOA to DB.", 2)
+    
+    if not existdb:
+        # Close the DB connection we opened
+        db.close()
+    
+    return toa_ids
 
 
 def main(args):

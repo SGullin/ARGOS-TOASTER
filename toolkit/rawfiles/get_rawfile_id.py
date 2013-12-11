@@ -13,11 +13,14 @@ import warnings
 
 import numpy as np
 
-import config
-import utils
-import database
-import errors
-import colour
+from toaster import config
+from toaster import utils
+from toaster.utils import datafile
+from toaster.utils import notify
+from toaster import database
+from toaster import errors
+from toaster import colour
+from toaster.toolkit.rawfiles import general
 
 SHORTNAME = 'show'
 DESCRIPTION = "Get a listing of rawfile_id " \
@@ -234,14 +237,14 @@ def get_rawfiles(args):
     return rawfiles 
 
 
-class RawfileParams(utils.FancyParams):
+class RawfileParams(datafile.FancyParams):
     def __init__(self, rawfile_id, *args, **kwargs):
         self.rawfile_id = rawfile_id
         super(RawfileParams, self).__init__(*args, **kwargs)
         
     def _generate_value(self, key):
         params = {'diags': []}
-        diags, diag_plots = utils.get_rawfile_diagnostics(self.rawfile_id)
+        diags, diag_plots = general.get_rawfile_diagnostics(self.rawfile_id)
         for dd in diags:
             params['diags'].append(dd['type'])
             params['diag_%s' % dd['type'].lower()] = dd['value']
@@ -482,7 +485,7 @@ def show_rawfiles(rawfiles):
                      "Frontend: %s" % rawdict['frontend'], \
                      "Backend: %s" % rawdict['backend'], \
                      "Clock: %s" % rawdict['clock']]
-            utils.print_info("\n".join(lines), 1)
+            notify.print_info("\n".join(lines), 1)
         if config.cfg.verbosity >= 2:
             lines = ["MJD: %.6f" % rawdict['mjd'], \
                      "Number of phase bins: %d" % rawdict['nbin'], \
@@ -493,15 +496,15 @@ def show_rawfiles(rawfiles):
                      "Bandwidth (MHz): %g" % rawdict['bw'], \
                      "Dispersion measure (pc cm^-3): %g" % rawdict['dm'], \
                      "Integration time (s): %g" % rawdict['length']]
-            utils.print_info("\n".join(lines), 2)
+            notify.print_info("\n".join(lines), 2)
         if config.cfg.verbosity >= 3:
-            diags, diag_plots = utils.get_rawfile_diagnostics(rawdict.rawfile_id)
+            diags, diag_plots = general.get_rawfile_diagnostics(rawdict.rawfile_id)
             lines = []
                 
             lines.append("Diagnostics:")
             for diag in rawdict['diags']:
                 lines.append("    %s: %s" % (diag, rawdict['diag_%s' % diag.lower()]))
-            utils.print_info("\n".join(lines), 3)
+            notify.print_info("\n".join(lines), 3)
         print "--"*25
 
 

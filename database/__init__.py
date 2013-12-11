@@ -3,11 +3,11 @@ import string
 
 import sqlalchemy as sa
 
-import config
-import errors
+from toaster import config
+from toaster import errors
 
-import schema
-import utils
+from toaster.database import schema
+import toaster.utils.notify as notify
 
 null = lambda x: x
     
@@ -50,7 +50,7 @@ def before_cursor_execute(conn, cursor, statement, parameters, \
         msg += "\n    Executing %d statements" % len(parameters)
     elif parameters:
         msg += "\n    Params: %s" % str(parameters)
-    utils.print_debug(msg, "queries", stepsback=7)
+    notify.print_debug(msg, "queries", stepsback=7)
 
 
 def commit_event(conn):
@@ -58,7 +58,7 @@ def commit_event(conn):
 
         See SQLAlchemy for details about event triggers.
     """
-    utils.print_debug("Committing database transaction.", 'database', \
+    notify.print_debug("Committing database transaction.", 'database', \
                         stepsback=7)
 
 
@@ -67,7 +67,7 @@ def rollback_event(conn):
         
         See SQLAlchemy for details about event triggers.
     """
-    utils.print_debug("Rolling back database transaction.", 'database', \
+    notify.print_debug("Rolling back database transaction.", 'database', \
                         stepsback=7)
         
 
@@ -76,7 +76,7 @@ def begin_event(conn):
         
         See SQLAlchemy for details about event triggers.
     """
-    utils.print_debug("Opening database transaction.", 'database', \
+    notify.print_debug("Opening database transaction.", 'database', \
                         stepsback=7)
 
 
@@ -187,7 +187,7 @@ class Database(object):
             if self.engine.dialect.name == 'sqlite':
                 result = self.execute("PRAGMA foreign_keys=ON")
                 result.close()
-            utils.print_debug("Database connection established.", 'database', \
+            notify.print_debug("Database connection established.", 'database', \
                                 stepsback=2)
         return self.conn
 
@@ -223,7 +223,7 @@ class Database(object):
             Outputs:
                 None
         """
-        utils.print_debug("Attempting to begin a transaction via " \
+        notify.print_debug("Attempting to begin a transaction via " \
                             "database object", 'database', stepsback=2)
         if not self.is_connected():
             raise errors.DatabaseError("Connection to database not " \
@@ -245,7 +245,7 @@ class Database(object):
             Outputs:
                 None
         """
-        utils.print_debug("Attempting to commit a transaction via " \
+        notify.print_debug("Attempting to commit a transaction via " \
                             "database object", 'database', stepsback=2)
         if self.open_transactions:
             trans = self.open_transactions.pop()
@@ -262,7 +262,7 @@ class Database(object):
             Outputs:
                 None
         """
-        utils.print_debug("Attempting to roll back a transaction via " \
+        notify.print_debug("Attempting to roll back a transaction via " \
                             "database object", 'database', stepsback=2)
         trans = self.open_transactions.pop()
         trans.rollback()
@@ -278,7 +278,7 @@ class Database(object):
                 None
         """
         if self.is_connected():
-            utils.print_debug("Database connection closed.", 'database', \
+            notify.print_debug("Database connection closed.", 'database', \
                                 stepsback=2)
             self.conn.close()
             if self.result is not None:

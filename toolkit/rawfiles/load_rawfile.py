@@ -8,12 +8,14 @@ import traceback
 import copy
 import shlex
 
-import config
-import utils
-import errors
-import database
-import diagnostics
-import diagnose_rawfile
+from toaster import config
+from toaster import utils
+from toaster import database
+from toaster import errors
+from toaster import diagnostics
+from toaster.utils import notify
+from toaster.utils import datafile
+from toaster.toolkit.rawfiles import diagnose_rawfile
 
 SHORTNAME = 'load'
 DESCRIPTION = "Archive a single raw file, " \
@@ -65,7 +67,7 @@ def populate_rawfiles_table(db, archivefn, params):
                             "MD5 (%s) already exists in the DB, but for " \
                             "a different pulsar (ID: %d)!" % (md5, psr_id))
     else:
-        utils.print_info("Inserting rawfile (%s) into DB." % fn, 3)
+        notify.print_info("Inserting rawfile (%s) into DB." % fn, 3)
         # Based on its MD5, this rawfile doesn't already 
         # exist in the DB. Insert it.
 
@@ -88,7 +90,7 @@ def populate_rawfiles_table(db, archivefn, params):
             try:
                 diags.append(diagcls(archivefn))
             except errors.DiagnosticNotApplicable, e:
-                utils.print_info("Diagnostic isn't applicable: %s. " \
+                notify.print_info("Diagnostic isn't applicable: %s. " \
                                 "Skipping..." % str(e), 1)
         if diags:
             # Load processing diagnostics
@@ -105,20 +107,20 @@ def load_rawfile(fn, existdb=None):
 
     try:
         # Enter information in rawfiles table
-        utils.print_info("Working on %s (%s)" % (fn, utils.Give_UTC_now()), 1)
+        notify.print_info("Working on %s (%s)" % (fn, utils.Give_UTC_now()), 1)
         # Check the file and parse the header
-        params = utils.prep_file(fn)
+        params = datafile.prep_file(fn)
         
         # Move the File
-        destdir = utils.get_archive_dir(fn, params=params)
-        newfn = utils.archive_file(fn, destdir)
+        destdir = datafile.get_archive_dir(fn, params=params)
+        newfn = datafile.archive_file(fn, destdir)
         
-        utils.print_info("%s moved to %s (%s)" % (fn, newfn, utils.Give_UTC_now()), 1)
+        notify.print_info("%s moved to %s (%s)" % (fn, newfn, utils.Give_UTC_now()), 1)
 
         # Register the file into the database
         rawfile_id = populate_rawfiles_table(db, newfn, params)
         
-        utils.print_info("Successfully loaded %s - rawfile_id=%d (%s)" % \
+        notify.print_info("Successfully loaded %s - rawfile_id=%d (%s)" % \
                 (fn, rawfile_id, utils.Give_UTC_now()), 1)
     finally:
         if not existdb:
@@ -185,7 +187,7 @@ def main(args):
             if args.from_file != '-':
                 rawlist.close()
             if numloaded:
-                utils.print_success("\n\n===================================\n" \
+                notify.print_success("\n\n===================================\n" \
                                     "%d rawfiles successfully loaded\n" \
                                     "===================================\n" % numloaded)
             if numfails:

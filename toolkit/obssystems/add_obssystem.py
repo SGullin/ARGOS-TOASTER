@@ -5,10 +5,11 @@ import traceback
 import copy
 import shlex
 
-import utils
-import database
-import errors
-
+from toaster import utils
+from toaster import database
+from toaster import errors
+from toaster.utils import notify
+from toaster.utils import cache
 
 SHORTNAME = 'add'
 DESCRIPTION = "Add a new observing system to the DB"
@@ -162,7 +163,7 @@ def main(args):
                                 "must have a telescope, backend, frontend, " \
                                 "band descriptor, and clock file! At least " \
                                 "one of these is missing.")
-                    tinfo = utils.get_telescope_info(customargs.telescope)
+                    tinfo = cache.get_telescope_info(customargs.telescope)
                     telescope_id = tinfo['telescope_id']
 
                     if customargs.name is None:
@@ -183,7 +184,7 @@ def main(args):
             if args.from_file != '-':
                 obssyslist.close()
             if numadded:
-                utils.print_success("\n\n===================================\n" \
+                notify.print_success("\n\n===================================\n" \
                                     "%d obssystems successfully added\n" \
                                     "===================================\n" % numadded)
             if numfails:
@@ -200,7 +201,7 @@ def main(args):
                         "must have a telescope, backend, frontend, " \
                         "band descriptor, and clock file! At least " \
                         "one of these is missing.")
-            tinfo = utils.get_telescope_info(args.telescope)
+            tinfo = cache.get_telescope_info(args.telescope)
             telescope_id = tinfo['telescope_id']
 
             if args.name is None:

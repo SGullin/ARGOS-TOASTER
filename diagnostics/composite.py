@@ -2,7 +2,9 @@ import tempfile
 import os
 import shutil
 
-import utils
+from toaster import utils
+from toaster.utils import notify
+from toaster.utils import datafile 
 import base
 
 class CompositePlotDiagnostic(base.PlotDiagnostic):
@@ -13,10 +15,10 @@ class CompositePlotDiagnostic(base.PlotDiagnostic):
                     "if the raw file is fully scrunched along " \
                     "an axis the relevent plot will not be shown."
     def _compute(self):
-        utils.print_info("Creating composite summary plot for %s" % self.fn, 3)
+        notify.print_info("Creating composite summary plot for %s" % self.fn, 3)
         handle, tmpfn = tempfile.mkstemp(suffix=".png")
         os.close(handle)
-        params = utils.prep_file(self.fn)
+        params = datafile.prep_file(self.fn)
         
         if (params['nsub'] > 1) and (params['nchan'] > 1):
             self.__plot_all(tmpfn, params)

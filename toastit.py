@@ -15,17 +15,17 @@ import traceback
 import shlex
 import random
 
-import config
-import colour
-import errors
-import manipulators
-import database
-from toolkit.rawfiles import load_rawfile
-from toolkit.parfiles import load_parfile
-from toolkit.templates import load_template
-from toolkit.processing import diagnose_processing
-import utils
-import diagnostics
+from toaster import config
+from toaster import colour
+from toaster import errors
+from toaster import manipulators
+from toaster import database
+from toaster.toolkit.rawfiles import load_rawfile
+from toaster.toolkit.parfiles import load_parfile
+from toaster.toolkit.templates import load_template
+from toaster.toolkit.processing import diagnose_processing
+from toaster import utils
+from toaster import diagnostics
 
 
 ###############################################################################

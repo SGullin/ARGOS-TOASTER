@@ -5,10 +5,10 @@ import copy
 import shlex
 import sys
 
-import utils
-import database
-import errors
-
+from toaster import utils
+from toaster import database
+from toaster import errors
+from toaster.utils import notify
 
 def validate_telescope(db, name, abbrev, code):
     """Check if the given telescope name, abbreviation, or code
@@ -175,7 +175,7 @@ def main():
             if args.from_file != '-':
                 tellist.close()
             if numadded:
-                utils.print_success("\n\n===================================\n" \
+                notify.print_success("\n\n===================================\n" \
                                     "%d telescopes successfully added\n" \
                                     "===================================\n" % numadded)
             if numfails:
