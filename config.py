@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 import os.path
-import glob
 
-from toaster import debug
 
 class ToasterConfigs(dict):
     def __init__(self):
+        super(ToasterConfigs, self).__init__()
         #self['toaster_dir'] = os.path.split(os.path.abspath(__file__))[0]
-        #fn = os.path.join(self.toaster_dir, "default.cfg") 
+        #fn = os.path.join(self.toaster_dir, "default.cfg")
         #self.load_config_file(fn)
         self.loaded_configs = False
         
@@ -19,15 +18,15 @@ class ToasterConfigs(dict):
             self.load_config_file(cfg_file)
 
         if not self.loaded_configs:
-            raise ValueError("No configuration files loaded. " \
-                        "Please set environment variable 'TOASTER_CFG' and " \
-                        "ensure at least one file listed is accessible.")
+            raise ValueError("No configuration files loaded. "
+                             "Please set environment variable 'TOASTER_CFG' and "
+                             "ensure at least one file listed is accessible.")
         
     def __getattr__(self, key):
         from toaster import errors
         if key not in self:
-            raise errors.NoConfigError("There is no config param called '%s' " \
-                                        "defined!" % key) 
+            raise errors.NoConfigError("There is no config param called '%s' "
+                                       "defined!" % key)
         return self[key]
 
     def __str__(self):
@@ -40,8 +39,8 @@ class ToasterConfigs(dict):
         #print "Loading configs from %s" % fn
         if os.path.isfile(fn):
             if not fn.endswith('.cfg'):
-                raise ValueError("TOASTER configuration files must " \
-                                        "end with the extention '.cfg'.")
+                raise ValueError("TOASTER configuration files must "
+                                 "end with the extension '.cfg'.")
             execfile(fn, {}, self)
             self.loaded_configs = True
 
@@ -54,9 +53,8 @@ def main():
     print cfg
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     from toaster import utils
-    parser = utils.DefaultArguments(\
-                description="Print configurations to terminal.")
+    parser = utils.DefaultArguments(description="Print configurations to terminal.")
     args = parser.parse_args()
     main()
