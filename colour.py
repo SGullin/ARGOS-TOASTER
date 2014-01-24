@@ -7,11 +7,12 @@ A module for colourizing text output to the terminal.
 Patrick Lazarus, August 28th, 2009
 """
 
+import os
 import optparse
 import types
 
-import config
-
+# Check if colours are to be used
+USECOLOURS = not os.environ.has_key('NO_TOASTER_COLOURS')
 
 # Default colour (reset to this colour)
 DEFAULT_CODE = "\033[0;39;49m"
@@ -123,7 +124,7 @@ def cstring(s, *override, **kwoverride):
     Keyword is optional. It will override the current
     colour code.
     """
-    if not hasattr(config.cfg, 'colour') or not config.cfg.colour:
+    if not USECOLOURS:
         return s
 
     global current_code, DEFAULT_CODE
@@ -191,7 +192,7 @@ class ColourizedOutput(object):
 
     def write(self, s):
         print "Writing"
-        self.fileobject.write(colour.cstring(s), *cargs, **ckwargs)
+        self.fileobject.write(cstring(s), self.cargs, self.ckwargs)
 
 
 def main():
