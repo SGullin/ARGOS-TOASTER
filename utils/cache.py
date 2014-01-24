@@ -1,9 +1,11 @@
 import pwd
 import os
+import types
 
 from toaster import config
 from toaster import database
 from toaster import errors
+from toaster.utils import notify
 
 ##############################################################################
 # CACHES
@@ -250,14 +252,12 @@ def get_prefname(alias):
     return get_pulsarname(get_pulsarid(alias))
 
 
-def get_pulsarid(alias, autoadd=False):
+def get_pulsarid(alias):
     """Given a pulsar name/alias return its pulsar_id number,
         or raise an error.
 
         Input:
             alias: The name/alias of the pulsar.
-            autoadd: Automatically add pulsar if it doesn't already exist.
-                (Default: False)
 
         Output:
             pulsar_id: The corresponding pulsar_id value.
@@ -266,15 +266,8 @@ def get_pulsarid(alias, autoadd=False):
     if alias in cache:
         pulsar_id = cache[alias]
     else:
-        if autoadd:
-            notify.print_info("Automatically inserting pulsar with " \
-                        "name '%s'" % alias, 1)
-            pulsar_id = add_pulsar.add_pulsar(alias)
-            # Add to cache, for next time
-            cache[alias] = pulsar_id
-        else:
-            raise errors.UnrecognizedValueError("The pulsar name/alias '%s' does " \
-                                       "not appear in the pulsarid_cache!" % alias)
+        raise errors.UnrecognizedValueError("The pulsar name/alias '%s' does " \
+                                   "not appear in the pulsarid_cache!" % alias)
     return pulsar_id
 
 
