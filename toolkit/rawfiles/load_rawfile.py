@@ -16,6 +16,7 @@ from toaster import diagnostics
 from toaster.utils import notify
 from toaster.utils import datafile
 from toaster.toolkit.rawfiles import diagnose_rawfile
+from utils.datafile import get_md5sum
 
 SHORTNAME = 'load'
 DESCRIPTION = "Archive a single raw file, " \
@@ -34,7 +35,7 @@ def add_arguments(parser):
 
 def populate_rawfiles_table(db, archivefn, params):
     # md5sum helper function in utils 
-    md5 = utils.Get_md5sum(archivefn)
+    md5 = get_md5sum(archivefn)
     path, fn = os.path.split(os.path.abspath(archivefn))
     size = os.path.getsize(archivefn) # File size in bytes
 
@@ -107,7 +108,7 @@ def load_rawfile(fn, existdb=None):
 
     try:
         # Enter information in rawfiles table
-        notify.print_info("Working on %s (%s)" % (fn, utils.Give_UTC_now()), 1)
+        notify.print_info("Working on %s (%s)" % (fn, utils.give_utc_now()), 1)
         # Check the file and parse the header
         params = datafile.prep_file(fn)
         
@@ -115,13 +116,13 @@ def load_rawfile(fn, existdb=None):
         destdir = datafile.get_archive_dir(fn, params=params)
         newfn = datafile.archive_file(fn, destdir)
         
-        notify.print_info("%s moved to %s (%s)" % (fn, newfn, utils.Give_UTC_now()), 1)
+        notify.print_info("%s moved to %s (%s)" % (fn, newfn, utils.give_utc_now()), 1)
 
         # Register the file into the database
         rawfile_id = populate_rawfiles_table(db, newfn, params)
         
         notify.print_info("Successfully loaded %s - rawfile_id=%d (%s)" % \
-                (fn, rawfile_id, utils.Give_UTC_now()), 1)
+                (fn, rawfile_id, utils.give_utc_now()), 1)
     finally:
         if not existdb:
             # Close DB connection

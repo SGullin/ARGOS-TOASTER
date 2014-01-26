@@ -178,7 +178,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
     #Start pipeline
     print "###################################################"
     print "Starting to toast data"
-    print "Start time: %s"%utils.Give_UTC_now()
+    print "Start time: %s"%utils.give_utc_now()
     print "###################################################"
     
     db = existdb or database.Database()
@@ -316,7 +316,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id, \
         # End pipeline
         print "###################################################"
         print random.choice(SUCCESSMSGS)
-        print "End time: %s" % utils.Give_UTC_now()
+        print "End time: %s" % utils.give_utc_now()
         print "###################################################"    
         
         # Close DB connection

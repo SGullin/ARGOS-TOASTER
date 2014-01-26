@@ -271,7 +271,7 @@ def archive_file(toarchive, destdir):
     os.chmod(dest, 0440)  # "0440" is an integer in base 8. It works
     # the same way 440 does for chmod on cmdline
 
-    notify.print_info("%s archived to %s (%s)" % (toarchive, dest, utils.Give_UTC_now()), 1)
+    notify.print_info("%s archived to %s (%s)" % (toarchive, dest, utils.give_utc_now()), 1)
 
     return dest
 

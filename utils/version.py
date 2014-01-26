@@ -17,7 +17,7 @@ def is_gitrepo(repodir):
     notify.print_info("Checking if directory '%s' contains a Git repo..." % repodir, 2)
     try:
         cmd = ["git", "rev-parse"]
-        stdout, stderr = utils.execute(cmd, dir=repodir, \
+        stdout, stderr = utils.execute(cmd, execdir=repodir, \
                                     stderr=open(os.devnull))
     except errors.SystemCallError:
         # Exit code is non-zero
@@ -39,7 +39,7 @@ def is_gitrepo_dirty(repodir):
     notify.print_info("Checking if Git repo at '%s' is dirty..." % repodir, 2)
     try:
         cmd = ["git", "diff", "--quiet"]
-        stdout, stderr = utils.execute(cmd, dir=repodir)
+        stdout, stderr = utils.execute(cmd, execdir=repodir)
     except errors.SystemCallError:
         # Exit code is non-zero
         return True
@@ -61,7 +61,7 @@ def get_githash(repodir):
         warnings.warn("Git repository has uncommitted changes!", \
                         errors.ToasterWarning)
     cmd = ["git", "rev-parse", "HEAD"]
-    stdout, stderr = utils.execute(cmd, dir=repodir)
+    stdout, stderr = utils.execute(cmd, execdir=repodir)
     githash = stdout.strip()
     return githash
 

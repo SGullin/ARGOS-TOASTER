@@ -4,6 +4,8 @@ from toaster import database
 from toaster import errors
 from toaster import utils
 from toaster.utils import notify
+from utils.datafile import get_md5sum
+
 
 def get_rawfile_diagnostics(rawfile_id, existdb=None):
     """Given a rawfile ID number return information about the 
@@ -100,7 +102,7 @@ def get_rawfile_from_id(rawfile_id, existdb=None, verify_md5=True):
         notify.print_info("Confirming MD5 sum of %s matches what is " \
                     "stored in DB (%s)" % (fullpath, md5sum_DB), 2)
                     
-        md5sum_file = utils.Get_md5sum(fullpath)
+        md5sum_file = get_md5sum(fullpath)
         if md5sum_DB != md5sum_file:
             raise errors.FileError("md5sum check of %s failed! MD5 from " \
                                 "DB (%s) != MD5 from file (%s)" % \

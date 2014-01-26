@@ -2,6 +2,8 @@ from toaster import database
 from toaster import errors
 from toaster import utils
 from toaster.utils import notify
+from utils.datafile import get_md5sum
+
 
 def set_as_master_template(template_id, existdb=None):
     """Set a template, specified by its ID number, as the 
@@ -99,7 +101,7 @@ def get_template_id(template, existdb=None):
     notify.print_info("Getting template ID for %s using "
                     "filename and md5sum" % args.parfile, 2)
     path, fn = os.path.split(os.path.abspath(template))
-    md5sum = utils.Get_md5sum(template)
+    md5sum = get_md5sum(template)
     select = db.select([db.templates.c.template_id, \
                         db.templates.c.filename, \
                         db.templates.c.md5sum]).\
@@ -187,7 +189,7 @@ def get_template_from_id(template_id, existdb=None, verify_md5=True):
         notify.print_info("Confirming MD5 sum of %s matches what is " \
                     "stored in DB (%s)" % (fullpath, md5sum_DB), 2)
                     
-        md5sum_file = utils.Get_md5sum(fullpath)
+        md5sum_file = get_md5sum(fullpath)
         if md5sum_DB != md5sum_file:
             raise errors.FileError("md5sum check of %s failed! MD5 from " \
                                 "DB (%s) != MD5 from file (%s)" % \

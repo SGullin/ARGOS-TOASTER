@@ -25,7 +25,7 @@ def main():
     for fn in infiles:
         try:
             if config.cfg.verbosity:
-                print "Checking %s (%s)" % (fn, utils.Give_UTC_now())
+                print "Checking %s (%s)" % (fn, utils.give_utc_now())
 
             # Check the file and parse the header
             params = utils.prep_file(fn)
@@ -34,10 +34,10 @@ def main():
             destdir = utils.get_archive_dir(fn, params=params)
             
             utils.print_info("%s will get archived to %s (%s)" % \
-                        (fn, destdir, utils.Give_UTC_now()), 1)
+                        (fn, destdir, utils.give_utc_now()), 1)
 
             utils.print_info("Finished with %s - pre-check successful (%s)" % \
-                        (fn, utils.Give_UTC_now()), 1)
+                        (fn, utils.give_utc_now()), 1)
 
         except errors.ToasterError, msg:
             sys.stderr.write("Pre-check of %s failed!\n%s\nSkipping...\n" % \
