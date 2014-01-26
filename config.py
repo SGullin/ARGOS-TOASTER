@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os.path
+import os
 
 
 class ToasterConfigs(dict):
@@ -10,10 +10,22 @@ class ToasterConfigs(dict):
         #self.load_config_file(fn)
         self.loaded_configs = False
         
-    def load_configs(self):
-        """Load configurations from TOASTER_CFG environment variable
+    def load_configs(self, cfg_files=None):
+        """Load configuration files. If no configuration files are provided
+            read list of files from TOASTER_CFG environment variable.
+
+            Inputs:
+                cfg_files: A list of configuration files to load.
+                    Files listed earlier in the list (ie lower indices)
+                    supersede files provided later.
+                    (Default: Read list of config files from "TOASTER_CFG"
+                    environment variable.)
+
+            Outputs:
+                None
         """
-        cfg_files = os.getenv("TOASTER_CFG", "").split(':')
+        if cfg_files is None:
+            cfg_files = os.environ.get("TOASTER_CFG", "").split(':')
         for cfg_file in reversed(cfg_files):
             self.load_config_file(cfg_file)
 
