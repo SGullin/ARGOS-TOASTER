@@ -18,19 +18,19 @@ DESCRIPTION = "Add a new pulsar to the DB"
 
 
 def add_arguments(parser):
-    parser.add_argument('pulsar_name', nargs='?', type=str, \
+    parser.add_argument('pulsar_name', nargs='?', type=str,
                         help="The preferred name of the new pulsar.")
-    parser.add_argument('-a', '--alias', dest='aliases', \
-                        type=str, action='append', default=[], \
-                        help="An alias for the pulsar. NOTE: multiple " \
-                            "aliases may be provided by including " \
-                            "multiple -a/--alias flags.")
-    parser.add_argument('--from-file', dest='from_file', \
-                        type=str, default=None, \
-                        help="A list of pulsars (one per line) to " \
-                            "add. Note: each line can also include " \
-                            "alias flags. (Default: load a single " \
-                            "pulsar given on the cmd line.)")
+    parser.add_argument('-a', '--alias', dest='aliases',
+                        type=str, action='append', default=[],
+                        help="An alias for the pulsar. NOTE: multiple "
+                             "aliases may be provided by including "
+                             "multiple -a/--alias flags.")
+    parser.add_argument('--from-file', dest='from_file',
+                        type=str, default=None,
+                        help="A list of pulsars (one per line) to "
+                             "add. Note: each line can also include "
+                             "alias flags. (Default: load a single "
+                             "pulsar given on the cmd line.)")
 
 
 def validate_pulsar_name(db, pulsar_name):
@@ -44,15 +44,15 @@ def validate_pulsar_name(db, pulsar_name):
         Ouputs:
             None
     """
-    select = db.select([db.pulsars], db.pulsars.c.pulsar_name==pulsar_name)
+    select = db.select([db.pulsars], db.pulsars.c.pulsar_name == pulsar_name)
     result = db.execute(select)
     row = result.fetchone()
     result.close()
     if row is not None:
-        raise errors.BadInputError("The proposed pulsar name, '%s', " \
-                                    "is already in use (each pulsar " \
-                                    "must have a unique name)." % \
-                                    pulsar_name)
+        raise errors.BadInputError("The proposed pulsar name, '%s', "
+                                   "is already in use (each pulsar "
+                                   "must have a unique name)." %
+                                   pulsar_name)
 
 
 def validate_aliases(aliases, existdb=None):
@@ -70,8 +70,8 @@ def validate_aliases(aliases, existdb=None):
     # Connect to the database
     db = existdb or database.Database()
     db.connect()
-    select = db.select([db.pulsar_aliases], \
-                        db.pulsar_aliases.c.pulsar_alias.in_(aliases))
+    select = db.select([db.pulsar_aliases],
+                       db.pulsar_aliases.c.pulsar_alias.in_(aliases))
     result = db.execute(select)
     aliases_in_use = []
     for row in result:
@@ -80,10 +80,10 @@ def validate_aliases(aliases, existdb=None):
     if existdb is None:
         db.close()
     if aliases_in_use:
-        raise errors.BadInputError("The following proposed pulsar aliases " \
-                                    "are already in use (each alias must be " \
-                                    "unique): '%s'" % \
-                                    "', '".join(aliases_in_use))
+        raise errors.BadInputError("The following proposed pulsar aliases "
+                                   "are already in use (each alias must be "
+                                   "unique): '%s'" %
+                                   "', '".join(aliases_in_use))
 
 
 def add_pulsar(pulsar_name, aliases=None, existdb=None):
@@ -107,11 +107,11 @@ def add_pulsar(pulsar_name, aliases=None, existdb=None):
     # Add the pulsar's name itself as an alias
     aliases.append(pulsar_name)
     # Make sure no aliases are duplicated in the list
-    # TODO: this is suceptible to strings that are different only
+    # TODO: this is susceptible to strings that are different only
     #       by upper/lower characters.
     aliases = list(set(aliases))
 
-    trans = db.begin() # Open a transaction
+    trans = db.begin()  # Open a transaction
     try:
         validate_pulsar_name(db, pulsar_name)
         # Insert new pulsar into the database
@@ -159,8 +159,8 @@ def add_pulsar_aliases(pulsar_id, aliases, existdb=None):
         ins = db.pulsar_aliases.insert()
         values = []
         for alias in aliases:
-            values.append({'pulsar_id':pulsar_id, \
-                            'pulsar_alias':alias})
+            values.append({'pulsar_id': pulsar_id,
+                           'pulsar_alias': alias})
         result = db.execute(ins, values)
         result.close()
     except:
@@ -181,20 +181,22 @@ def main(args):
     try:
         if args.from_file is not None:
             # Re-create parser, so we can read arguments from file
-            parser = utils.DefaultArguments()
-            add_arguments(parser)
+            file_parser = utils.DefaultArguments()
+            add_arguments(file_parser)
             if args.pulsar_name is not None:
-                raise errors.BadInputError("When adding pulsars from " \
-                                "a file, a pulsar name should _not_ be " \
-                                "provided on the command line. (The value " \
-                                "%s was given on the command line)." % \
-                                args.pulsar_name)
+                raise errors.BadInputError("When adding pulsars from "
+                                           "a file, a pulsar name should "
+                                           "_not_ be provided on the command "
+                                           "line. (The value %s was given on "
+                                           "the command line)." %
+                                           args.pulsar_name)
             if args.from_file == '-':
                 psrlist = sys.stdin
             else:
                 if not os.path.exists(args.from_file):
-                    raise errors.FileError("The pulsar list (%s) does " \
-                                "not appear to exist." % args.from_file)
+                    raise errors.FileError("The pulsar list (%s) does "
+                                           "not appear to exist." %
+                                           args.from_file)
                 psrlist = open(args.from_file, 'r')
             numfails = 0
             numadded = 0
@@ -207,9 +209,9 @@ def main(args):
                 try:
                     customargs = copy.deepcopy(args)
                     arglist = shlex.split(line.strip())
-                    parser.parse_args(arglist, namespace=customargs)
-                    pulsar_id = add_pulsar(customargs.pulsar_name, \
-                                            customargs.aliases, db)
+                    file_parser.parse_args(arglist, namespace=customargs)
+                    pulsar_id = add_pulsar(customargs.pulsar_name,
+                                           customargs.aliases, db)
                     print "Successfully inserted new pulsar. " \
                         "Returned pulsar_id: %d" % pulsar_id
                     numadded += 1
@@ -219,24 +221,26 @@ def main(args):
             if args.from_file != '-':
                 psrlist.close()
             if numadded:
-                notify.print_success("\n\n===================================\n" \
-                                    "%d pulsars successfully added\n" \
-                                    "===================================\n" % numadded)
+                notify.print_success("\n\n===================================\n"
+                                     "%d pulsars successfully added\n"
+                                     "===================================\n" %
+                                     numadded)
             if numfails:
-                raise errors.ToasterError(\
-                    "\n\n===================================\n" \
-                        "The adding of %d pulsars failed!\n" \
-                        "Please review error output.\n" \
-                        "===================================\n" % numfails)
+                raise errors.ToasterError(
+                    "\n\n===================================\n"
+                    "The adding of %d pulsars failed!\n"
+                    "Please review error output.\n"
+                    "===================================\n" %
+                    numfails)
         else:
             pulsar_id = add_pulsar(args.pulsar_name, args.aliases, db)
             print "Successfully inserted new pulsar. " \
-                        "Returned pulsar_id: %d" % pulsar_id
+                  "Returned pulsar_id: %d" % pulsar_id
     finally:
         # Close DB connection
         db.close()
 
-if __name__=='__main__':
+if __name__ == '__main__':
     parser = utils.DefaultArguments(description=DESCRIPTION)
     add_arguments(parser)
     args = parser.parse_args()
