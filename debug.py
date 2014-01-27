@@ -29,6 +29,7 @@ def set_mode_on(*modes_toset):
             raise errors.BadDebugMode("The debug mode '%s' doesn't exist!" % mode)
         ONMODES[mode] = True
 
+
 def set_allmodes_on():
     for mode in MODE_DEFS:
         ONMODES[mode] = True
@@ -68,4 +69,3 @@ def print_debug_status():
 
 # By default set all debug modes to False
 set_allmodes_off()
-
