@@ -5,12 +5,14 @@ import sqlalchemy as sa
 
 from toaster import config
 from toaster import errors
+from toaster import debug
 
 from toaster.database import schema
-import toaster.utils.notify as notify
+from toaster.utils import notify
 
 null = lambda x: x
-    
+
+
 def fancy_getitem(self, key):
     filterfunc = null
     if (type(key) in (type('str'), type(u'str'))) and key.endswith("_L"):
@@ -26,19 +28,20 @@ def fancy_getitem(self, key):
         if len(matches) == 1:
             return filterfunc(super(self.__class__, self).__getitem__(matches[0]))
         elif len(matches) > 1:
-            raise errors.BadColumnNameError("The column abbreviation " \
-                                "'%s' is ambiguous. ('%s' all match)" % \
-                                (key, "', '".join(matches)))
+            raise errors.BadColumnNameError("The column abbreviation "
+                                            "'%s' is ambiguous. "
+                                            "('%s' all match)" %
+                                            (key, "', '".join(matches)))
         else:
-            raise errors.BadColumnNameError("The column '%s' doesn't exist! " \
-                                "(Valid column names: '%s')" % \
-                                (key, "', '".join(sorted(self.keys()))))
+            raise errors.BadColumnNameError("The column '%s' doesn't exist! "
+                                            "(Valid column names: '%s')" %
+                                            (key, "', '".join(sorted(self.keys()))))
 
 sa.engine.RowProxy.__getitem__ = fancy_getitem
     
 
-def before_cursor_execute(conn, cursor, statement, parameters, \
-                            context, executemany):
+def before_cursor_execute(conn, cursor, statement, parameters,
+                          context, executemany):
     """An event to be executed before execution of SQL queries.
 
         See SQLAlchemy for details about event triggers.
@@ -58,8 +61,8 @@ def commit_event(conn):
 
         See SQLAlchemy for details about event triggers.
     """
-    notify.print_debug("Committing database transaction.", 'database', \
-                        stepsback=7)
+    notify.print_debug("Committing database transaction.", 'database',
+                       stepsback=7)
 
 
 def rollback_event(conn):
@@ -67,8 +70,8 @@ def rollback_event(conn):
         
         See SQLAlchemy for details about event triggers.
     """
-    notify.print_debug("Rolling back database transaction.", 'database', \
-                        stepsback=7)
+    notify.print_debug("Rolling back database transaction.", 'database',
+                       stepsback=7)
         
 
 def begin_event(conn):
@@ -76,12 +79,13 @@ def begin_event(conn):
         
         See SQLAlchemy for details about event triggers.
     """
-    notify.print_debug("Opening database transaction.", 'database', \
-                        stepsback=7)
+    notify.print_debug("Opening database transaction.", 'database',
+                       stepsback=7)
 
 
 # Cache of database engines
 engines = {}
+
 
 def get_toaster_engine(url=None):
     """Given a DB URL string return the corresponding DB engine.
@@ -100,9 +104,9 @@ def get_toaster_engine(url=None):
     if url not in engines:
         # Create the database engine
         engine = sa.create_engine(config.cfg.dburl)
-        sa.event.listen(engine, "before_cursor_execute", \
-                            before_cursor_execute)
-        if config.debug.is_on('database'):
+        sa.event.listen(engine, "before_cursor_execute",
+                        before_cursor_execute)
+        if debug.is_on('database'):
             sa.event.listen(engine, "commit", commit_event)
             sa.event.listen(engine, "rollback", rollback_event)
             sa.event.listen(engine, "begin", begin_event)
@@ -114,15 +118,15 @@ class Database(object):
     def __init__(self, autocommit=True):
         """Set up a Toaster Database object using SQLAlchemy.
         """
-        self.conn = None # No connection is established 
-                         # until self.connect() is called
+        self.conn = None  # No connection is established
+                          # until self.connect() is called
         self.engine = get_toaster_engine()
         if not self.is_created():
-            raise errors.DatabaseError("The database (%s) does not appear " \
-                                    "to have any tables. Be sure to run " \
-                                    "'create_tables.py' before attempting " \
-                                    "to connect to the database." % \
-                                            self.engine.url.database)
+            raise errors.DatabaseError("The database (%s) does not appear "
+                                       "to have any tables. Be sure to run "
+                                       "'create_tables.py' before attempting "
+                                       "to connect to the database." %
+                                       self.engine.url.database)
         self.autocommit = autocommit
 
         # The database description (metadata)
@@ -187,8 +191,9 @@ class Database(object):
             if self.engine.dialect.name == 'sqlite':
                 result = self.execute("PRAGMA foreign_keys=ON")
                 result.close()
-            notify.print_debug("Database connection established.", 'database', \
-                                stepsback=2)
+            notify.print_debug("Database connection established.",
+                               'database',
+                               stepsback=2)
         return self.conn
 
     def execute(self, *args, **kwargs):
@@ -206,9 +211,11 @@ class Database(object):
                     by the call to self.conn.execute(...).
         """
         if not self.is_connected():
-            raise errors.DatabaseError("Connection to database not " \
-                    "established. Be sure self.connect(...) is called " \
-                    "before attempting to execute queries.")
+            raise errors.DatabaseError("Connection to database not "
+                                       "established. Be sure "
+                                       "self.connect(...) is called "
+                                       "before attempting to execute "
+                                       "queries.")
         if self.result is not None:
             self.result.close()
         self.result = self.conn.execute(*args, **kwargs)
@@ -223,15 +230,17 @@ class Database(object):
             Outputs:
                 None
         """
-        notify.print_debug("Attempting to begin a transaction via " \
-                            "database object", 'database', stepsback=2)
+        notify.print_debug("Attempting to begin a transaction via "
+                           "database object", 'database', stepsback=2)
         if not self.is_connected():
-            raise errors.DatabaseError("Connection to database not " \
-                    "established. Be sure self.connect(...) is called " \
-                    "before attempting to execute queries.")
+            raise errors.DatabaseError("Connection to database not "
+                                       "established. Be sure "
+                                       "self.connect(...) is called "
+                                       "before attempting to execute "
+                                       "queries.")
         if self.open_transactions:
-            warnings.warn("A transaction already appears to be in progress.", \
-                           errors.ToasterWarning) 
+            warnings.warn("A transaction already appears to be in progress.",
+                          errors.ToasterWarning)
         trans = self.conn.begin()
         self.open_transactions.append(trans)
         return trans
@@ -245,8 +254,8 @@ class Database(object):
             Outputs:
                 None
         """
-        notify.print_debug("Attempting to commit a transaction via " \
-                            "database object", 'database', stepsback=2)
+        notify.print_debug("Attempting to commit a transaction via "
+                           "database object", 'database', stepsback=2)
         if self.open_transactions:
             trans = self.open_transactions.pop()
         else:
@@ -262,8 +271,8 @@ class Database(object):
             Outputs:
                 None
         """
-        notify.print_debug("Attempting to roll back a transaction via " \
-                            "database object", 'database', stepsback=2)
+        notify.print_debug("Attempting to roll back a transaction via "
+                           "database object", 'database', stepsback=2)
         trans = self.open_transactions.pop()
         trans.rollback()
 
@@ -278,8 +287,8 @@ class Database(object):
                 None
         """
         if self.is_connected():
-            notify.print_debug("Database connection closed.", 'database', \
-                                stepsback=2)
+            notify.print_debug("Database connection closed.", 'database',
+                               stepsback=2)
             self.conn.close()
             if self.result is not None:
                 self.result.close()
@@ -319,7 +328,7 @@ class Database(object):
         self.execute(*args, **kwargs)
         return self.fetchone()
 
-    def execute_and_fetchall(self):
+    def execute_and_fetchall(self, *args, **kwargs):
         """A convenience method for executing a query and
             fetching all rows.
             
