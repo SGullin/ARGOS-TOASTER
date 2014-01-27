@@ -23,8 +23,9 @@ MODE_DEFS = {'syscalls': 'Print commands being executed as system calls.',
 ONMODES = {}
 
 
-def set_mode_on(*modes_toset):
-    for mode in modes_toset:
+def set_mode_on(*modes):
+    for mode in modes:
+        mode = mode.lower()
         if mode not in MODE_DEFS:
             raise errors.BadDebugMode("The debug mode '%s' doesn't exist!" % mode)
         ONMODES[mode] = True
@@ -42,6 +43,7 @@ def set_allmodes_off():
 
 def set_mode_off(*modes):
     for mode in modes:
+        mode = mode.lower()
         ONMODES[mode] = False
 
 
@@ -54,6 +56,7 @@ def get_on_modes():
 
 
 def is_on(mode):
+    mode = mode.lower()
     return ONMODES[mode]
 
     
