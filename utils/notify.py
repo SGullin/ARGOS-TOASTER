@@ -4,6 +4,8 @@ import inspect
 
 from toaster import config
 from toaster import colour
+from toaster import debug
+
 
 def print_success(msg):
     """Print a success message.
@@ -18,6 +20,7 @@ def print_success(msg):
     """
     colour.cprint(msg, 'success')
     sys.stdout.flush()
+
 
 def print_info(msg, level=1):
     """Print an informative message if the current verbosity is
@@ -37,8 +40,9 @@ def print_info(msg, level=1):
         if config.cfg.excessive_verbosity:
             # Get caller info
             fn, lineno, funcnm = inspect.stack()[1][1:4]
-            colour.cprint("INFO (level: %d) [%s:%d - %s(...)]:" % 
-                    (level, os.path.split(fn)[-1], lineno, funcnm), 'infohdr')
+            colour.cprint("INFO (level: %d) [%s:%d - %s(...)]:" %
+                          (level, os.path.split(fn)[-1], lineno, funcnm),
+                          'infohdr')
             msg = msg.replace('\n', '\n    ')
             colour.cprint("    %s" % msg, 'info')
         else:
@@ -62,19 +66,17 @@ def print_debug(msg, category, stepsback=1):
         Outputs:
             None
     """
-    if config.debug.is_on(category):
+    if debug.is_on(category):
         if config.cfg.helpful_debugging:
             # Get caller info
             fn, lineno, funcnm = inspect.stack()[stepsback][1:4]
-            to_print = colour.cstring("DEBUG %s [%s:%d - %s(...)]:\n" % \
-                        (category.upper(), os.path.split(fn)[-1], lineno, funcnm), \
-                            'debughdr')
+            to_print = colour.cstring("DEBUG %s [%s:%d - %s(...)]:\n" %
+                                      (category.upper(),
+                                       os.path.split(fn)[-1], lineno,
+                                       funcnm), 'debughdr')
             msg = msg.replace('\n', '\n    ')
             to_print += colour.cstring("    %s" % msg, 'debug')
         else:
             to_print = colour.cstring(msg, 'debug')
         sys.stderr.write(to_print + '\n')
         sys.stderr.flush()
-
-
-
