@@ -16,7 +16,6 @@ from toaster import diagnostics
 from toaster.utils import notify
 from toaster.utils import datafile
 from toaster.toolkit.rawfiles import diagnose_rawfile
-from utils.datafile import get_md5sum
 
 SHORTNAME = 'load'
 DESCRIPTION = "Archive a single raw file, " \
@@ -24,49 +23,54 @@ DESCRIPTION = "Archive a single raw file, " \
 
 
 def add_arguments(parser):
-    parser.add_argument('--from-file', dest='from_file', \
-                        type=str, default=None, \
-                        help="A list of rawfiles (one per line) to " \
-                            "load. (Default: load a raw file provided " \
-                            "on the cmd line.)")
-    parser.add_argument("rawfile", nargs='?', type=str, \
+    parser.add_argument('--from-file', dest='from_file',
+                        type=str, default=None,
+                        help="A list of rawfiles (one per line) to "
+                             "load. (Default: load a raw file provided "
+                             "on the cmd line.)")
+    parser.add_argument("rawfile", nargs='?', type=str,
                         help="File name of the raw file to upload.")
 
 
 def populate_rawfiles_table(db, archivefn, params):
     # md5sum helper function in utils 
-    md5 = get_md5sum(archivefn)
+    md5 = datafile.get_md5sum(archivefn)
     path, fn = os.path.split(os.path.abspath(archivefn))
-    size = os.path.getsize(archivefn) # File size in bytes
+    size = os.path.getsize(archivefn)  # File size in bytes
 
     trans = db.begin()
     # Does this file exist already?
-    select = db.select([db.rawfiles.c.rawfile_id, \
+    select = db.select([db.rawfiles.c.rawfile_id,
                         db.rawfiles.c.pulsar_id]).\
-                where(db.rawfiles.c.md5sum==md5)
+                where(db.rawfiles.c.md5sum == md5)
     result = db.execute(select)
     rows = result.fetchall()
     result.close()
     if len(rows) > 1:
         trans.rollback()
-        raise errors.InconsistentDatabaseError("There are %d rawfiles " \
-                    "with MD5 (%s) in the database already" % (len(rows), md5))
+        raise errors.InconsistentDatabaseError("There are %d rawfiles "
+                                               "with MD5 (%s) in the "
+                                               "database already" %
+                                               (len(rows), md5))
     elif len(rows) == 1:
         rawfile_id = rows[0]['rawfile_id']
         psr_id = rows[0]['pulsar_id']
         if psr_id == params['pulsar_id']:
-            warnings.warn("A rawfile with this MD5 (%s) already exists " \
-                            "in the DB for this pulsar (ID: %d). " \
-                            "The file will not be re-registed into the DB. " \
-                            "Doing nothing..." % (md5, psr_id), \
-                            errors.ToasterWarning)
+            warnings.warn("A rawfile with this MD5 (%s) already exists "
+                          "in the DB for this pulsar (ID: %d). "
+                          "The file will not be re-registed into the DB. "
+                          "Doing nothing..." % (md5, psr_id),
+                          errors.ToasterWarning)
             trans.commit()
             return rawfile_id
         else:
             trans.rollback()
-            raise errors.InconsistentDatabaseError("A rawfile with this " \
-                            "MD5 (%s) already exists in the DB, but for " \
-                            "a different pulsar (ID: %d)!" % (md5, psr_id))
+            raise errors.InconsistentDatabaseError("A rawfile with this "
+                                                   "MD5 (%s) already exists "
+                                                   "in the DB, but for "
+                                                   "a different pulsar "
+                                                   "(ID: %d)!" %
+                                                   (md5, psr_id))
     else:
         notify.print_info("Inserting rawfile (%s) into DB." % fn, 3)
         # Based on its MD5, this rawfile doesn't already 
@@ -74,11 +78,11 @@ def populate_rawfiles_table(db, archivefn, params):
 
         # Insert the file
         ins = db.rawfiles.insert()
-        values = {'md5sum':md5, \
-                  'filename':fn, \
-                  'filepath':path, \
-                  'filesize':size, \
-                  'coord':'%s,%s' % (params['ra'],params['dec'])}
+        values = {'md5sum': md5,
+                  'filename': fn,
+                  'filepath': path,
+                  'filesize': size,
+                  'coord': '%s,%s' % (params['ra'], params['dec'])}
         values.update(params)
         result = db.execute(ins, values)
         rawfile_id = result.inserted_primary_key[0]
@@ -91,11 +95,11 @@ def populate_rawfiles_table(db, archivefn, params):
             try:
                 diags.append(diagcls(archivefn))
             except errors.DiagnosticNotApplicable, e:
-                notify.print_info("Diagnostic isn't applicable: %s. " \
-                                "Skipping..." % str(e), 1)
+                notify.print_info("Diagnostic isn't applicable: %s. "
+                                  "Skipping..." % str(e), 1)
         if diags:
             # Load processing diagnostics
-            diagnose_rawfile.insert_rawfile_diagnostics(rawfile_id, diags, \
+            diagnose_rawfile.insert_rawfile_diagnostics(rawfile_id, diags,
                                                         existdb=db)
     trans.commit()
     return rawfile_id
@@ -116,13 +120,14 @@ def load_rawfile(fn, existdb=None):
         destdir = datafile.get_archive_dir(fn, params=params)
         newfn = datafile.archive_file(fn, destdir)
         
-        notify.print_info("%s moved to %s (%s)" % (fn, newfn, utils.give_utc_now()), 1)
+        notify.print_info("%s moved to %s (%s)" % (fn, newfn,
+                                                   utils.give_utc_now()), 1)
 
         # Register the file into the database
         rawfile_id = populate_rawfiles_table(db, newfn, params)
         
-        notify.print_info("Successfully loaded %s - rawfile_id=%d (%s)" % \
-                (fn, rawfile_id, utils.give_utc_now()), 1)
+        notify.print_info("Successfully loaded %s - rawfile_id=%d (%s)" %
+                          (fn, rawfile_id, utils.give_utc_now()), 1)
     finally:
         if not existdb:
             # Close DB connection
@@ -134,10 +139,10 @@ def main(args):
     # Allow arguments to be read from stdin
     if ((args.rawfile is None) or (args.rawfile == '-')) and \
                 (args.from_file is None):
-        warnings.warn("No input file or --from-file argument given " \
-                        "will read from stdin.", \
-                        errors.ToasterWarning)
-        args.rawfile = None # In case it was set to '-'
+        warnings.warn("No input file or --from-file argument given "
+                      "will read from stdin.",
+                      errors.ToasterWarning)
+        args.rawfile = None  # In case it was set to '-'
         args.from_file = '-'
     # Connect to the database
     db = database.Database()
@@ -146,20 +151,22 @@ def main(args):
     try:
         if args.from_file is not None:
             # Re-create parser, so we can read arguments from file
-            parser = utils.DefaultArguments()
-            add_arguments(parser)
+            file_parser = utils.DefaultArguments()
+            add_arguments(file_parser)
             if args.rawfile is not None:
-                raise errors.BadInputError("When loading rawfiles from " \
-                                "a file, a rawfile value should _not_ be " \
-                                "provided on the command line. (The value " \
-                                "%s was given on the command line)." % \
-                                args.rawfile)
+                raise errors.BadInputError("When loading rawfiles from "
+                                           "a file, a rawfile value should "
+                                           "_not_ be provided on the command "
+                                           "line. (The value %s was given "
+                                           "on the command line)." %
+                                           args.rawfile)
             if args.from_file == '-':
                 rawlist = sys.stdin
             else:
                 if not os.path.exists(args.from_file):
-                    raise errors.FileError("The rawfile list (%s) does " \
-                                "not appear to exist." % args.from_file)
+                    raise errors.FileError("The rawfile list (%s) does "
+                                           "not appear to exist." %
+                                           args.from_file)
                 rawlist = open(args.from_file, 'r')
             numfails = 0
             numloaded = 0
@@ -175,12 +182,12 @@ def main(args):
                     # arguments, but this makes the code more future-proof
                     customargs = copy.deepcopy(args)
                     arglist = shlex.split(line.strip())
-                    parser.parse_args(arglist, namespace=customargs)
+                    file_parser.parse_args(arglist, namespace=customargs)
                  
                     fn = customargs.rawfile
                     rawfile_id = load_rawfile(fn, db)
                     print "%s has been loaded to the DB. rawfile_id: %d" % \
-                                (fn, rawfile_id)
+                          (fn, rawfile_id)
                     numloaded += 1
                 except errors.ToasterError:
                     numfails += 1
@@ -188,15 +195,16 @@ def main(args):
             if args.from_file != '-':
                 rawlist.close()
             if numloaded:
-                notify.print_success("\n\n===================================\n" \
-                                    "%d rawfiles successfully loaded\n" \
-                                    "===================================\n" % numloaded)
+                notify.print_success(
+                    "\n\n===================================\n"
+                    "%d rawfiles successfully loaded\n"
+                    "===================================\n" % numloaded)
             if numfails:
-                raise errors.ToasterError(\
-                    "\n\n===================================\n" \
-                        "The loading of %d rawfiles failed!\n" \
-                        "Please review error output.\n" \
-                        "===================================\n" % numfails)
+                raise errors.ToasterError(
+                    "\n\n===================================\n"
+                    "The loading of %d rawfiles failed!\n"
+                    "Please review error output.\n"
+                    "===================================\n" % numfails)
         else:
             fn = args.rawfile
             rawfile_id = load_rawfile(fn, db)
@@ -207,9 +215,8 @@ def main(args):
         db.close()
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     parser = utils.DefaultArguments(description=DESCRIPTION)
     add_arguments(parser)
     args = parser.parse_args()
     main(args)
-
