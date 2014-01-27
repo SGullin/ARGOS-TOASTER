@@ -149,6 +149,7 @@ def prep_file(fn):
                 "rcvr", "basis", "backend", "mjd"]
 
     params = get_header_vals(fn, hdritems)
+    params['user_id'] = cache.get_userid()
 
     # Normalise telescope name
     tinfo = cache.get_telescope_info(params['telescop'])
@@ -188,7 +189,6 @@ def prep_file(fn):
         params['name'] = cache.get_prefname(params['name'])
         params['pulsar_id'] = psr_id
 
-        params['user_id'] = cache.get_userid()
     return params
 
 
