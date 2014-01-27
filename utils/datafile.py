@@ -8,7 +8,7 @@ from toaster import errors
 from toaster import utils
 from toaster.utils import notify
 from toaster.utils import cache
-
+from toaster.toolkit.pulsars import add_pulsar
 
 header_param_types = {'freq': float,
                       'length': float,
@@ -179,6 +179,8 @@ def prep_file(fn):
         if config.cfg.auto_add_pulsars:
             notify.print_info("Automatically inserting pulsar with "
                               "name '%s'" % params['name'], 1)
+            # Add pulsar
+            add_pulsar.add_pulsar(params['name'])
             # Force an update of the pulsarid cache
             cache.get_pulsarid_cache(update=True)
         else:
