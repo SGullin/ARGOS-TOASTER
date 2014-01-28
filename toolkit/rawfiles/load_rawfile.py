@@ -138,7 +138,7 @@ def load_rawfile(fn, existdb=None):
 def main(args):
     # Allow arguments to be read from stdin
     if ((args.rawfile is None) or (args.rawfile == '-')) and \
-                (args.from_file is None):
+       (args.from_file is None):
         warnings.warn("No input file or --from-file argument given "
                       "will read from stdin.",
                       errors.ToasterWarning)
