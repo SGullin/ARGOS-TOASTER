@@ -180,16 +180,16 @@ def prep_file(fn):
             notify.print_info("Automatically inserting pulsar with "
                               "name '%s'" % params['name'], 1)
             # Add pulsar
-            add_pulsar.add_pulsar(params['name'])
-            # Force an update of the pulsarid cache
+            psr_id = add_pulsar.add_pulsar(params['name'])
+            # Force an update of the pulsarid and pulsarname caches
             cache.get_pulsarid_cache(update=True)
+            cache.get_pulsarname_cache(update=True)
         else:
             raise errors.FileError("The pulsar name %s (from file %s) is not "
                                    "recognized." % (params['name'], fn))
-    else:
-        # Normalise pulsar name
-        params['name'] = cache.get_prefname(params['name'])
-        params['pulsar_id'] = psr_id
+    # Normalise pulsar name
+    params['name'] = cache.get_prefname(params['name'])
+    params['pulsar_id'] = psr_id
 
     return params
 
