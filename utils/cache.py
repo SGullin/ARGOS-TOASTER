@@ -140,7 +140,7 @@ def get_pulsarid_cache(existdb=None, update=False):
         db = existdb or database.Database()
         db.connect()
 
-        select = db.select([db.pulsar_aliases.c.pulsar_alias, \
+        select = db.select([db.pulsar_aliases.c.pulsar_alias,
                             db.pulsar_aliases.c.pulsar_id])
         result = db.execute(select)
         rows = result.fetchall()
@@ -266,8 +266,10 @@ def get_pulsarid(alias):
     if alias in cache:
         pulsar_id = cache[alias]
     else:
-        raise errors.UnrecognizedValueError("The pulsar name/alias '%s' does " \
-                                   "not appear in the pulsarid_cache!" % alias)
+        raise errors.UnrecognizedValueError("The pulsar name/alias "
+                                            "'%s' does not appear in "
+                                            "the pulsarid_cache!" %
+                                            alias)
     return pulsar_id
 
 
