@@ -70,5 +70,9 @@ def print_debug_status():
         print "    None"
 
 
+def get_modes_and_descriptions():
+    return MODE_DEFS.items()
+
+
 # By default set all debug modes to False
 set_allmodes_off()
