@@ -1,9 +1,13 @@
 import warnings
+import os
 
+from toaster import config
 from toaster import database
 from toaster import errors
 from toaster import utils
 from toaster.utils import notify
+from toaster import debug
+
 
 def is_gitrepo(repodir):
     """Return True if the given dir is a git repository.
@@ -145,17 +149,17 @@ def check_repos():
             None
     """
     if is_gitrepo_dirty(os.path.abspath(os.path.dirname(__file__))):
-        if config.debug.GITTEST:
-            warnings.warn("Git repository is dirty! Will tolerate because " \
-                            "pipeline debugging is on.", \
-                            errors.ToasterWarning)
+        if debug.is_on('GITTEST'):
+            warnings.warn("Git repository is dirty! Will tolerate because "
+                          "pipeline debugging is on.",
+                          errors.ToasterWarning)
         else:
-            raise errors.ToasterError("Pipeline's git repository is dirty. " \
-                                            "Aborting!")
+            raise errors.ToasterError("Pipeline's git repository is dirty. "
+                                      "Aborting!")
     if not is_gitrepo(config.cfg.psrchive_dir):
-        warnings.warn("PSRCHIVE directory (%s) is not a git repository!" % \
-                        config.cfg.psrchive_dir, errors.ToasterWarning)
+        warnings.warn("PSRCHIVE directory (%s) is not a git repository!" %
+                      config.cfg.psrchive_dir, errors.ToasterWarning)
     elif is_gitrepo_dirty(config.cfg.psrchive_dir):
-        raise errors.ToasterError("PSRCHIVE's git repository is dirty. " \
-                                        "Clean up your act!")
+        raise errors.ToasterError("PSRCHIVE's git repository is dirty. "
+                                  "Clean up your act!")
 
