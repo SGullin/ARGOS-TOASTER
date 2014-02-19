@@ -138,8 +138,8 @@ def load_template(fn, comments, is_master=False, existdb=None):
         template_id = populate_templates_table(db, newfn, params,
                                                comments=comments)
 
-        mastertemp_id, tempfn = utils.get_master_template(params['pulsar_id'],
-                                                          params['obssystem_id'])
+        mastertemp_id, tempfn = general.get_master_template(params['pulsar_id'],
+                                                            params['obssystem_id'])
         if mastertemp_id is None:
             # If this is the only template for this pulsar
             # make sure it will be set as the master
@@ -147,10 +147,10 @@ def load_template(fn, comments, is_master=False, existdb=None):
 
         if is_master:
             notify.print_info("Setting %s as master template (%s)" %
-                              (newfn, utils.Give_UTC_now()), 1)
+                              (newfn, utils.give_utc_now()), 1)
             general.set_as_master_template(template_id, db)
         notify.print_info("Finished with %s - template_id=%d (%s)" %
-                          (fn, template_id, utils.Give_UTC_now()), 1)
+                          (fn, template_id, utils.give_utc_now()), 1)
     finally:
         if not existdb:
             # Close DB connection
@@ -163,7 +163,7 @@ def main(args):
     if ((args.template is None) or (args.template == '-')) and (args.from_file is None):
         warnings.warn("No input file or --from-file argument given "
                       "will read from stdin.", errors.ToasterWarning)
-        args.template = None # In case it was set to '-'
+        args.template = None  # In case it was set to '-'
         args.from_file = '-'
     
     # Connect to the database
@@ -213,11 +213,12 @@ def main(args):
             if args.from_file != '-':
                 templatelist.close()
             if numloaded:
-                utils.print_success("\n\n===================================\n"
-                                    "%d templates successfully loaded\n"
-                                    "===================================\n" % numloaded)
+                notify.print_success("\n\n===================================\n"
+                                     "%d templates successfully loaded\n"
+                                     "===================================\n" %
+                                     numloaded)
             if numfails:
-                raise errors.ToasterError(\
+                raise errors.ToasterError(
                     "\n\n===================================\n"
                     "The loading of %d templates failed!\n"
                     "Please review error output.\n"
