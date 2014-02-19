@@ -1,8 +1,6 @@
 """Useful, general functions and data.
 """
 import sys
-import os
-import os.path
 import datetime
 import argparse
 import hashlib
@@ -13,6 +11,8 @@ import re
 from toaster import config
 from toaster import errors
 from toaster import debug
+from toaster.utils import notify
+
 
 ##############################################################################
 # GLOBAL DEFINITIONS
@@ -32,44 +32,6 @@ def give_utc_now():
 
 def hash_password(pw):
     return hashlib.md5(pw).hexdigest()
-
-
-def make_proc_diagnostics_dir(fn, proc_id):
-    """Given an archive, create the appropriate diagnostics
-        directory, and cross-references.
-
-        Inputs:
-            fn: The file to create a diagnostic directory for.
-            proc_id: The processing ID number to create a diagnostic
-                directory for.
-        
-        Outputs:
-            dir: The diagnostic directory's name.
-    """
-    diagnostics_location = os.path.join(config.cfg.data_archive_location, "diagnostics")
-    params = prep_file(fn)
-    basedir = get_archive_dir(fn, params=params, \
-                              data_archive_location=diagnostics_location)
-    dir = os.path.join(basedir, "procid_%d" % proc_id)
-    # Make sure directory exists
-    if not os.path.isdir(dir):
-        # Create directory
-        notify.print_info("Making diagnostic directory: %s" % dir, 2)
-        os.makedirs(dir, 0770)
-
-    crossrefdir = os.path.join(diagnostics_location, "processing")
-    if not os.path.isdir(crossrefdir):
-        # Create directory
-        notify.print_info("Making diagnostic crossref dir: %s" % crossrefdir, 2)
-        os.makedirs(crossrefdir, 0770)
-
-    crossref = os.path.join(crossrefdir, "procid_%d" % proc_id)
-    if not os.path.islink(crossref):
-        # Create symlink
-        notify.print_info("Making crossref to diagnostic dir: %s" % crossref, 2)
-        os.symlink(dir, crossref)
-
-    return dir
 
 
 def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr,
@@ -110,13 +72,13 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr,
         notify.print_debug("Sending the following to cmd's stdin: %s" % stdinstr, \
                            "syscalls")
         # Run (and time) the command. Check for errors.
-        pipe = subprocess.Popen(cmd, shell=False, cwd=execdir, \
+        pipe = subprocess.Popen(cmd, shell=False, cwd=execdir,
                                 stdin=subprocess.PIPE,
                                 stdout=stdout, stderr=stderr)
         (stdoutdata, stderrdata) = pipe.communicate(stdinstr)
     else:
         # Run (and time) the command. Check for errors.
-        pipe = subprocess.Popen(cmd, shell=False, cwd=execdir, \
+        pipe = subprocess.Popen(cmd, shell=False, cwd=execdir,
                                 stdout=stdout)#, stderr=stderr)
         (stdoutdata, stderrdata) = pipe.communicate()
     retcode = pipe.returncode
@@ -137,60 +99,6 @@ def execute(cmd, stdout=subprocess.PIPE, stderr=sys.stderr,
         stderr.close()
 
     return stdoutdata, stderrdata
-
-
-def parse_pat_output(patout):
-    """Parse the output from 'pat'.
-        
-        Input:
-            patout: The stdout output of running 'pat'.
-
-        Output:
-            toainfo: A list of dictionaries, each with
-                information for a TOA.
-    """
-    toainfo = []
-    for toastr in patout.split("\n"):
-        toastr = toastr.strip()
-        if toastr and (toastr != "FORMAT 1") and \
-                (not toastr.startswith("Plotting")):
-            toasplit = toastr.split()
-            freq = float(toasplit[1])
-            imjd = float(toasplit[2].split(".")[0])
-            fmjd = float("0." + toasplit[2].split(".")[1])
-            err = float(toasplit[3])
-            if '-gof' in toasplit:
-                # The goodness-of-fit is only calculated for the 'FDM'
-                # fitting method. The GoF value returned for other 
-                # methods is inaccurate.
-                gofvalstr = toasplit[toasplit.index('-gof') + 1]
-                if config.cfg.toa_fitting_method == 'FDM' and gofvalstr != '*error*':
-                    gof = float(gofvalstr)
-                else:
-                    gof = None
-            if ('-bw' in toasplit) and ('-nchan' in toasplit):
-                nchan = int(toasplit[toasplit.index('-nchan') + 1])
-                bw = float(toasplit[toasplit.index('-bw') + 1])
-                bw_per_toa = bw / nchan
-            else:
-                bw_per_toa = None
-            if ('-length' in toasplit) and ('-nsubint' in toasplit):
-                nsubint = int(toasplit[toasplit.index('-nsubint') + 1])
-                length = float(toasplit[toasplit.index('-length') + 1])
-                length_per_toa = length / nsubint
-            else:
-                length_per_toa = None
-            if '-nbin' in toasplit:
-                nbin = int(toasplit[toasplit.index('-nbin') + 1])
-            toainfo.append({'freq': freq,
-                            'imjd': imjd,
-                            'fmjd': fmjd,
-                            'toa_unc_us': err,
-                            'goodness_of_fit': gof,
-                            'bw': bw_per_toa,
-                            'length': length_per_toa,
-                            'nbin': nbin})
-    return toainfo
 
 
 def set_warning_mode(mode=None, reset=True):
@@ -325,10 +233,8 @@ class DefaultArguments(argparse.ArgumentParser):
     class ListDebugModes(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
             print "Available debugging modes:"
-            for name, desc in debug.modes:
+            for name, desc in debug.get_modes_and_descriptions():
                 if desc is None:
                     continue
                 print "    %s: %s" % (name, desc)
             sys.exit(1)
-
-
