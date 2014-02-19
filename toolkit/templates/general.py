@@ -206,7 +206,7 @@ def get_template_from_id(template_id, existdb=None, verify_md5=True):
     return fullpath
 
 
-def get_master_template(pulsar_id, obssystem_id):
+def get_master_template(pulsar_id, obssystem_id, existdb=None):
     """Given a pulsar ID number, and observing system ID number
         return the full path to the appropriate master template, 
         and its ID number. If no master template exists return
@@ -215,6 +215,8 @@ def get_master_template(pulsar_id, obssystem_id):
         Inputs:
             pulsar_id: The pulsar ID number.
             obssystem_id: The observing system ID number.
+            existdb: A (optional) existing database connection object.
+                (Default: Establish a db connection)
 
         Outputs:
             mastertmp_id: The master template's template_id value, or
@@ -224,7 +226,7 @@ def get_master_template(pulsar_id, obssystem_id):
                 template exists for the provided pulsar/obssystem
                 combination.
     """
-    db = database.Database()
+    db = existdb or database.Database()
     db.connect()
 
     select = db.select([db.templates.c.template_id,
