@@ -3,17 +3,20 @@ import os
 import shutil
 
 from toaster import utils
+from toaster import errors
 from toaster.utils import notify
 from toaster.utils import datafile 
-import base
+from toaster.diagnostics import base
+
 
 class CompositePlotDiagnostic(base.PlotDiagnostic):
     name = 'Composite'
     description = "A composite plot including a profile, " \
-                    "a time vs. phase plot, a freq vs. phase " \
-                    "plot, and some text information. NOTE: " \
-                    "if the raw file is fully scrunched along " \
-                    "an axis the relevent plot will not be shown."
+                  "a time vs. phase plot, a freq vs. phase " \
+                  "plot, and some text information. NOTE: " \
+                  "if the raw file is fully scrunched along " \
+                  "an axis the relevent plot will not be shown."
+
     def _compute(self):
         notify.print_info("Creating composite summary plot for %s" % self.fn, 3)
         handle, tmpfn = tempfile.mkstemp(suffix=".png")
@@ -26,12 +29,12 @@ class CompositePlotDiagnostic(base.PlotDiagnostic):
             self.__plot_nofreq(tmpfn, params)
         elif (params['nsub'] == 1) and (params['nchan'] > 1):
             self.__plot_notime(tmpfn, params)
-        elif  (params['nsub'] == 1) and (params['nchan'] == 1):
+        elif (params['nsub'] == 1) and (params['nchan'] == 1):
             self.__plot_profonly(tmpfn, params)
         else:
-            raise errors.FileError("Not sure how to plot diagnostic for file. " \
-                                    "(nsub: %d; nchan: %d)" % \
-                                    (params['nsub'], params['nchan']))
+            raise errors.FileError("Not sure how to plot diagnostic for file. "
+                                   "(nsub: %d; nchan: %d)" %
+                                   (params['nsub'], params['nchan']))
         tmpdir = os.path.split(tmpfn)[0]
         archivefn = os.path.split(self.fn)[-1]
         pngfn = os.path.join(tmpdir, archivefn+".composite.png")
