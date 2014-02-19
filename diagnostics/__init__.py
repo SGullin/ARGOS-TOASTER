@@ -1,17 +1,19 @@
 import os.path
 
-import database
-import utils
-import errors
-import base
+from toaster import config
+from toaster import errors
+from toaster.diagnostics import base
+from toaster.utils import datafile
+from toaster.utils import notify
 
-registered_diagnostics = ['composite', \
-                          'snr', \
-                          'time_vs_phase', \
-                          'freq_vs_phase', \
-                          'profile', \
-                          'stokes', \
-                          'masked_percentage', \
+
+registered_diagnostics = ['composite',
+                          'snr',
+                          'time_vs_phase',
+                          'freq_vs_phase',
+                          'profile',
+                          'stokes',
+                          'masked_percentage',
                           ]
 
 
@@ -26,10 +28,12 @@ def get_diagnostic_class(diagnostic_name):
             diagcls: The diagnostic class.
     """
     if diagnostic_name not in registered_diagnostics:
-        raise errors.UnrecognizedValueError("The diagnostic, '%s', " \
-                    "is not a registered. The following " \
-                    "are registered: '%s'" % \
-                    (diagnostic_name, "', '".join(registered_diagnostics)))
+        raise errors.UnrecognizedValueError("The diagnostic, '%s', "
+                                            "is not a registered. "
+                                            "The following are registered: "
+                                            "'%s'" %
+                                            (diagnostic_name,
+                                             "', '".join(registered_diagnostics)))
     mod = __import__(diagnostic_name, globals())
     diagcls = mod.Diagnostic
     return diagcls
@@ -81,13 +85,10 @@ class CustomPlotDiagnostic(base.PlotDiagnostic):
     def __init__(self, fn, name, plotfn):
         self.name = name
         if not os.path.isfile(plotfn):
-            raise errors.FileError("The diagnostic plot provided (%s) " \
-                            "doesn't exist!" % plotfn)
+            raise errors.FileError("The diagnostic plot provided (%s) "
+                                   "doesn't exist!" % plotfn)
         self.plotfn = plotfn
         super(CustomPlotDiagnostic, self).__init__(fn)
 
     def _compute(self):
         return self.plotfn
-
-
-
