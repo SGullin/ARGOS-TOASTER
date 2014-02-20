@@ -6,10 +6,12 @@ of pulsars in the database.
 
 Patrick Lazarus, Oct 28, 2012.
 """
-import errors
-import colour
-import utils
-import database
+from toaster import errors
+from toaster import colour
+from toaster import utils
+from toaster import database
+from toaster.utils import cache
+from toaster.utils import notify
 
 
 SHORTNAME = 'show'
@@ -18,20 +20,20 @@ DESCRIPTION = "Get a listing of pulsars " \
 
 
 def add_arguments(parser):
-    parser.add_argument('-p', '--psr', dest='psrnames', \
-                        type=str, default=[], action='append', \
+    parser.add_argument('-p', '--psr', dest='psrnames',
+                        type=str, default=[], action='append',
                         help="The pulsar to grab info for.")
-    parser.add_argument('--pulsar-id', dest='pulsar_ids', \
-                        type=int, default=[], action='append', \
+    parser.add_argument('--pulsar-id', dest='pulsar_ids',
+                        type=int, default=[], action='append',
                         help="IDs of pulsars to grab info for.")
-    parser.add_argument("-O", "--output-style", default='text', \
-                        dest='output_style', type=str, \
-                        help="The following options control how " \
-                        "pulsars are displayed. Recognized " \
-                        "modes: 'text' - List pulsars and aliases in a " \
-                        "human-readable format; 'dump' - Dump all " \
-                        "pulsar names and aliases to screen. " \
-                        "(Default: text).")
+    parser.add_argument("-O", "--output-style", default='text',
+                        dest='output_style', type=str,
+                        help="The following options control how "
+                             "pulsars are displayed. Recognized "
+                             "modes: 'text' - List pulsars and aliases in a "
+                             "human-readable format; 'dump' - Dump all "
+                             "pulsar names and aliases to screen. "
+                             "(Default: text).")
 
 
 def get_pulsarinfo(pulsar_ids=None, existdb=None):
@@ -52,23 +54,23 @@ def get_pulsarinfo(pulsar_ids=None, existdb=None):
 
     try:
         # Get number of observations
-        select = db.select([db.rawfiles.c.pulsar_id, \
-                            db.rawfiles.c.telescop, \
+        select = db.select([db.rawfiles.c.pulsar_id,
+                            db.rawfiles.c.telescop,
                             database.sa.func.count(db.rawfiles.c.rawfile_id).\
-                                label('numobs')], \
+                                label('numobs')],
                     from_obj=[db.rawfiles.\
-                        outerjoin(db.replacement_rawfiles, \
-                            onclause=db.replacement_rawfiles.c.obsolete_rawfile_id == \
+                        outerjoin(db.replacement_rawfiles,
+                            onclause=db.replacement_rawfiles.c.obsolete_rawfile_id ==
                                     db.rawfiles.c.rawfile_id)]).\
                     where(db.replacement_rawfiles.c.replacement_rawfile_id == None).\
-                    group_by(db.rawfiles.c.pulsar_id, \
+                    group_by(db.rawfiles.c.pulsar_id,
                              db.rawfiles.c.telescop)
         result = db.execute(select)
         rawfile_rows = result.fetchall()
         result.close()
  
         # Get number of TOAs
-        select = db.select([db.toas.c.pulsar_id, \
+        select = db.select([db.toas.c.pulsar_id,
                             database.sa.func.count(db.toas.c.toa_id).\
                                 label('numtoas')]).\
                     group_by(db.toas.c.pulsar_id)
@@ -77,16 +79,16 @@ def get_pulsarinfo(pulsar_ids=None, existdb=None):
         result.close()
  
         # Get parfile info
-        select = db.select([db.parfiles.c.pulsar_id, \
-                            db.parfiles.c.parfile_id, \
-                            db.parfiles.c.dm, \
-                            (1.0/db.parfiles.c.f0).label('period'), \
-                            db.parfiles.c.raj, \
-                            db.parfiles.c.decj, \
-                            db.parfiles.c.binary_model], \
+        select = db.select([db.parfiles.c.pulsar_id,
+                            db.parfiles.c.parfile_id,
+                            db.parfiles.c.dm,
+                            (1.0/db.parfiles.c.f0).label('period'),
+                            db.parfiles.c.raj,
+                            db.parfiles.c.decj,
+                            db.parfiles.c.binary_model],
                     from_obj=[db.master_parfiles.\
-                        outerjoin(db.parfiles, \
-                            onclause=db.parfiles.c.parfile_id == \
+                        outerjoin(db.parfiles,
+                            onclause=db.parfiles.c.parfile_id ==
                                     db.master_parfiles.c.parfile_id)])
         result = db.execute(select)
         parfile_rows = result.fetchall()
@@ -99,10 +101,10 @@ def get_pulsarinfo(pulsar_ids=None, existdb=None):
         result.close()
 
         # Get pulsar names
-        pulsarname_cache = utils.get_pulsarname_cache(existdb=db)
-        pulsaralias_cache = utils.get_pulsaralias_cache(existdb=db)
-        userinfo_cache = utils.get_userinfo_cache(existdb=db)
-        telescopeinfo_cache = utils.get_telescopeinfo_cache(existdb=db)
+        pulsarname_cache = cache.get_pulsarname_cache(existdb=db)
+        pulsaralias_cache = cache.get_pulsaralias_cache(existdb=db)
+        userinfo_cache = cache.get_userinfo_cache(existdb=db)
+        telescopeinfo_cache = cache.get_telescopeinfo_cache(existdb=db)
     except:
         trans.rollback()
         raise
@@ -116,18 +118,18 @@ def get_pulsarinfo(pulsar_ids=None, existdb=None):
     for psrid, name in pulsarname_cache.iteritems():
         if pulsar_ids is not None and psrid not in pulsar_ids:
             continue
-        psrinfo[psrid] = {'name': name, \
-                         'aliases': pulsaralias_cache[psrid], \
-                         'telescopes': [], \
-                         'curators': [], \
-                         'numobs': 0, \
-                         'numtoas': 0, \
-                         'parfile_id': None, \
-                         'period': None, \
-                         'dm': None, \
-                         'raj': 'Unknown', \
-                         'decj': 'Unknown', \
-                         'binary': None}
+        psrinfo[psrid] = {'name': name,
+                          'aliases': pulsaralias_cache[psrid],
+                          'telescopes': [],
+                          'curators': [],
+                          'numobs': 0,
+                          'numtoas': 0,
+                          'parfile_id': None,
+                          'period': None,
+                          'dm': None,
+                          'raj': 'Unknown',
+                          'decj': 'Unknown',
+                          'binary': None}
     for row in rawfile_rows:
         psrid = row['pulsar_id']
         if pulsar_ids is not None and psrid not in pulsar_ids:
@@ -180,7 +182,7 @@ def show_pulsars(psrinfo):
     for psrid in sorted(psrinfo.keys()):
         psr = psrinfo[psrid]
         print colour.cstring("Pulsar ID:", underline=True, bold=True) + \
-                colour.cstring(" %d" % psrid, bold=True)
+            colour.cstring(" %d" % psrid, bold=True)
         print "Pulsar Name: %s" % psr['name'] 
         print "Aliases:"
         for alias in psr['aliases']:
@@ -201,17 +203,17 @@ def show_pulsars(psrinfo):
 
         lines = ["Number of observations: %d" % psr['numobs']]
         if psr['numobs'] > 0:
-            lines.append("Telescopes used:\n    " + \
-                            "\n    ".join(psr['telescopes']))
+            lines.append("Telescopes used:\n    " +
+                         "\n    ".join(psr['telescopes']))
         lines.append("Number of TOAs: %d" % psr['numtoas'])
         if psr['curators'] == 'Everyone':
             lines.append("Curators: Everyone")
         elif psr['curators']:
-            lines.append("Curators:\n    " + \
-                            "\n    ".join(psr['curators']))
+            lines.append("Curators:\n    " +
+                         "\n    ".join(psr['curators']))
         else:
             lines.append("Curators: None")
-        utils.print_info("\n".join(lines), 1)
+        notify.print_info("\n".join(lines), 1)
         print "--"*25
 
 
@@ -226,11 +228,11 @@ def dump_pulsars(pulsar_ids=None):
             None
     """
     # Grab the pulsar alias cache once rather than accessing it multiple times
-    pulsaralias_cache = utils.get_pulsaralias_cache()
+    pulsaralias_cache = cache.get_pulsaralias_cache()
     if pulsar_ids is None:
         pulsar_ids = sorted(pulsaralias_cache.keys())
     for psrid in sorted(pulsar_ids):
-        psrname = utils.get_pulsarname(psrid)
+        psrname = cache.get_pulsarname(psrid)
         print psrname
         for alias in pulsaralias_cache[psrid]:
             if alias == psrname:
@@ -240,23 +242,24 @@ def dump_pulsars(pulsar_ids=None):
 
 def main(args):
     # Build caches
-    utils.get_pulsarname_cache()
+    cache.get_pulsarname_cache()
     pulsar_ids = args.pulsar_ids + \
-                    [utils.get_pulsarid(psr) for psr in args.psrnames]
+        [cache.get_pulsarid(psr) for psr in args.psrnames]
     if not pulsar_ids:
         pulsar_ids = None
-    if args.output_style=='text':
+    if args.output_style == 'text':
         # Get pulsar info
         psrinfo = get_pulsarinfo(pulsar_ids)
         show_pulsars(psrinfo)
-    elif args.output_style=='dump':
+    elif args.output_style == 'dump':
         dump_pulsars(pulsar_ids)
     else:
-        raise errors.UnrecognizedValueError("The output-style '%s' is " \
-                    "not recognized!" % args.output_style)
+        raise errors.UnrecognizedValueError("The output-style '%s' is "
+                                            "not recognized!" %
+                                            args.output_style)
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     parser = utils.DefaultArguments(description=DESCRIPTION)
     add_arguments(parser)
     args = parser.parse_args()
