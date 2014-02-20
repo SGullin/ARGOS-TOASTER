@@ -5,6 +5,7 @@ import datetime
 import argparse
 import hashlib
 import subprocess
+import types
 import warnings
 import re
 
@@ -18,6 +19,8 @@ from toaster.utils import notify
 # GLOBAL DEFINITIONS
 ##############################################################################
 # The following regular expressions are used when parse parfiles
+from utils import notify
+
 float_re = re.compile(r"^[-+]?(\d+(\.\d*)?|\.\d+)([eEdD][-+]?\d+)?$")
 int_re = re.compile(r"^[-+]?\d+$")
 
@@ -238,3 +241,34 @@ class DefaultArguments(argparse.ArgumentParser):
                     continue
                 print "    %s: %s" % (name, desc)
             sys.exit(1)
+
+
+def sort_by_keys(tosort, keys):
+    """Sort a list of dictionaries, or database rows
+        by the list of keys provided. Keys provided
+        later in the list take precedence over earlier
+        ones. If a key ends in '_r' sorting by that key
+        will happen in reverse.
+
+        Inputs:
+            tosort: The list to sort.
+            keys: The keys to use for sorting.
+
+        Outputs:
+            None - sorting is done in-place.
+    """
+    if not tosort:
+        return tosort
+    notify.print_info("Sorting by keys (%s)" % " then ".join(keys), 3)
+    for sortkey in keys:
+        if sortkey.endswith("_r"):
+            sortkey = sortkey[:-2]
+            rev = True
+            notify.print_info("Reverse sorting by %s..." % sortkey, 2)
+        else:
+            rev = False
+            notify.print_info("Sorting by %s..." % sortkey, 2)
+        if type(tosort[0][sortkey]) is types.StringType:
+            tosort.sort(key=lambda x: x[sortkey].lower(), reverse=rev)
+        else:
+            tosort.sort(key=lambda x: x[sortkey], reverse=rev)

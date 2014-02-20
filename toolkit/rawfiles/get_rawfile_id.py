@@ -9,8 +9,6 @@ Patrick Lazarus, Jan. 8, 2012.
 """
 import datetime
 import os.path
-import types
-import warnings
 
 import numpy as np
 
@@ -122,7 +120,7 @@ def main(args):
         raise errors.ToasterError("No rawfiles match parameters provided!")
     
     # Sort rawfiles
-    sort_by_keys(rawfiles, args.sortkeys)
+    utils.sort_by_keys(rawfiles, args.sortkeys)
 
     if args.output_style=='text':
         show_rawfiles(rawfiles)
@@ -179,30 +177,30 @@ def get_rawfiles(args):
         whereclause &= (db.obssystems.c.clock.like(args.clock))
     if not args.match_obsolete:
         whereclause &= (db.replacement_rawfiles.c.replacement_rawfile_id==None)
-    select = db.select([db.rawfiles.c.rawfile_id, \
-                        db.rawfiles.c.add_time, \
-                        db.rawfiles.c.filename, \
-                        db.rawfiles.c.filepath, \
-                        db.rawfiles.c.filesize, \
-                        db.rawfiles.c.nbin, \
-                        db.rawfiles.c.nchan, \
-                        db.rawfiles.c.npol, \
-                        db.rawfiles.c.nsub, \
-                        db.rawfiles.c.freq, \
-                        db.rawfiles.c.bw, \
-                        db.rawfiles.c.dm, \
-                        db.rawfiles.c.length, \
-                        db.rawfiles.c.mjd, \
-                        db.replacement_rawfiles.c.replacement_rawfile_id, \
-                        db.users.c.real_name, \
-                        db.users.c.email_address, \
-                        db.pulsars.c.pulsar_name, \
-                        db.telescopes.c.telescope_name, \
-                        db.obssystems.c.obssystem_id, \
-                        db.obssystems.c.name.label('obssystem'), \
-                        db.obssystems.c.frontend, \
-                        db.obssystems.c.backend, \
-                        db.obssystems.c.band_descriptor, \
+    select = db.select([db.rawfiles.c.rawfile_id,
+                        db.rawfiles.c.add_time,
+                        db.rawfiles.c.filename,
+                        db.rawfiles.c.filepath,
+                        db.rawfiles.c.filesize,
+                        db.rawfiles.c.nbin,
+                        db.rawfiles.c.nchan,
+                        db.rawfiles.c.npol,
+                        db.rawfiles.c.nsub,
+                        db.rawfiles.c.freq,
+                        db.rawfiles.c.bw,
+                        db.rawfiles.c.dm,
+                        db.rawfiles.c.length,
+                        db.rawfiles.c.mjd,
+                        db.replacement_rawfiles.c.replacement_rawfile_id,
+                        db.users.c.real_name,
+                        db.users.c.email_address,
+                        db.pulsars.c.pulsar_name,
+                        db.telescopes.c.telescope_name,
+                        db.obssystems.c.obssystem_id,
+                        db.obssystems.c.name.label('obssystem'),
+                        db.obssystems.c.frontend,
+                        db.obssystems.c.backend,
+                        db.obssystems.c.band_descriptor,
                         db.obssystems.c.clock], \
                 from_obj=[db.rawfiles.\
                     outerjoin(db.replacement_rawfiles, \
@@ -479,23 +477,23 @@ def show_rawfiles(rawfiles):
             colour.cprint("Rawfile has been superseded by rawfile_id=%d" % \
                     rawdict['replacement_rawfile_id'], 'warning')
         if config.cfg.verbosity >= 1:
-            lines = ["Observing system ID: %d" % rawdict['obssystem_id'], \
-                     "Observing system name: %s" % rawdict['obssystem'], \
-                     "Observing band: %s" % rawdict['band_descriptor'], \
-                     "Telescope: %s" % rawdict['telescope_name'], \
-                     "Frontend: %s" % rawdict['frontend'], \
-                     "Backend: %s" % rawdict['backend'], \
+            lines = ["Observing system ID: %d" % rawdict['obssystem_id'],
+                     "Observing system name: %s" % rawdict['obssystem'],
+                     "Observing band: %s" % rawdict['band_descriptor'],
+                     "Telescope: %s" % rawdict['telescope_name'],
+                     "Frontend: %s" % rawdict['frontend'],
+                     "Backend: %s" % rawdict['backend'],
                      "Clock: %s" % rawdict['clock']]
             notify.print_info("\n".join(lines), 1)
         if config.cfg.verbosity >= 2:
-            lines = ["MJD: %.6f" % rawdict['mjd'], \
-                     "Number of phase bins: %d" % rawdict['nbin'], \
-                     "Number of channels: %d" % rawdict['nchan'], \
-                     "Number of polarisations: %d" % rawdict['npol'], \
-                     "Number of sub-integrations: %d" % rawdict['nsub'], \
-                     "Centre frequency (MHz): %g" % rawdict['freq'], \
-                     "Bandwidth (MHz): %g" % rawdict['bw'], \
-                     "Dispersion measure (pc cm^-3): %g" % rawdict['dm'], \
+            lines = ["MJD: %.6f" % rawdict['mjd'],
+                     "Number of phase bins: %d" % rawdict['nbin'],
+                     "Number of channels: %d" % rawdict['nchan'],
+                     "Number of polarisations: %d" % rawdict['npol'],
+                     "Number of sub-integrations: %d" % rawdict['nsub'],
+                     "Centre frequency (MHz): %g" % rawdict['freq'],
+                     "Bandwidth (MHz): %g" % rawdict['bw'],
+                     "Dispersion measure (pc cm^-3): %g" % rawdict['dm'],
                      "Integration time (s): %g" % rawdict['length']]
             notify.print_info("\n".join(lines), 2)
         if config.cfg.verbosity >= 3:
@@ -509,39 +507,8 @@ def show_rawfiles(rawfiles):
         print "--"*25
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     parser = utils.DefaultArguments(description=DESCRIPTION)
     add_arguments(parser)
     args = parser.parse_args()
     main(args)
-
-
-def sort_by_keys(tosort, keys):
-    """Sort a list of dictionaries, or database rows
-        by the list of keys provided. Keys provided
-        later in the list take precedence over earlier
-        ones. If a key ends in '_r' sorting by that key
-        will happen in reverse.
-
-        Inputs:
-            tosort: The list to sort.
-            keys: The keys to use for sorting.
-
-        Outputs:
-            None - sorting is done in-place.
-    """
-    if not tosort:
-        return tosort
-    notify.print_info("Sorting by keys (%s)" % " then ".join(keys), 3)
-    for sortkey in keys:
-        if sortkey.endswith("_r"):
-            sortkey = sortkey[:-2]
-            rev = True
-            notify.print_info("Reverse sorting by %s..." % sortkey, 2)
-        else:
-            rev = False
-            notify.print_info("Sorting by %s..." % sortkey, 2)
-        if type(tosort[0][sortkey]) is types.StringType:
-            tosort.sort(key=lambda x: x[sortkey].lower(), reverse=rev)
-        else:
-            tosort.sort(key=lambda x: x[sortkey], reverse=rev)
