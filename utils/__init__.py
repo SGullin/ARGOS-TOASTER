@@ -19,7 +19,6 @@ from toaster.utils import notify
 # GLOBAL DEFINITIONS
 ##############################################################################
 # The following regular expressions are used when parse parfiles
-from utils import notify
 
 float_re = re.compile(r"^[-+]?(\d+(\.\d*)?|\.\d+)([eEdD][-+]?\d+)?$")
 int_re = re.compile(r"^[-+]?\d+$")
