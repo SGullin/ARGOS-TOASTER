@@ -4,74 +4,74 @@
 import sys
 import shlex
 import os.path
-import textwrap
-import warnings
-import argparse
 
-import config
-import utils
-import database
-import errors
-from toolkit.timfiles import write_timfile as wt
-from toolkit.timfiles import conflict_handlers
+from toaster import debug
+from toaster import utils
+from toaster import database
+from toaster import errors
+from toaster.utils import version
+from toaster.utils import cache
+from toaster.utils import notify
+from toaster.toolkit.timfiles import write_timfile as wt
+from toaster.toolkit.timfiles import conflict_handlers
 
 SHORTNAME = 'create'
 DESCRIPTION = 'Extracts TOA information ' \
               'from table, and creates a tim file for ' \
               'use with tempo2.'
 
-CONFLICT_HANDLERS = {'strict': conflict_handlers.strict_conflict_handler, \
-                     'tolerant': conflict_handlers.tolerant_conflict_handler, \
+CONFLICT_HANDLERS = {'strict': conflict_handlers.strict_conflict_handler,
+                     'tolerant': conflict_handlers.tolerant_conflict_handler,
                      'newest': conflict_handlers.get_newest_toas}
 
 
 def add_arguments(parser):
-    parser.add_argument('-p', '--psr', dest='pulsar_names', \
-                        type=str, action='append', \
+    parser.add_argument('-p', '--psr', dest='pulsar_names',
+                        type=str, action='append',
                         help="The pulsar to grab rawfiles for.")
-    parser.add_argument('-P', '--process-id', dest='process_ids', \
-                        type=int, default=[], action='append', \
-                        help="A process ID. Multiple instances of " \
-                            "these criteria may be provided.")
-    parser.add_argument('-t', '--telescope', dest='telescopes', type=str, \
-                        default=[], action='append', \
+    parser.add_argument('-P', '--process-id', dest='process_ids',
+                        type=int, default=[], action='append',
+                        help="A process ID. Multiple instances of "
+                             "these criteria may be provided.")
+    parser.add_argument('-t', '--telescope', dest='telescopes', type=str,
+                        default=[], action='append',
                         help='Telescope name or alias. NOTE: To get TOAs '
-                            'from multiple telescopes, provide the ' \
-                            '-t/--telescope option multiple times.')
-    parser.add_argument('--backend', dest='backends', \
-                        type=str, default=[], action='append', \
-                        help='Backend name. NOTE: To get TOAs from ' \
-                            'multiple backends, provide the --backend ' \
-                            'options multiple times.')
-    parser.add_argument('--toa-id', dest='toa_ids', \
-                        type=int, default=[], action='append', \
-                        help='Individual TOA ID to include. Multiple ' \
-                            '--toa-id options can be provided.')
-    parser.add_argument('--start-mjd', dest='start_mjd', type=float, \
+                             'from multiple telescopes, provide the '
+                             '-t/--telescope option multiple times.')
+    parser.add_argument('--backend', dest='backends',
+                        type=str, default=[], action='append',
+                        help='Backend name. NOTE: To get TOAs from '
+                             'multiple backends, provide the --backend '
+                             'options multiple times.')
+    parser.add_argument('--toa-id', dest='toa_ids',
+                        type=int, default=[], action='append',
+                        help='Individual TOA ID to include. Multiple '
+                             '--toa-id options can be provided.')
+    parser.add_argument('--start-mjd', dest='start_mjd', type=float,
                         help='Get TOAs with MJD larger than this value.')
-    parser.add_argument('--end-mjd', dest='end_mjd', type=float, \
+    parser.add_argument('--end-mjd', dest='end_mjd', type=float,
                         help='Get TOAs with MJD smaller than this value.')
-    parser.add_argument('-m', '--manipulator', dest='manipulators', \
-                        type=str, default=[], action='append', \
-                        help="Name of manipulator to match. Multiple '-m/" \
-                            "--manipulator' arguments may be provided. " \
-                            "(Default: match all manipulators).")
-    parser.add_argument('--on-conflict', dest='on_conflict', \
-                        choices=CONFLICT_HANDLERS, default='strict', \
-                        help="Determine what to do when conflicting " \
-                            "TOAs are selected. (Default: raise an " \
-                            "exception.)")
-    parser.add_argument('-n', '--dry-run', dest='dry_run', \
-                        action='store_true', default=False, \
-                        help="Print information about the timfile, but " \
-                            "don't actually create it.")
-    parser.add_argument('--comments', dest='comments', \
-                        type=str, \
+    parser.add_argument('-m', '--manipulator', dest='manipulators',
+                        type=str, default=[], action='append',
+                        help="Name of manipulator to match. Multiple '-m/"
+                             "--manipulator' arguments may be provided. "
+                             "(Default: match all manipulators).")
+    parser.add_argument('--on-conflict', dest='on_conflict',
+                        choices=CONFLICT_HANDLERS, default='strict',
+                        help="Determine what to do when conflicting "
+                             "TOAs are selected. (Default: raise an "
+                             "exception.)")
+    parser.add_argument('-n', '--dry-run', dest='dry_run',
+                        action='store_true', default=False,
+                        help="Print information about the timfile, but "
+                             "don't actually create it.")
+    parser.add_argument('--comments', dest='comments',
+                        type=str,
                         help="Provide comments describing the timfile.")
-    parser.add_argument("--from-file", dest='from_file', \
-                        type=str, default=None, \
-                        help="A file containing a list of command line " \
-                            "arguments use.")
+    parser.add_argument("--from-file", dest='from_file',
+                        type=str, default=None,
+                        help="A file containing a list of command line "
+                             "arguments use.")
 
 
 def toa_select(args, existdb=None):
@@ -116,68 +116,67 @@ def toa_select(args, existdb=None):
         whereclause &= (db.toas.c.toa_id.in_(args.toa_ids)) 
     if args.process_ids:
         whereclause &= (db.toas.c.process_id.in_(args.process_ids)) 
-    
-    
-    select = db.select([db.toas.c.toa_id.distinct(), \
-                        db.toas.c.process_id, \
-                        db.toas.c.rawfile_id, \
-                        db.toas.c.pulsar_id, \
-                        db.toas.c.obssystem_id, \
-                        db.toas.c.imjd, \
-                        db.toas.c.fmjd, \
-                        (db.toas.c.fmjd+db.toas.c.imjd).label('mjd'), \
-                        db.toas.c.freq, \
-                        db.toas.c.toa_unc_us, \
-                        db.toas.c.bw, \
-                        db.toas.c.length, \
-                        db.toas.c.nbin, \
-                        database.sa.func.ifnull(db.toas.c.goodness_of_fit, 0).\
-                                label('goodness_of_fit'), \
-                        db.obssystems.c.name.label('obssystem'), \
-                        db.obssystems.c.backend, \
-                        db.obssystems.c.frontend, \
-                        db.obssystems.c.band_descriptor, \
-                        db.telescopes.c.telescope_id, \
-                        db.telescopes.c.telescope_name, \
-                        db.telescopes.c.telescope_abbrev, \
-                        db.telescopes.c.telescope_code, \
-                        db.process.c.version_id, \
-                        db.process.c.template_id, \
-                        db.process.c.parfile_id, \
-                        db.process.c.add_time, \
-                        db.process.c.manipulator, \
-                        db.rawfiles.c.filename.label('rawfile'), \
-                        db.replacement_rawfiles.c.replacement_rawfile_id, \
-                        db.templates.c.filename.label('template'), \
-                        (db.toas.c.bw/db.rawfiles.c.bw * \
-                                db.rawfiles.c.nchan).label('nchan')], \
+
+    select = db.select([db.toas.c.toa_id.distinct(),
+                        db.toas.c.process_id,
+                        db.toas.c.rawfile_id,
+                        db.toas.c.pulsar_id,
+                        db.toas.c.obssystem_id,
+                        db.toas.c.imjd,
+                        db.toas.c.fmjd,
+                        (db.toas.c.fmjd+db.toas.c.imjd).label('mjd'),
+                        db.toas.c.freq,
+                        db.toas.c.toa_unc_us,
+                        db.toas.c.bw,
+                        db.toas.c.length,
+                        db.toas.c.nbin,
+                        database.sa.func.ifnull(db.toas.c.goodness_of_fit, 0).
+                        label('goodness_of_fit'),
+                        db.obssystems.c.name.label('obssystem'),
+                        db.obssystems.c.backend,
+                        db.obssystems.c.frontend,
+                        db.obssystems.c.band_descriptor,
+                        db.telescopes.c.telescope_id,
+                        db.telescopes.c.telescope_name,
+                        db.telescopes.c.telescope_abbrev,
+                        db.telescopes.c.telescope_code,
+                        db.process.c.version_id,
+                        db.process.c.template_id,
+                        db.process.c.parfile_id,
+                        db.process.c.add_time,
+                        db.process.c.manipulator,
+                        db.rawfiles.c.filename.label('rawfile'),
+                        db.replacement_rawfiles.c.replacement_rawfile_id,
+                        db.templates.c.filename.label('template'),
+                        (db.toas.c.bw/db.rawfiles.c.bw *
+                         db.rawfiles.c.nchan).label('nchan')],
                 from_obj=[db.toas.\
-                    join(db.pulsar_aliases, \
-                        onclause=db.toas.c.pulsar_id == \
+                    join(db.pulsar_aliases,
+                        onclause=db.toas.c.pulsar_id ==
                                 db.pulsar_aliases.c.pulsar_id).\
-                    outerjoin(db.pulsars, \
-                        onclause=db.pulsar_aliases.c.pulsar_id == \
+                    outerjoin(db.pulsars,
+                        onclause=db.pulsar_aliases.c.pulsar_id ==
                                 db.pulsars.c.pulsar_id).\
-                    outerjoin(db.process, \
-                        onclause=db.toas.c.process_id == \
+                    outerjoin(db.process,
+                        onclause=db.toas.c.process_id ==
                                 db.process.c.process_id).\
-                    outerjoin(db.rawfiles, \
-                        onclause=db.rawfiles.c.rawfile_id == \
+                    outerjoin(db.rawfiles,
+                        onclause=db.rawfiles.c.rawfile_id ==
                                 db.toas.c.rawfile_id).\
-                    outerjoin(db.replacement_rawfiles, \
-                        onclause=db.rawfiles.c.rawfile_id == \
+                    outerjoin(db.replacement_rawfiles,
+                        onclause=db.rawfiles.c.rawfile_id ==
                                 db.replacement_rawfiles.c.obsolete_rawfile_id).\
-                    outerjoin(db.templates, \
-                        onclause=db.templates.c.template_id == \
+                    outerjoin(db.templates,
+                        onclause=db.templates.c.template_id ==
                                 db.toas.c.template_id).\
-                    outerjoin(db.obssystems, \
-                        onclause=db.toas.c.obssystem_id == \
+                    outerjoin(db.obssystems,
+                        onclause=db.toas.c.obssystem_id ==
                                 db.obssystems.c.obssystem_id).\
-                    outerjoin(db.telescopes, \
-                        onclause=db.telescopes.c.telescope_id == \
+                    outerjoin(db.telescopes,
+                        onclause=db.telescopes.c.telescope_id ==
                                 db.obssystems.c.telescope_id).\
-                    join(db.telescope_aliases, \
-                        onclause=db.telescopes.c.telescope_id == \
+                    join(db.telescope_aliases,
+                        onclause=db.telescopes.c.telescope_id ==
                                 db.telescope_aliases.c.telescope_id)]).\
                 where(whereclause)
     return select
@@ -227,7 +226,7 @@ def print_summary(toas, comments):
         # Observing systems
         nobssys = obssystems.get(toa['obssystem'], 0) + 1
         obssystems[toa['obssystem']] = nobssys
-        # Manpulators
+        # Manipulators
         nman = manipulators.get(toa['manipulator'], 0) + 1
         manipulators[toa['manipulator']] = nman
     print "Number of TOAs: %d" % len(toas)
@@ -262,11 +261,11 @@ def add_timfile_entry(toas, cmdline, comments, conflict_handler, existdb=None):
 
     # Insert timfile entry
     ins = db.timfiles.insert()
-    values = {'user_id':utils.get_userid(), \
-              'version_id':utils.get_version_id(db), \
-              'comments':comments, \
-              'pulsar_id':toas[0]['pulsar_id'], \
-              'input_args':cmdline}
+    values = {'user_id': cache.get_userid(),
+              'version_id': version.get_version_id(db),
+              'comments': comments,
+              'pulsar_id': toas[0]['pulsar_id'],
+              'input_args': cmdline}
     result = db.execute(ins, values)
     timfile_id = result.inserted_primary_key[0]
     result.close()
@@ -275,8 +274,8 @@ def add_timfile_entry(toas, cmdline, comments, conflict_handler, existdb=None):
     ins = db.toa_tim.insert()
     values = []
     for toa in toas:
-        values.append({'timfile_id':timfile_id, \
-                       'toa_id':toa['toa_id']})
+        values.append({'timfile_id': timfile_id,
+                       'toa_id': toa['toa_id']})
     db.execute(ins, values)
 
     if not existdb:
@@ -288,8 +287,8 @@ def add_timfile_entry(toas, cmdline, comments, conflict_handler, existdb=None):
 def main(args):
     # Check to make sure user provided a comment
     if not args.dry_run and args.comments is None:
-        raise errors.BadInputError("A comment describing the timfile is " \
-                                    "required!")
+        raise errors.BadInputError("A comment describing the timfile is "
+                                   "required!")
     
     if args.from_file is not None:
         # Re-create parser, so we can read arguments from file
@@ -299,8 +298,8 @@ def main(args):
             argfile = sys.stdin
         else:
             if not os.path.exists(args.from_file):
-                raise errors.FileError("The list of cmd line args (%s) " \
-                            "does not exist." % args.from_file)
+                raise errors.FileError("The list of cmd line args (%s) "
+                                       "does not exist." % args.from_file)
             argfile = open(args.from_file, 'r')
         for line in argfile:
             # Strip comments
@@ -319,22 +318,22 @@ def main(args):
     try:
         cmdline = " ".join(sys.argv)
         toas = get_toas(args, db)
-        if config.debug.TIMFILE:
+        if debug.is_on('TIMFILE'):
             # Check for / handle conflicts
             conflict_handler = CONFLICT_HANDLERS[args.on_conflict]
             toas = conflict_handler(toas)
-            wt.write_timfile(toas, {'comments': args.comments, \
-                                    'user_id': utils.get_userid(), \
-                                    'add_time': "Not in DB!", \
+            wt.write_timfile(toas, {'comments': args.comments,
+                                    'user_id': cache.get_userid(),
+                                    'add_time': "Not in DB!",
                                     'timfile_id': -1})
         elif args.dry_run:
             print_summary(toas, args.comments)
         else:
             conflict_handler = CONFLICT_HANDLERS[args.on_conflict]
-            timfile_id = add_timfile_entry(toas, cmdline, args.comments, \
-                                            conflict_handler)
-            utils.print_info("Created new timfile entry - timfile_id=%d (%s)" % \
-                    (timfile_id, utils.Give_UTC_now()), 1)
+            timfile_id = add_timfile_entry(toas, cmdline, args.comments,
+                                           conflict_handler)
+            notify.print_info("Created new timfile entry - timfile_id=%d (%s)" %
+                              (timfile_id, utils.give_utc_now()), 1)
     except:
         db.rollback()
         db.close()
@@ -344,8 +343,8 @@ def main(args):
         db.close()
     
 
-if __name__=='__main__':
+if __name__ == '__main__':
     parser = utils.DefaultArguments(description=DESCRIPTION)
     add_arguments(parser)
-    args=parser.parse_args()
+    args = parser.parse_args()
     main(args)
