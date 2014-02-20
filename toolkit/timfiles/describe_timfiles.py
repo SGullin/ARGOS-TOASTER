@@ -3,11 +3,12 @@
 """Show an overview of timfile entries in the DB.
 """
 
-import database
-import utils
-import colour
-import errors
-
+from toaster import database
+from toaster import utils
+from toaster import colour
+from toaster import errors
+from toaster.utils import notify
+from toaster.utils import cache
 import numpy as np
 
 
@@ -16,25 +17,25 @@ DESCRIPTION = "Print an overview of info about timfiles."
 
 
 def add_arguments(parser):
-    parser.add_argument('-p', '--psr', dest='pulsar_name', \
-                        type=str, default='%', \
-                        help="The pulsar to grab timfiles for. " \
-                            "NOTE: SQL regular expression syntax may be used")
-    parser.add_argument('--timfile-id', dest='timfile_id', \
-                        type=int, default=None, \
-                        help="A timfile ID. This is useful for checking " \
-                            "the details of a single timfile, identified " \
-                            "by its ID number. NOTE: No other timfiles " \
-                            "will match if this option is provided.")
-    parser.add_argument("-O", "--output-style", default='text', \
-                        dest='output_style', type=str, \
-                        help="The following options control how " \
-                        "the matching processing jobs are presented. " \
-                        "Recognized modes: 'text' - List information. " \
-                        "Increase verbosity to get more info; 'plot' - " \
-                        "Show a plot summarizing all TOAs in a timfile " \
-                        "NOTE: This only applies when a single timfile " \
-                        "matches the criteria provided. (Default: text).")
+    parser.add_argument('-p', '--psr', dest='pulsar_name',
+                        type=str, default='%',
+                        help="The pulsar to grab timfiles for. "
+                             "NOTE: SQL regular expression syntax may be used")
+    parser.add_argument('--timfile-id', dest='timfile_id',
+                        type=int, default=None,
+                        help="A timfile ID. This is useful for checking "
+                             "the details of a single timfile, identified "
+                             "by its ID number. NOTE: No other timfiles "
+                             "will match if this option is provided.")
+    parser.add_argument("-O", "--output-style", default='text',
+                        dest='output_style', type=str,
+                        help="The following options control how "
+                             "the matching processing jobs are presented. "
+                             "Recognized modes: 'text' - List information. "
+                             "Increase verbosity to get more info; 'plot' - "
+                             "Show a plot summarizing all TOAs in a timfile "
+                             "NOTE: This only applies when a single timfile "
+                             "matches the criteria provided. (Default: text).")
 
 
 def get_timfiles_toas(timfile_id):
@@ -52,25 +53,25 @@ def get_timfiles_toas(timfile_id):
     db = database.Database()
     db.connect()
 
-    select = db.select([db.toas.c.toa_id, \
-                        db.toas.c.toa_unc_us, \
+    select = db.select([db.toas.c.toa_id,
+                        db.toas.c.toa_unc_us,
                         (db.toas.c.fmjd+db.toas.c.imjd).\
-                                label('mjd'), \
-                        db.replacement_rawfiles.c.replacement_rawfile_id, \
-                        db.obssystems.c.band_descriptor, \
-                        db.obssystems.c.name, \
-                        db.obssystems.c.obssystem_id], \
+                                label('mjd'),
+                        db.replacement_rawfiles.c.replacement_rawfile_id,
+                        db.obssystems.c.band_descriptor,
+                        db.obssystems.c.name,
+                        db.obssystems.c.obssystem_id],
                 from_obj=[db.toa_tim.\
-                    outerjoin(db.toas, \
-                        onclause=db.toas.c.toa_id == \
+                    outerjoin(db.toas,
+                        onclause=db.toas.c.toa_id ==
                                 db.toa_tim.c.toa_id).\
-                    outerjoin(db.replacement_rawfiles, \
-                        onclause=db.toas.c.rawfile_id == \
+                    outerjoin(db.replacement_rawfiles,
+                        onclause=db.toas.c.rawfile_id ==
                                 db.replacement_rawfiles.c.obsolete_rawfile_id).\
-                    outerjoin(db.obssystems, \
-                        onclause=db.toas.c.obssystem_id == \
+                    outerjoin(db.obssystems,
+                        onclause=db.toas.c.obssystem_id ==
                                 db.obssystems.c.obssystem_id)]).\
-                where(db.toa_tim.c.timfile_id==timfile_id)
+                where(db.toa_tim.c.timfile_id == timfile_id)
     result = db.execute(select)
     rows = result.fetchall()
     result.close()
@@ -94,50 +95,50 @@ def get_timfiles(psr='%', timfile_id=None):
 
     whereclause = db.pulsar_aliases.c.pulsar_alias.like(psr)
     if timfile_id is not None:
-        whereclause &= (db.timfiles.c.timfile_id==timfile_id)
+        whereclause &= (db.timfiles.c.timfile_id == timfile_id)
 
-    select = db.select([db.timfiles, \
-                        db.users.c.real_name, \
-                        db.users.c.email_address, \
-                        db.pulsars.c.pulsar_name, \
-                        db.master_timfiles.c.timfile_id.label('mtimid'), \
+    select = db.select([db.timfiles,
+                        db.users.c.real_name,
+                        db.users.c.email_address,
+                        db.pulsars.c.pulsar_name,
+                        db.master_timfiles.c.timfile_id.label('mtimid'),
                         database.sa.func.count(db.toa_tim.c.toa_id.distinct()).\
-                                    label('numtoas'), \
+                                    label('numtoas'),
                         database.sa.func.max(db.toas.c.fmjd+db.toas.c.imjd).\
-                                    label('endmjd'), \
+                                    label('endmjd'),
                         database.sa.func.min(db.toas.c.fmjd+db.toas.c.imjd).\
-                                    label('startmjd'), \
+                                    label('startmjd'),
                         database.sa.func.count(db.obssystems.c.telescope_id.distinct()).\
-                                    label('numtelescopes'), \
+                                    label('numtelescopes'),
                         database.sa.func.count(db.toas.c.obssystem_id.distinct()).\
-                                    label('numobsys'), \
+                                    label('numobsys'),
                         database.sa.func.max(db.replacement_rawfiles.c.replacement_rawfile_id).\
-                                    label('any_replaced')], \
+                                    label('any_replaced')],
                 from_obj=[db.timfiles.\
-                    join(db.pulsar_aliases, \
-                        onclause=db.timfiles.c.pulsar_id == \
+                    join(db.pulsar_aliases,
+                        onclause=db.timfiles.c.pulsar_id ==
                                 db.pulsar_aliases.c.pulsar_id).\
-                    outerjoin(db.pulsars, \
-                        onclause=db.timfiles.c.pulsar_id == \
+                    outerjoin(db.pulsars,
+                        onclause=db.timfiles.c.pulsar_id ==
                                 db.pulsars.c.pulsar_id).\
-                    outerjoin(db.master_timfiles, \
-                        onclause=db.master_timfiles.c.timfile_id == \
+                    outerjoin(db.master_timfiles,
+                        onclause=db.master_timfiles.c.timfile_id ==
                                     db.timfiles.c.timfile_id).\
-                    outerjoin(db.users, \
-                        onclause=db.users.c.user_id == \
+                    outerjoin(db.users,
+                        onclause=db.users.c.user_id ==
                                 db.timfiles.c.user_id).\
-                    join(db.toa_tim, \
-                        onclause=db.toa_tim.c.timfile_id == \
+                    join(db.toa_tim,
+                        onclause=db.toa_tim.c.timfile_id ==
                                 db.timfiles.c.timfile_id).\
-                    outerjoin(db.toas, \
-                        onclause=db.toa_tim.c.toa_id == \
+                    outerjoin(db.toas,
+                        onclause=db.toa_tim.c.toa_id ==
                                 db.toas.c.toa_id).\
-                    outerjoin(db.replacement_rawfiles, \
-                        onclause=db.toas.c.rawfile_id == \
+                    outerjoin(db.replacement_rawfiles,
+                        onclause=db.toas.c.rawfile_id ==
                                 db.replacement_rawfiles.c.obsolete_rawfile_id).\
-                    outerjoin(db.obssystems, \
-                        onclause=db.toas.c.obssystem_id == \
-                                db.obssystems.c.obssystem_id)], \
+                    outerjoin(db.obssystems,
+                        onclause=db.toas.c.obssystem_id ==
+                                db.obssystems.c.obssystem_id)],
                 distinct=db.timfiles.c.timfile_id).\
                 where(whereclause).\
                 group_by(db.timfiles.c.timfile_id)
@@ -155,26 +156,26 @@ def show_timfiles(timfiles):
         print "--"*25
         for timfile in timfiles:
             print colour.cstring("Timfile ID:", underline=True, bold=True) + \
-                    colour.cstring(" %d" % timfile['timfile_id'], bold=True)
+                colour.cstring(" %d" % timfile['timfile_id'], bold=True)
             print "Pulsar name: %s" % timfile['pulsar_name']
             print "Master timfile? %s" % \
                         (((timfile['mtimid'] is not None) and "Yes") or "No")
-            print "Last edited by: %s (%s)" % (timfile['real_name'], \
-                                            timfile['email_address'])
+            print "Last edited by: %s (%s)" % (timfile['real_name'],
+                                               timfile['email_address'])
             print "Comments: %s" % timfile['comments']
             print "Date and time timfile was last edited: %s" % \
-                        timfile['add_time'].isoformat(' ')
+                timfile['add_time'].isoformat(' ')
             print "Number of TOAs: %d" % timfile['numtoas']
             if timfile['any_replaced'] is not None:
-                colour.cprint("Some TOAs are from rawfiles that been " \
-                            "superseded", 'warning')
+                colour.cprint("Some TOAs are from rawfiles that been "
+                              "superseded", 'warning')
 
             # Show extra information if verbosity is >= 1
-            lines = ["First TOA (MJD): %s" % timfile['startmjd'], \
-                     "Last TOA (MJD): %s" % timfile['endmjd'], \
-                     "Number of telescopes used: %d" % timfile['numtelescopes'], \
+            lines = ["First TOA (MJD): %s" % timfile['startmjd'],
+                     "Last TOA (MJD): %s" % timfile['endmjd'],
+                     "Number of telescopes used: %d" % timfile['numtelescopes'],
                      "Number of observing systems used: %d" % timfile['numobsys']]
-            utils.print_info("\n".join(lines), 1)
+            notify.print_info("\n".join(lines), 1)
             print "--"*25
     else:
         raise errors.ToasterError("No timfiles match parameters provided!")
@@ -210,22 +211,22 @@ def plot_timfile(timfile):
         ind = BANDS.index(toa['band_descriptor'])
         ymin = float(ind)/numbands
         ymax = float(ind+1)/numbands
-        colour = COLOURS[obssys_ids.index(toa['obssystem_id'])%ncolours]
-        artists.append(plt.axvline(toa['mjd'], ymin, ymax, c=colour))
+        cc = COLOURS[obssys_ids.index(toa['obssystem_id']) % ncolours]
+        artists.append(plt.axvline(toa['mjd'], ymin, ymax, c=cc))
         himjd = max(himjd, toa['mjd'])
         lomjd = min(lomjd, toa['mjd'])
     plt.xlabel("MJD")
-    plt.yticks(np.arange(0.5/numbands, 1, 1.0/numbands), BANDS, \
-                rotation=30, va='top')
+    plt.yticks(np.arange(0.5/numbands, 1, 1.0/numbands), BANDS,
+               rotation=30, va='top')
     plt.xlim(lomjd, himjd)
     patches = []
     obssystems = []
     for ii, obssys_id in enumerate(obssys_ids):
-        colour = COLOURS[ii%ncolours]
-        patches.append(matplotlib.patches.Patch(fc=colour))
-        obssystems.append(utils.get_obssysinfo(obssys_id)['name'])
-    plt.figlegend(patches, obssystems, 'lower center', ncol=4, \
-                    prop=dict(size='small'))
+        cc = COLOURS[ii % ncolours]
+        patches.append(matplotlib.patches.Patch(fc=cc))
+        obssystems.append(cache.get_obssysinfo(obssys_id)['name'])
+    plt.figlegend(patches, obssystems, 'lower center', ncol=4,
+                  prop=dict(size='small'))
 
     def change_thickness(event):
         if event.key == '=':
@@ -250,16 +251,16 @@ def main(args):
             plot_timfile(timfiles[0])
             plt.show()
         else:
-            raise errors.BadInputError("Timfile summary plot only applies " \
-                                    "when a single timfile matches the " \
-                                    "criteria provided. (%d matches)" % \
-                                    len(timfiles))
+            raise errors.BadInputError("Timfile summary plot only applies "
+                                       "when a single timfile matches the "
+                                       "criteria provided. (%d matches)" %
+                                       len(timfiles))
     else:
-        raise errors.UnrecognizedValue("The output-style (%s) isn't " \
-                                    "recognized." % args.output_style)
+        raise errors.UnrecognizedValueError("The output-style (%s) isn't "
+                                            "recognized." % args.output_style)
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     parser = utils.DefaultArguments(description=DESCRIPTION)
     add_arguments(parser)
     args = parser.parse_args()
