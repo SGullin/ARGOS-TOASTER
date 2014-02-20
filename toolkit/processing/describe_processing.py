@@ -5,69 +5,71 @@ Show an overview of data reduction.
 
 Patrick Lazarus, Nov 2, 2012
 """
+import os
 import sys
 import shlex
 
-import config
-import database
-import utils
-import errors
-import colour
+from toaster import config
+from toaster import database
+from toaster import utils
+from toaster import errors
+from toaster import colour
+from toaster.utils import cache
+from toaster.utils import notify
 
 SHORTNAME = 'show'
 DESCRIPTION = "Get a list of processing jobs from the DB that match the " \
-                "given set of criteria."
+              "given set of criteria."
 
 
 def add_arguments(parser):
-    parser.add_argument('-r', '--rawfile-id', dest='rawfile_ids', \
-                        type=int, default=[], action='append', \
-                        help="A raw file ID. Multiple instances of " \
-                            "these criteria may be provided.")
-    parser.add_argument('-P', '--process-id', dest='process_ids', \
-                        type=int, default=[], action='append', \
-                        help="A process ID. Multiple instances of " \
-                            "these criteria may be provided.")
-    parser.add_argument('-p', '--psr', dest='pulsar_name', \
-                        type=str, default='%', \
-                        help="The pulsar to grab rawfiles for. " \
-                            "NOTE: SQL regular expression syntax may be used")
-    parser.add_argument('-m', '--manipulator', dest='manipulators', \
-                        type=str, default=[], action='append', \
-                        help="The name of the manipulator used to process " \
-                            "the data.")
-    parser.add_argument('--manipulator-arg', dest='manip_args', \
-                        type=str, default=[], action='append', \
-                        help="A string contained in the arguments " \
-                            "provided to the manipulator. Multiple " \
-                            "instances of these criteria may be provided. " \
-                            "All such criteria must be provided.")
-    parser.add_argument("--from-file", dest='from_file', \
-                        type=str, default=None, \
-                        help="A file containing a list of command line " \
-                            "arguments use.")
-    parser.add_argument("-O", "--output-style", default='text', \
-                        dest='output_style', type=str, \
-                        help="The following options control how " \
-                        "the matching processing jobs are presented. " \
-                        "Recognized modes: 'text' - List information. " \
-                        "Increase verbosity to get more info; " \
-                        "'summary' - Summarize the matching processing " \
-                        "jobs. Other styles are python-style format " \
-                        "strings interpolated using row-information for " \
-                        "each matching rawfile (e.g. 'Manipulator = " \
-                        "%%(manipulator)s'). " \
-                        "(Default: text).")
-    parser.add_argument('--sort', dest='sortkeys', metavar='SORTKEY', \
-                        action='append', default=['add_time', 'rawfile_id'], \
-                        help="DB column to sort processing jobs by. Multiple " \
-                            "--sort options can be provided. Options " \
-                            "provided later will take precedence " \
-                            "over previous options. (Default: Sort " \
-                            "primarily by rawfile_id, then processing " \
-                            "date/time)")
+    parser.add_argument('-r', '--rawfile-id', dest='rawfile_ids',
+                        type=int, default=[], action='append',
+                        help="A raw file ID. Multiple instances of "
+                             "these criteria may be provided.")
+    parser.add_argument('-P', '--process-id', dest='process_ids',
+                        type=int, default=[], action='append',
+                        help="A process ID. Multiple instances of "
+                             "these criteria may be provided.")
+    parser.add_argument('-p', '--psr', dest='pulsar_name',
+                        type=str, default='%',
+                        help="The pulsar to grab rawfiles for. "
+                             "NOTE: SQL regular expression syntax may be used")
+    parser.add_argument('-m', '--manipulator', dest='manipulators',
+                        type=str, default=[], action='append',
+                        help="The name of the manipulator used to process "
+                             "the data.")
+    parser.add_argument('--manipulator-arg', dest='manip_args',
+                        type=str, default=[], action='append',
+                        help="A string contained in the arguments "
+                             "provided to the manipulator. Multiple "
+                             "instances of these criteria may be provided. "
+                             "All such criteria must be provided.")
+    parser.add_argument("--from-file", dest='from_file',
+                        type=str, default=None,
+                        help="A file containing a list of command line "
+                             "arguments use.")
+    parser.add_argument("-O", "--output-style", default='text',
+                        dest='output_style', type=str,
+                        help="The following options control how "
+                             "the matching processing jobs are presented. "
+                             "Recognized modes: 'text' - List information. "
+                             "Increase verbosity to get more info; "
+                             "'summary' - Summarize the matching processing "
+                             "jobs. Other styles are python-style format "
+                             "strings interpolated using row-information for "
+                             "each matching rawfile (e.g. 'Manipulator = "
+                             "%%(manipulator)s'). "
+                             "(Default: text).")
+    parser.add_argument('--sort', dest='sortkeys', metavar='SORTKEY',
+                        action='append', default=['add_time', 'rawfile_id'],
+                        help="DB column to sort processing jobs by. Multiple "
+                             "--sort options can be provided. Options "
+                             "provided later will take precedence "
+                             "over previous options. (Default: Sort "
+                             "primarily by rawfile_id, then processing "
+                             "date/time)")
     
-
 
 def get_procjobs(args, existdb=None):
     """Return a dictionary of information for each 
@@ -104,57 +106,56 @@ def get_procjobs(args, existdb=None):
             tmp &= (db.process.c.manipulator_args.contains(args.manip_args[0]))
         whereclause &= (tmp)
 
-    select = db.select([db.process.c.process_id.distinct(), \
-                        db.process.c.rawfile_id, \
-                        db.process.c.template_id, \
-                        db.process.c.parfile_id, \
-                        db.process.c.user_id, \
-                        db.process.c.add_time, \
-                        db.process.c.manipulator, \
-                        db.process.c.manipulator_args, \
-                        db.process.c.nchan, \
-                        db.process.c.nsub, \
-                        db.process.c.toa_fitting_method, \
-                        (db.process.c.nchan*db.process.c.nsub).\
-                                label("numtoas"), \
-                        db.rawfiles.c.filepath.\
-                                label("rawpath"), \
-                        db.rawfiles.c.filename.\
-                                label("rawfn"), \
-                        db.rawfiles.c.pulsar_id, \
-                        db.replacement_rawfiles.c.replacement_rawfile_id, \
-                        db.templates.c.filepath.\
-                                label("temppath"), \
-                        db.templates.c.filename.\
-                                label("tempfn"), \
-                        db.parfiles.c.filepath.\
-                                label("parpath"), \
-                        db.parfiles.c.filename.\
-                                label("parfn"), \
-                        db.users.c.real_name, \
-                        db.users.c.email_address, \
-                        ], \
+    select = db.select([db.process.c.process_id.distinct(),
+                        db.process.c.rawfile_id,
+                        db.process.c.template_id,
+                        db.process.c.parfile_id,
+                        db.process.c.user_id,
+                        db.process.c.add_time,
+                        db.process.c.manipulator,
+                        db.process.c.manipulator_args,
+                        db.process.c.nchan,
+                        db.process.c.nsub,
+                        db.process.c.toa_fitting_method,
+                        (db.process.c.nchan*db.process.c.nsub).
+                        label("numtoas"),
+                        db.rawfiles.c.filepath.
+                        label("rawpath"),
+                        db.rawfiles.c.filename.
+                        label("rawfn"),
+                        db.rawfiles.c.pulsar_id,
+                        db.replacement_rawfiles.c.replacement_rawfile_id,
+                        db.templates.c.filepath.
+                        label("temppath"),
+                        db.templates.c.filename.
+                        label("tempfn"),
+                        db.parfiles.c.filepath.
+                        label("parpath"),
+                        db.parfiles.c.filename.
+                        label("parfn"),
+                        db.users.c.real_name,
+                        db.users.c.email_address],
                 from_obj=[db.process.\
-                    outerjoin(db.users, \
-                        onclause=db.users.c.user_id == \
+                    outerjoin(db.users,
+                        onclause=db.users.c.user_id ==
                                 db.process.c.user_id).\
-                    outerjoin(db.rawfiles, \
-                        onclause=db.rawfiles.c.rawfile_id == \
+                    outerjoin(db.rawfiles,
+                        onclause=db.rawfiles.c.rawfile_id ==
                                 db.process.c.rawfile_id).\
-                    outerjoin(db.replacement_rawfiles, \
-                        onclause=db.rawfiles.c.rawfile_id == \
+                    outerjoin(db.replacement_rawfiles,
+                        onclause=db.rawfiles.c.rawfile_id ==
                                 db.replacement_rawfiles.c.obsolete_rawfile_id).\
-                    join(db.pulsar_aliases, \
-                        onclause=db.rawfiles.c.pulsar_id == \
+                    join(db.pulsar_aliases,
+                        onclause=db.rawfiles.c.pulsar_id ==
                                 db.pulsar_aliases.c.pulsar_id).\
-                    outerjoin(db.pulsars, \
-                        onclause=db.pulsar_aliases.c.pulsar_id == \
+                    outerjoin(db.pulsars,
+                        onclause=db.pulsar_aliases.c.pulsar_id ==
                                 db.pulsars.c.pulsar_id).\
-                    outerjoin(db.templates, \
-                        onclause=db.templates.c.template_id == \
+                    outerjoin(db.templates,
+                        onclause=db.templates.c.template_id ==
                                 db.process.c.template_id).\
-                    outerjoin(db.parfiles, \
-                        onclause=db.parfiles.c.parfile_id == \
+                    outerjoin(db.parfiles,
+                        onclause=db.parfiles.c.parfile_id ==
                                 db.process.c.parfile_id)]).\
                 where(whereclause)
     result = db.execute(select)
@@ -169,28 +170,28 @@ def show_procjobs(procjobs):
     print "--"*25
     for procjob in procjobs:
         print colour.cstring("Process Id:", underline=True, bold=True) + \
-                colour.cstring(" %d" % procjob.process_id, bold=True)
-        print "\nPulsar name: %s" % utils.get_pulsarname(procjob.pulsar_id)
+            colour.cstring(" %d" % procjob.process_id, bold=True)
+        print "\nPulsar name: %s" % cache.get_pulsarname(procjob.pulsar_id)
         print "Rawfile (ID=%d): %s" % (procjob.rawfile_id, procjob.rawfn)
         if procjob.replacement_rawfile_id is not None:
-            colour.cprint("Rawfile has been superseded by rawfile_id=%d" % \
-                    procjob.replacement_rawfile_id, 'warning')
+            colour.cprint("Rawfile has been superseded by rawfile_id=%d" %
+                          procjob.replacement_rawfile_id, 'warning')
         print "Manipulator: %s" % procjob.manipulator
         print "       Args: %s" % procjob.manipulator_args
         print "Number of freq. chunks: %d" % procjob.nchan
         print "Number of time chunks: %d" % procjob.nsub
         print "Uploaded by: %s (%s)" % \
-                    (procjob.real_name, procjob.email_address)
+            (procjob.real_name, procjob.email_address)
         print "Date and time job completed: %s" % procjob.add_time.isoformat(' ')
         if config.cfg.verbosity >= 1:
-            lines = ["Template (ID=%d): %s" % \
-                            (procjob.template_id, procjob.tempfn)]
+            lines = ["Template (ID=%d): %s" %
+                     (procjob.template_id, procjob.tempfn)]
             if procjob.parfile_id is not None:
-                lines.append("Parfile (ID=%d): %s" % \
-                            (procjob.parfile_id, procjob.parfn))
+                lines.append("Parfile (ID=%d): %s" %
+                             (procjob.parfile_id, procjob.parfn))
             else:
                 lines.append("No parfile installed during processing.")
-            utils.print_info("\n".join(lines), 1)
+            notify.print_info("\n".join(lines), 1)
         print "--"*25
 
 
@@ -231,8 +232,8 @@ def main(args):
             argfile = sys.stdin
         else:
             if not os.path.exists(args.from_file):
-                raise errors.FileError("The list of cmd line args (%s) " \
-                            "does not exist." % args.from_file)
+                raise errors.FileError("The list of cmd line args (%s) "
+                                       "does not exist." % args.from_file)
             argfile = open(args.from_file, 'r')
         for line in argfile:
             # Strip comments
@@ -248,15 +249,15 @@ def main(args):
         raise errors.ToasterError("No processing jobs match parameters provided!")
     # Sort procjobs
     utils.sort_by_keys(procjobs, args.sortkeys) 
-    if args.output_style=='text':
+    if args.output_style == 'text':
         show_procjobs(procjobs)
-    elif args.output_style=='summary':
+    elif args.output_style == 'summary':
         summarize_procjobs(procjobs)
     else:
         custom_show_procjobs(procjobs, fmt=args.output_style)
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     parser = utils.DefaultArguments(description=DESCRIPTION)
     add_arguments(parser)
     args = parser.parse_args()
