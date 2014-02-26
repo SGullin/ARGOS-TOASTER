@@ -6,13 +6,16 @@ import tempfile
 import argparse
 import textwrap
 
-import colour
-import errors
-import utils
+from toaster import colour
+from toaster import errors
+from toaster import utils
+from toaster import debug
+from toaster.utils import notify
 
 registered_manipulators = ["pamit"]
 
 __all__ = registered_manipulators
+
 
 class BaseManipulator(object):
     """The base class of Manipulator objects.
@@ -21,10 +24,11 @@ class BaseManipulator(object):
         manipulate them, and return a single output archive.
     """
     name = NotImplemented
+
     def __init__(self):
-        self.parser = argparse.ArgumentParser(add_help=False, \
-                                    usage=argparse.SUPPRESS, \
-                                    description="The '%s' manipulator -- %s" % \
+        self.parser = argparse.ArgumentParser(add_help=False,
+                                    usage=argparse.SUPPRESS,
+                                    description="The '%s' manipulator -- %s" %
                                                 (self.name, self.description))
         self._add_arguments(self.parser)
         self.argstr = ""
@@ -42,8 +46,7 @@ class BaseManipulator(object):
 
     def _manipulate(self, infns, outname):
         raise NotImplementedError("The '_manipulate' method of Manipulator "
-                                    "classes must be defined.")
-
+                                  "classes must be defined.")
 
     def _add_arguments(self, parser):
         """Given an argparse.ArgumentParser instance add 
@@ -104,22 +107,22 @@ class BaseManipulator(object):
 
 class ManipulatorArguments(utils.DefaultArguments):
     def __init__(self, *args, **kwargs):
-        super(ManipulatorArguments, self).__init__(add_help=False, \
-                                                *args, **kwargs)
-        self.add_argument('-m', '--manipulator', dest='manip_name', \
-                            default=registered_manipulators[0], \
-                            choices=registered_manipulators, \
-                            help="The name of the manipulator plugin to use")
-        self.add_argument('--list-manipulators', nargs=0, \
-                            action=self.ListManipulatorsAction, \
-                            help="List available manipulators and " \
-                                "descriptions, them exit.")
-        self.add_argument('-h', '--help', nargs='?', dest='help_topic', \
-                            metavar='MANIPULATOR', \
-                            action=self.HelpAction, type=str, \
-                            help="Display this help message. If provided "
-                                "with the name of a manipulator, display "
-                                "its help.")
+        super(ManipulatorArguments, self).__init__(add_help=False,
+                                                   *args, **kwargs)
+        self.add_argument('-m', '--manipulator', dest='manip_name',
+                          default=registered_manipulators[0],
+                          choices=registered_manipulators,
+                          help="The name of the manipulator plugin to use")
+        self.add_argument('--list-manipulators', nargs=0,
+                          action=self.ListManipulatorsAction,
+                          help="List available manipulators and "
+                               "descriptions, them exit.")
+        self.add_argument('-h', '--help', nargs='?', dest='help_topic',
+                          metavar='MANIPULATOR',
+                          action=self.HelpAction, type=str,
+                          help="Display this help message. If provided "
+                               "with the name of a manipulator, display "
+                               "its help.")
 
     class HelpAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
@@ -132,13 +135,13 @@ class ManipulatorArguments(utils.DefaultArguments):
 
     class ListManipulatorsAction(argparse.Action):
         def __call__(self, parser, namespace, values, option_string):
-            colour.cprint("Available Manipulators:", \
-                            bold=True, underline=True) 
+            colour.cprint("Available Manipulators:",
+                          bold=True, underline=True)
             for name in sorted(registered_manipulators):
                 manip = load_manipulator(name)
                 wrapper = textwrap.TextWrapper(subsequent_indent=" "*(len(name)+4))
                 print "%s -- %s" % (colour.cstring(name, bold=True), 
-                                        wrapper.fill(manip.description))
+                                    wrapper.fill(manip.description))
             sys.exit(1)
         
 
@@ -152,10 +155,12 @@ def load_manipulator(manip_name):
             manip: A manipulator instance.
     """
     if manip_name not in registered_manipulators:
-        raise errors.UnrecognizedValueError("The manipulator, '%s', " \
-                    "is not a registered manipulator. The following " \
-                    "are registered: '%s'" % \
-                    (manip_name, "', '".join(registered_manipulators)))
+        raise errors.UnrecognizedValueError("The manipulator, '%s', "
+                                            "is not a registered manipulator. "
+                                            "The following are registered: "
+                                            "'%s'" %
+                                            (manip_name,
+                                             "', '".join(registered_manipulators)))
     mod = __import__(manip_name, globals())
     return mod.Manipulator()
 
@@ -173,8 +178,8 @@ def load_archives(fns):
         Output:
             archives: A list of Archive objects.
     """
-    import psrchive # Temporarily move import here in case 
-                    # psrchive bindings aren't installed
+    import psrchive  # Temporarily move import here in case
+                     # psrchive bindings aren't installed
     archives = []
     for fn in fns:
         archives.append(psrchive.Archive_load(fn))
@@ -199,13 +204,13 @@ def unload_archive(archive, outname):
     if not os.path.exists(outname):
         archive.unload(outname)
     else:
-        raise ManipulatorError("Will not unload archive to '%s'. " \
-                                "A file by that name already exists" % outname)
+        raise ManipulatorError("Will not unload archive to '%s'. "
+                               "A file by that name already exists" % outname)
 
 
 # Is the stuff below still needed??
 
-def run_manipulator(prepped_manipfunc, infns, outname=None, \
+def run_manipulator(prepped_manipfunc, infns, outname=None,
                     tmpdir=None):
     """Set up a temporary directory to run the manipulator
         method in, load the archives, run the manipulator,
@@ -225,8 +230,8 @@ def run_manipulator(prepped_manipfunc, infns, outname=None, \
         Outputs:
             None
     """
-    workdir = tempfile.mkdtemp(dir=tmpdir, prefix='toaster_tmp', \
-                                            suffix='_workdir')
+    workdir = tempfile.mkdtemp(dir=tmpdir, prefix='toaster_tmp',
+                               suffix='_workdir')
     newfns = []
     for fn in infns:
         newfn = os.path.join(workdir, os.path.split(fn)[-1])
@@ -235,9 +240,9 @@ def run_manipulator(prepped_manipfunc, infns, outname=None, \
     try:
         prepped_manipfunc(newfns, outname)
     finally:
-        if debug.MANIPULATOR:
-            utils.print_debug("Manipulator worked in %s. Not removing it.", \
-                                'manipulator')
+        if debug.is_on('MANIPULATOR'):
+            notify.print_debug("Manipulator worked in %s. Not removing it.",
+                               'manipulator')
         else:
             shutil.rmtree(workdir)
 
@@ -279,5 +284,3 @@ class ManipulatorError(Exception):
         that are understood, and expected.)
     """
     pass
-
-
