@@ -1,5 +1,6 @@
 import warnings
 import string
+import re
 
 import sqlalchemy as sa
 
@@ -12,6 +13,8 @@ from toaster.utils import notify
 
 null = lambda x: x
 
+toround_re = re.compile(r"_R(-?\d+)?$")
+
 
 def fancy_getitem(self, key):
     filterfunc = null
@@ -21,7 +24,12 @@ def fancy_getitem(self, key):
     elif (type(key) in (type('str'), type(u'str'))) and key.endswith("_U"):
         filterfunc = string.upper
         key = key[:-2]
-    if self.has_key(key):
+    elif (type(key) in (type('str'), type(u'str'))) and toround_re.search(key):
+        head, sep, tail = key.rpartition('_R')
+        digits = int(tail) if tail else 0
+        filterfunc = lambda x: round(x, digits)
+        key = head
+    if key in self:
         return filterfunc(super(self.__class__, self).__getitem__(key))
     else:
         matches = [k for k in self.keys() if k.startswith(key)]
