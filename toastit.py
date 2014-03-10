@@ -177,7 +177,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id,
                                             dir=config.cfg.base_tmp_dir)
         os.close(tmpfile)
         # Run the manipulator
-        manip.run([adjustfn], manipfn)
+        manip.run([adjustfn], manipfn, tmpdir=config.cfg.base_tmp_dir)
  
         # Get template from template_id and verify MD5SUM
         template = templates_general.get_template_from_id(template_id,
