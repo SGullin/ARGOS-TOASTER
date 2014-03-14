@@ -1,4 +1,5 @@
 from toaster import config
+from toaster.toolkit.timfiles import readers
 
 
 def parse_pat_output(patout):
@@ -14,9 +15,7 @@ def parse_pat_output(patout):
     toainfo = []
     for toastr in patout.split("\n"):
         toastr = toastr.strip()
-        if toastr and (toastr != "FORMAT 1") and \
-                (not toastr.startswith("Plotting")) and \
-                (not toastr.startswith("%PGPLOT")):
+        if readers.tempo2_reader(toastr):
             toasplit = toastr.split()
             freq = float(toasplit[1])
             imjd = float(toasplit[2].split(".")[0])
