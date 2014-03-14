@@ -275,7 +275,7 @@ def load_toas(toainfo, existdb=None):
     if not toainfo:
         raise errors.BadInputError("No TOA info was provided!")
 
-    # Use the exisitng DB connection, or open a new one if None was provided
+    # Use the existing DB connection, or open a new one if None was provided
     db = existdb or database.Database()
     db.connect()
     db.begin()  # Open a transaction
