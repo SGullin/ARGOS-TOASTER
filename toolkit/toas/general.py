@@ -14,8 +14,10 @@ def parse_pat_output(patout):
     toainfo = []
     for toastr in patout.split("\n"):
         toastr = toastr.strip()
+        print toastr
         if toastr and (toastr != "FORMAT 1") and \
-                (not toastr.startswith("Plotting")):
+                (not toastr.startswith("Plotting")) and \
+                (not toastr.startswith("%PGPLOT")):
             toasplit = toastr.split()
             freq = float(toasplit[1])
             imjd = float(toasplit[2].split(".")[0])
