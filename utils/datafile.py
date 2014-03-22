@@ -2,6 +2,7 @@ import hashlib
 import warnings
 import os.path
 import shutil
+import re
 
 from toaster import config
 from toaster import errors
@@ -313,6 +314,7 @@ def get_archive_dir(fn, data_archive_location=None, params=None):
 
 
 null = lambda x: x
+toround_re = re.compile(r"_R(-?\d+)?$")
 
 
 class FancyParams(dict):
@@ -326,15 +328,20 @@ class FancyParams(dict):
         elif (type(key) in (type('str'), type(u'str'))) and key.endswith("_U"):
             filterfunc = str.upper
             key = key[:-2]
+        elif (type(key) in (type('str'), type(u'str'))) and toround_re.search(key):
+            head, sep, tail = key.rpartition('_R')
+            digits = int(tail) if tail else 0
+            filterfunc = lambda x: round(x, digits)
+            key = head
+        elif (type(key) in (type('str'), type(u'str'))) and key.startswith("date:"):
+            fmt = key[5:]
+            key = 'mjd'
+            filterfunc = lambda mjd: utils.mjd_to_datetime(mjd).strftime(fmt)
         else:
             filterfunc = null
         if self.has_key(key):
             val = self.get_value(key)
-            if type(val) in (type('str'), type(u'str')):
-                val = str(val)
-                return filterfunc(val)
-            else:
-                return val
+            return filterfunc(val)
         else:
             matches = [k for k in self.keys() if k.startswith(key)]
             if len(matches) == 1:

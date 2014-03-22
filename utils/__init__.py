@@ -9,11 +9,12 @@ import types
 import warnings
 import re
 
+import numpy as np
+
 from toaster import config
 from toaster import errors
 from toaster import debug
 from toaster.utils import notify
-
 
 ##############################################################################
 # GLOBAL DEFINITIONS
@@ -271,3 +272,65 @@ def sort_by_keys(tosort, keys):
             tosort.sort(key=lambda x: x[sortkey].lower(), reverse=rev)
         else:
             tosort.sort(key=lambda x: x[sortkey], reverse=rev)
+
+
+def mjd_to_date(mjds):
+    """Convert Modified Julian Day (MJD) to the year, month, day.
+
+        Input:
+            mjds: Array of Modified Julian days
+
+        Outputs:
+            years: Array of years.
+            months: Array of months.
+            days: Array of (fractional) days.
+
+        (Follow Jean Meeus' Astronomical Algorithms, 2nd Ed., Ch. 7)
+    """
+    JD = np.atleast_1d(mjds)+2400000.5
+
+    if np.any(JD<0.0):
+        raise ValueError("This function does not apply for JD < 0.")
+
+    JD += 0.5
+
+    # Z is integer part of JD
+    Z = np.floor(JD)
+    # F is fractional part of JD
+    F = np.mod(JD, 1)
+
+    A = np.copy(Z)
+    alpha = np.floor((Z-1867216.25)/36524.25)
+    A[Z>=2299161] = Z + 1 + alpha - np.floor(0.25*alpha)
+
+    B = A + 1524
+    C = np.floor((B-122.1)/365.25)
+    D = np.floor(365.25*C)
+    E = np.floor((B-D)/30.6001)
+
+    day = B - D - np.floor(30.6001*E) + F
+    month = E - 1
+    month[(E==14.0) | (E==15.0)] = E - 13
+    year = C - 4716
+    year[(month==1.0) | (month==2.0)] = C - 4715
+
+    return (year.astype('int').squeeze(), month.astype('int').squeeze(), \
+                day.squeeze())
+
+
+def mjd_to_datetime(mjd):
+    """Given an MJD return a datetime.datetime object.
+        
+        Input:
+            mjds: Array of Modified Julian days
+
+        Output:
+            date: The datetime object.
+    """
+    yy, mm, dd = mjd_to_date(mjd)
+    hh = (dd % 1.0)*24
+    mins = (hh % 1.0)*60
+    ss = (mins % 1.0)*60
+    mus = (ss % 1.0)*1e6
+    date = datetime.datetime(int(yy), int(mm), int(dd), int(hh), int(mins), int(ss), int(mus))
+    return date
