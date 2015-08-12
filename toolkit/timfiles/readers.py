@@ -13,6 +13,7 @@ from toaster.utils import cache
 KNOWN_FLAG_TYPES = {'bw': float,
                     'length': float,
                     'nbin': int,
+                    'padd': float,
                     'goodness_of_fit': float}
 
 # The following dictionary specifies alternative names for
@@ -21,7 +22,7 @@ KNOWN_FLAG_ALIASES = {'bandwidth': 'bw',
                       'gof': 'goodness_of_fit'}
 
 
-def tempo2_reader(line):
+def tempo2_reader(line, get_telescope_id=True):
     """Parse line, assuming it is a TOA in tempo2 format.
         Return a dictionary of information.
 
@@ -52,7 +53,8 @@ def tempo2_reader(line):
         toainfo['fmjd'] = float(grp['fmjd'])
         toainfo['toa_unc_us'] = float(grp['err'])
         toainfo['telescope'] = grp['site']
-        toainfo['telescope_id'] = cache.get_telescope_info(grp['site'])['telescope_id']
+        if get_telescope_id:
+            toainfo['telescope_id'] = cache.get_telescope_info(grp['site'])['telescope_id']
         comments = []
         if grp['comment1']:
             comments.append(grp['comment1'].strip())
@@ -69,7 +71,7 @@ def tempo2_reader(line):
             key = KNOWN_FLAG_ALIASES.get(key, key)
             caster = KNOWN_FLAG_TYPES.get(key, str)
             try:
-                toainfo['extras'][key] = caster(val)
+                toainfo['extras'][key] = caster(val.strip())
             except:
                 notify.print_info("Couldn't cast %s:%s" % (key, val), 2)
 

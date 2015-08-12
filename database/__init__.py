@@ -31,8 +31,8 @@ def fancy_getitem(self, key):
         filterfunc = lambda x: round(x, digits)
         key = head
     elif (type(key) in (type('str'), type(u'str'))) and key.startswith("date:"):
-        key = 'mjd'
         fmt = key[5:]
+        key = 'mjd'
         filterfunc = lambda mjd: utils.mjd_to_datetime(mjd).strftime(fmt)
     if key in self:
         return filterfunc(super(self.__class__, self).__getitem__(key))

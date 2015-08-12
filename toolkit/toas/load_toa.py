@@ -8,7 +8,7 @@ from toaster import debug
 from toaster import errors
 from toaster import database
 
-from toolkit.timfiles import readers
+from toaster.toolkit.timfiles import readers
 
 SHORTNAME = "load"
 DESCRIPTION = "Load a TOA created outside of TOASTER."
@@ -73,8 +73,8 @@ def add_arguments(parser):
                              'the obssystem name (see --obssystem-flag)')
 
 
-def __parse_timfile(timfn, reader=readers.tempo2_reader,
-                    **obssys_discovery_kwargs):
+def parse_timfile(timfn, reader=readers.tempo2_reader,
+                  determine_obssystem=True, **obssys_discovery_kwargs):
     """Read the input timfile and parse the TOAs contained.
 
         Inputs:
@@ -82,6 +82,8 @@ def __parse_timfile(timfn, reader=readers.tempo2_reader,
             reader: The reader function. Reader functions take
                 a single line as input and return a dictionary
                 of TOA info. (Default: a Tempo2 TOA format reader)
+            determine_obssystem: Try to automatically discover
+                the observing system. (Default: True)
             
             ** Additional keyword arguments are directly passed on 
                 to __determine_obssystem(...) for observing system 
@@ -106,14 +108,21 @@ def __parse_timfile(timfn, reader=readers.tempo2_reader,
     for ii, line in enumerate(timfile):
         line = line.rstrip()
         if line.startswith("INCLUDE"):
+            includefn = os.path.abspath(os.path.join(os.path.dirname(timfn),
+                                                     line.split()[1]))
             # Recursively parse included files
-            toas.extend(__parse_timfile(line.split()[1], reader=reader,
-                        **obssys_discovery_kwargs))
+            parsed = parse_timfile(includefn, reader=reader,
+                                   determine_obssystem=determine_obssystem,
+                                   **obssys_discovery_kwargs)
+            utils.notify.print_info("Parsed %d TOAs from included file (%s)" %
+                                    (len(parsed), includefn), 1)
+            toas.extend(parsed)
         try:
             toainfo = reader(line)
             if toainfo is not None:
-                toainfo['obssystem_id'] = __determine_obssystem(toainfo,
-                                                                **obssys_discovery_kwargs)
+                if determine_obssystem:
+                    toainfo['obssystem_id'] = __determine_obssystem(toainfo,
+                                                                    **obssys_discovery_kwargs)
                 toas.append(toainfo)
         except Exception, e:
             if debug.is_on('TOAPARSE'):
@@ -252,7 +261,7 @@ def load_from_timfile(timfile, pulsar_id, reader=READERS['tempo2'],
             toas: The TOAs that were loaded into the DB.
     """
     # Parse input file
-    toas = __parse_timfile(timfile, reader=reader,
+    toas = parse_timfile(timfile, reader=reader,
                            **obssystem_discovery_args)
     for ti in toas:
         ti['pulsar_id'] = pulsar_id
@@ -328,7 +337,7 @@ def main(args):
 
     if args.dry_run:
         # Parse input file
-        toas = __parse_timfile(args.timfile, reader=args.format,
+        toas = parse_timfile(args.timfile, reader=args.format,
                                **obssystem_discovery_args)
         print "%d TOAs parsed" % len(toas)
         msg = []

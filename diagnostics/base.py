@@ -1,8 +1,8 @@
 import os.path
 
-import utils
-import database
-import errors
+from toaster import utils
+from toaster import database
+from toaster import errors
 
 
 class BaseDiagnostic(object):
