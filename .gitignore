@@ -3,3 +3,5 @@
 *.pyc
 /webtoaster/temp/*
 .idea/
+toaster.cfg
+toaster-dev.cfg
