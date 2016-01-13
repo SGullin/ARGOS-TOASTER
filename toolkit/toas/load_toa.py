@@ -74,7 +74,8 @@ def add_arguments(parser):
 
 
 def parse_timfile(timfn, reader=readers.tempo2_reader,
-                  determine_obssystem=True, **obssys_discovery_kwargs):
+                  determine_obssystem=True, 
+                  get_telescope_id=True, **obssys_discovery_kwargs):
     """Read the input timfile and parse the TOAs contained.
 
         Inputs:
@@ -84,7 +85,9 @@ def parse_timfile(timfn, reader=readers.tempo2_reader,
                 of TOA info. (Default: a Tempo2 TOA format reader)
             determine_obssystem: Try to automatically discover
                 the observing system. (Default: True)
-            
+            get_telescope_id: Query the database to get the telescope
+                ID number. This argument is passed on to the
+                TOA-line reader. (Default: True)
             ** Additional keyword arguments are directly passed on 
                 to __determine_obssystem(...) for observing system 
                 discovery
@@ -113,12 +116,13 @@ def parse_timfile(timfn, reader=readers.tempo2_reader,
             # Recursively parse included files
             parsed = parse_timfile(includefn, reader=reader,
                                    determine_obssystem=determine_obssystem,
+                                   get_telescope_id=get_telescope_id,
                                    **obssys_discovery_kwargs)
             utils.notify.print_info("Parsed %d TOAs from included file (%s)" %
                                     (len(parsed), includefn), 1)
             toas.extend(parsed)
         try:
-            toainfo = reader(line)
+            toainfo = reader(line, get_telescope_id=get_telescope_id)
             if toainfo is not None:
                 if determine_obssystem:
                     toainfo['obssystem_id'] = __determine_obssystem(toainfo,
