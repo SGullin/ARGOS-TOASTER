@@ -28,11 +28,13 @@ def tempo2_reader(line, get_telescope_id=True):
 
         Input:
             line: A single TOA line in Tempo2 format.
+            get_telescope_id: Query the database to get the telescope
+                ID number. (Default: True)
 
         Output:
             toainfo: A dictionary of TOA information.
     """
-    tempo2_toa_re = re.compile(r'^ *(?P<bad>(#|(C ))(?P<comment1>.*?))? *'
+    tempo2_toa_re = re.compile(r'^ *(?P<bad>(#|(C )|(c ))(?P<comment1>.*?))? *'
                                r'(?P<file>[^ ]+) +'
                                r'(?P<freq>\d+(\.\d+)?) +(?P<imjd>\d+)(?P<fmjd>\.\d+) +'
                                r'(?P<err>\d+(\.\d+)?) +(?P<site>[^ ]+)')
@@ -46,13 +48,15 @@ def tempo2_reader(line, get_telescope_id=True):
         grp = match.groupdict()
      
         toainfo = {}
-        toainfo['is_bad'] = (grp['bad'] is not None)
+        toainfo['grp'] = grp
+        toainfo['is_bad'] = (line.strip().startswith('#') or line.strip().lower().startswith('c ')) #(grp['bad'] is not None)
         toainfo['file'] = grp['file']
         toainfo['freq'] = float(grp['freq'])
         toainfo['imjd'] = int(grp['imjd'])
         toainfo['fmjd'] = float(grp['fmjd'])
         toainfo['toa_unc_us'] = float(grp['err'])
         toainfo['telescope'] = grp['site']
+        toainfo['line'] = line
         if get_telescope_id:
             toainfo['telescope_id'] = cache.get_telescope_info(grp['site'])['telescope_id']
         comments = []
@@ -81,12 +85,14 @@ def tempo2_reader(line, get_telescope_id=True):
     return toainfo
 
 
-def parkes_reader(line):
+def parkes_reader(line, get_telescope_id=True):
     """Parse line, assuming it is a TOA in parkes format.
         Return a dictionary of information.
 
         Input:
             line: A single TOA line in parkes format.
+            get_telescope_id: Query the database to get the telescope
+                ID number. (Default: True)
 
         Output:
             toainfo: A dictionary of TOA information.
@@ -110,7 +116,8 @@ def parkes_reader(line):
         toainfo['fmjd'] = float(grp['fmjd'])
         toainfo['toa_unc_us'] = float(grp['err'])
         toainfo['telescope'] = grp['site']
-        toainfo['telescope_id'] = cache.get_telescope_info(grp['site'])['telescope_id']
+        if get_telescope_id:
+            toainfo['telescope_id'] = cache.get_telescope_info(grp['site'])['telescope_id']
         toainfo['extras'] = {'phaseoffset': float(grp['phaseoffset']),
                              'infostr': grp['info'].strip() + ' -- ' + grp['info2'].strip()}
         if grp['dmcorr']:
