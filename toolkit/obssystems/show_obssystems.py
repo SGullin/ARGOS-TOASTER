@@ -6,9 +6,10 @@ of observing systems in the database.
 
 Patrick Lazarus, Nov 6, 2012.
 """
-import errors
-import colour
-import utils
+from toaster import errors
+from toaster import colour
+from toaster import utils
+from toaster.utils import cache
 
 
 SHORTNAME = 'show'
@@ -21,13 +22,13 @@ def add_arguments(parser):
 
 def main(args):
     # Build cache
-    obssysinfo_cache = utils.get_obssysinfo_cache()
+    obssysinfo_cache = cache.get_obssysinfo_cache()
 
     obssys_ids = obssysinfo_cache.keys()
 
     print "--"*25
     for id in sorted(obssys_ids):
-        obssysinfo = utils.get_obssysinfo(id)
+        obssysinfo = cache.get_obssysinfo(id)
         print colour.cstring("Observing System ID:", underline=True, bold=True) + \
                 colour.cstring(" %d" % id, bold=True)
         print "Observing System Name: %s" % obssysinfo['name']
