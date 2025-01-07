@@ -167,22 +167,22 @@ def get_procjobs(args, existdb=None):
 
 
 def show_procjobs(procjobs):
-    print "--"*25
+    print("--"*25)
     for procjob in procjobs:
-        print colour.cstring("Process Id:", underline=True, bold=True) + \
-            colour.cstring(" %d" % procjob.process_id, bold=True)
-        print "\nPulsar name: %s" % cache.get_pulsarname(procjob.pulsar_id)
-        print "Rawfile (ID=%d): %s" % (procjob.rawfile_id, procjob.rawfn)
+        print(colour.cstring("Process Id:", underline=True, bold=True) + \
+            colour.cstring(" %d" % procjob.process_id, bold=True))
+        print("\nPulsar name: %s" % cache.get_pulsarname(procjob.pulsar_id))
+        print("Rawfile (ID=%d): %s" % (procjob.rawfile_id, procjob.rawfn))
         if procjob.replacement_rawfile_id is not None:
             colour.cprint("Rawfile has been superseded by rawfile_id=%d" %
                           procjob.replacement_rawfile_id, 'warning')
-        print "Manipulator: %s" % procjob.manipulator
-        print "       Args: %s" % procjob.manipulator_args
-        print "Number of freq. chunks: %d" % procjob.nchan
-        print "Number of time chunks: %d" % procjob.nsub
-        print "Uploaded by: %s (%s)" % \
-            (procjob.real_name, procjob.email_address)
-        print "Date and time job completed: %s" % procjob.add_time.isoformat(' ')
+        print("Manipulator: %s" % procjob.manipulator)
+        print("       Args: %s" % procjob.manipulator_args)
+        print("Number of freq. chunks: %d" % procjob.nchan)
+        print("Number of time chunks: %d" % procjob.nsub)
+        print("Uploaded by: %s (%s)" % \
+            (procjob.real_name, procjob.email_address))
+        print("Date and time job completed: %s" % procjob.add_time.isoformat(' '))
         if config.cfg.verbosity >= 1:
             lines = ["Template (ID=%d): %s" %
                      (procjob.template_id, procjob.tempfn)]
@@ -192,7 +192,7 @@ def show_procjobs(procjobs):
             else:
                 lines.append("No parfile installed during processing.")
             notify.print_info("\n".join(lines), 1)
-        print "--"*25
+        print("--"*25)
 
 
 def summarize_procjobs(procjobs):
@@ -214,16 +214,16 @@ def summarize_procjobs(procjobs):
         # Pulsars
         npsr = pulsars.get(procjob['pulsar_id'], 0) + 1
         pulsars[procjob['pulsar_id']] = npsr
-    print "Number of processing jobs: %d" % len(procjobs)
-    print "Number of manipulators: %d" % len(manipulators)
+    print("Number of processing jobs: %d" % len(procjobs))
+    print("Number of manipulators: %d" % len(manipulators))
     for manip in sorted(manipulators.keys()):
-        print "    Number of '%s' processing jobs: %d" % (manip, manipulators[manip])
-    print "Number of pulsars: %d" % len(pulsars)
+        print("    Number of '%s' processing jobs: %d" % (manip, manipulators[manip]))
+    print("Number of pulsars: %d" % len(pulsars))
 
 
 def custom_show_procjobs(procjobs, fmt="%(process_id)d"):
     for procjob in procjobs:
-        print fmt.decode('string-escape') % procjob
+        print(fmt.decode('string-escape') % procjob)
 
 
 def main(args):

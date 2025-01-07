@@ -212,8 +212,8 @@ def main(args):
                     file_parser.parse_args(arglist, namespace=customargs)
                     pulsar_id = add_pulsar(customargs.pulsar_name,
                                            customargs.aliases, db)
-                    print "Successfully inserted new pulsar. " \
-                        "Returned pulsar_id: %d" % pulsar_id
+                    print("Successfully inserted new pulsar. " \
+                        "Returned pulsar_id: %d" % pulsar_id)
                     numadded += 1
                 except errors.ToasterError:
                     numfails += 1
@@ -234,8 +234,8 @@ def main(args):
                     numfails)
         else:
             pulsar_id = add_pulsar(args.pulsar_name, args.aliases, db)
-            print "Successfully inserted new pulsar. " \
-                  "Returned pulsar_id: %d" % pulsar_id
+            print("Successfully inserted new pulsar. " \
+                  "Returned pulsar_id: %d" % pulsar_id)
     finally:
         # Close DB connection
         db.close()

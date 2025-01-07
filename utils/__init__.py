@@ -235,11 +235,11 @@ class DefaultArguments(argparse.ArgumentParser):
 
     class ListDebugModes(argparse.Action):
         def __call__(self, parser, namespace, values, option_string=None):
-            print "Available debugging modes:"
+            print("Available debugging modes:")
             for name, desc in debug.get_modes_and_descriptions():
                 if desc is None:
                     continue
-                print "    %s: %s" % (name, desc)
+                print("    %s: %s" % (name, desc))
             sys.exit(1)
 
 

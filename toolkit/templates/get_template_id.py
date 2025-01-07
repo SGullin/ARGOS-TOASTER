@@ -175,60 +175,60 @@ def get_templates(args):
 
 
 def show_templates(templates):
-    if len(templates):
-        print "--"*25
-        for tdict in templates:
-            print colour.cstring("Template ID:", underline=True, bold=True) + \
-                colour.cstring(" %d" % tdict['template_id'], bold=True)
-            fn = os.path.join(tdict['filepath'], tdict['filename'])
-            print "\nTemplate: %s" % fn
-            print "Pulsar name: %s" % tdict['pulsar_name']
-            print "Master template? %s" % \
-                  (((tdict['mtempid'] is not None) and "Yes") or "No")
-            print "Number of phase bins: %d" % tdict['nbin']
-            print "Uploaded by: %s (%s)" % (tdict['real_name'],
-                                            tdict['email_address'])
-            print "Uploader's comments: %s" % tdict['comments']
-            print "Date and time template was added: %s" % \
-                  tdict['add_time'].isoformat(' ')
-
-            # Show extra information if verbosity is >= 1
-            lines = ["Observing System ID: %d" % tdict['obssystem_id'],
-                     "Observing System Name: %s" % tdict['obssys_name'],
-                     "Telescope: %s" % tdict['telescope_name'],
-                     "Frontend: %s" % tdict['frontend'],
-                     "Backend: %s" % tdict['backend'],
-                     "Clock: %s" % tdict['clock']]
-            notify.print_info("\n".join(lines), 1)
-           
-            try:
-                # Show the template if verbosity is >= 2
-                cmd = ["psrtxt", fn]
-                psrtxtout, stderr = utils.execute(cmd)
-
-                gnuplotcode = """set term dumb
-                                 set format y ""
-                                 set nokey
-                                 set border 1
-                                 set tics out
-                                 set xtics nomirror
-                                 set ytics 0,1,0
-                                 set xlabel "Phase Bin"
-                                 set xrange [0:%d]
-                                 plot "-" using 3:4 w l
-                                 %s
-                                 end
-                            """ % (tdict.nbin-1, psrtxtout)
-                plot, stderr = utils.execute(["gnuplot"],
-                                             stderr=open(os.devnull),
-                                             stdinstr=gnuplotcode)
-                notify.print_info(plot, 2)
-            except errors.SystemCallError:
-                # gnuplot is probably not installed
-                pass
-            print "--"*25
-    else:
+    if not len(templates):
         raise errors.ToasterError("No templates match parameters provided!")
+    
+    print("--"*25)
+    for tdict in templates:
+        print(colour.cstring("Template ID:", underline=True, bold=True) + \
+            colour.cstring(" %d" % tdict['template_id'], bold=True))
+        fn = os.path.join(tdict['filepath'], tdict['filename'])
+        print("\nTemplate: %s" % fn)
+        print("Pulsar name: %s" % tdict['pulsar_name'])
+        print("Master template? %s" % \
+                (((tdict['mtempid'] is not None) and "Yes") or "No"))
+        print("Number of phase bins: %d" % tdict['nbin'])
+        print("Uploaded by: %s (%s)" % (tdict['real_name'],
+                                        tdict['email_address']))
+        print("Uploader's comments: %s" % tdict['comments'])
+        print("Date and time template was added: %s" % \
+                tdict['add_time'].isoformat(' '))
+
+        # Show extra information if verbosity is >= 1
+        lines = ["Observing System ID: %d" % tdict['obssystem_id'],
+                    "Observing System Name: %s" % tdict['obssys_name'],
+                    "Telescope: %s" % tdict['telescope_name'],
+                    "Frontend: %s" % tdict['frontend'],
+                    "Backend: %s" % tdict['backend'],
+                    "Clock: %s" % tdict['clock']]
+        notify.print_info("\n".join(lines), 1)
+        
+        try:
+            # Show the template if verbosity is >= 2
+            cmd = ["psrtxt", fn]
+            psrtxtout, stderr = utils.execute(cmd)
+
+            gnuplotcode = """set term dumb
+                                set format y ""
+                                set nokey
+                                set border 1
+                                set tics out
+                                set xtics nomirror
+                                set ytics 0,1,0
+                                set xlabel "Phase Bin"
+                                set xrange [0:%d]
+                                plot "-" using 3:4 w l
+                                %s
+                                end
+                        """ % (tdict.nbin-1, psrtxtout)
+            plot, stderr = utils.execute(["gnuplot"],
+                                            stderr=open(os.devnull),
+                                            stdinstr=gnuplotcode)
+            notify.print_info(plot, 2)
+        except errors.SystemCallError:
+            # gnuplot is probably not installed
+            pass
+        print("--"*25)
 
 
 if __name__ == '__main__':

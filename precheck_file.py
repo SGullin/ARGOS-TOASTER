@@ -25,7 +25,7 @@ def main():
     for fn in infiles:
         try:
             if config.cfg.verbosity:
-                print "Checking %s (%s)" % (fn, utils.give_utc_now())
+                print("Checking %s (%s)" % (fn, utils.give_utc_now()))
 
             # Check the file and parse the header
             params = utils.prep_file(fn)
@@ -39,7 +39,7 @@ def main():
             utils.print_info("Finished with %s - pre-check successful (%s)" % \
                         (fn, utils.give_utc_now()), 1)
 
-        except errors.ToasterError, msg:
+        except (errors.ToasterError, msg):
             sys.stderr.write("Pre-check of %s failed!\n%s\nSkipping...\n" % \
                                 (fn, msg))
     

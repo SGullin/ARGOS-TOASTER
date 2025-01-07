@@ -108,8 +108,8 @@ def main():
     user_id = add_new_user(db, args.user_name, args.real_name, \
                             args.email_address, args.passwd_hash, \
                             args.is_active, args.is_admin)
-    print "Successfully inserted new user. " \
-                "Returned user_id: %d" % user_id
+    print("Successfully inserted new user. " \
+                "Returned user_id: %d" % user_id)
 
 
 if __name__=='__main__':

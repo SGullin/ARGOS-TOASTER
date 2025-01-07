@@ -128,7 +128,7 @@ def parse_timfile(timfn, reader=readers.tempo2_reader,
                     toainfo['obssystem_id'] = __determine_obssystem(toainfo,
                                                                     **obssys_discovery_kwargs)
                 toas.append(toainfo)
-        except Exception, e:
+        except (Exception, e):
             if debug.is_on('TOAPARSE'):
                 raise
             raise errors.BadTOAFormat("Error occurred while parsing "
@@ -343,7 +343,7 @@ def main(args):
         # Parse input file
         toas = parse_timfile(args.timfile, reader=args.format,
                                **obssystem_discovery_args)
-        print "%d TOAs parsed" % len(toas)
+        print("%d TOAs parsed" % len(toas))
         msg = []
         for toa in toas:
             msg.append("TOA info: %s" % "\n    ".join(["%s: %s" % xx for xx in toa.iteritems()]))

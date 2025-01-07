@@ -48,12 +48,12 @@ class ToasterConfigs(dict):
         return "\n".join(lines)
     
     def load_config_file(self, fn):
-        #print "Loading configs from %s" % fn
+        #print("Loading configs from %s" % fn)
         if os.path.isfile(fn):
             if not fn.endswith('.cfg'):
                 raise ValueError("TOASTER configuration files must "
                                  "end with the extension '.cfg'.")
-            execfile(fn, {}, self)
+            exec(open(fn).read(), {}, self)
             self.loaded_configs = True
 
 
@@ -62,7 +62,7 @@ cfg.load_configs()
 
 
 def main():
-    print cfg
+    print(cfg)
 
 
 if __name__ == '__main__':

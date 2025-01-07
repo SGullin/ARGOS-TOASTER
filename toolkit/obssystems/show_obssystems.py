@@ -26,17 +26,17 @@ def main(args):
 
     obssys_ids = obssysinfo_cache.keys()
 
-    print "--"*25
+    print("--"*25)
     for id in sorted(obssys_ids):
         obssysinfo = cache.get_obssysinfo(id)
-        print colour.cstring("Observing System ID:", underline=True, bold=True) + \
-                colour.cstring(" %d" % id, bold=True)
-        print "Observing System Name: %s" % obssysinfo['name']
-        print "Telescope: %d" % obssysinfo['telescope_id']
-        print "Receiver: %s" % obssysinfo['frontend']
-        print "Backend: %s" % obssysinfo['backend']
-        print "Observing Band: %s" % obssysinfo['band_descriptor']
-        print "--"*25
+        print(colour.cstring("Observing System ID:", underline=True, bold=True) + \
+                colour.cstring(" %d" % id, bold=True))
+        print("Observing System Name: %s" % obssysinfo['name'])
+        print("Telescope: %d" % obssysinfo['telescope_id'])
+        print("Receiver: %s" % obssysinfo['frontend'])
+        print("Backend: %s" % obssysinfo['backend'])
+        print("Observing Band: %s" % obssysinfo['band_descriptor'])
+        print("--"*25)
 
 
 if __name__=='__main__':

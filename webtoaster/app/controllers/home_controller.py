@@ -20,7 +20,7 @@ def index(request):
 	# user = User.objects.filter(username=u'snip3')[0]
 	# user.backend = 'django.contrib.auth.backends.ModelBackend'
 	# login( request, user)
-	# print "%s" % str(user)
+	# print("%s" % str(user))
 
 
 	t = loader.get_template('home/index.html')

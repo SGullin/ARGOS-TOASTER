@@ -88,7 +88,7 @@ def add(request):
           curator_response = Pulsars.update_curators(response, to_add_ids=[curator_id])
         request.session['flash'] = { 'type': 'success', 'message': 'Pulsar was succesfully added with iD: %i' % response }
         return redirect("/webtoaster/pulsars/%i/" % response)
-      except Exception, e:
+      except (Exception, e):
         request.session['flash'] = { 'type': 'error', 'message': 'Toaster produced an error: %s' %  str(e)}      
     else:
       request.session['flash'] = { 'type': 'error', 'message': 'Please verify your form' }
@@ -120,7 +120,7 @@ def master_parfile(request, pulsar_id):
     parfile = parfiles[0]
   else:
     parfile=None
-  print parfile.__class__
+  print(parfile.__class__)
   t = loader.get_template('pulsars/master_parfile.html')
   c = RequestContext(request, {
     'parfile': parfile,

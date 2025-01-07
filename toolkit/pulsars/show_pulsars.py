@@ -178,28 +178,28 @@ def show_pulsars(psrinfo):
         Outputs:
             None
     """
-    print "--"*25
+    print("--"*25)
     for psrid in sorted(psrinfo.keys()):
         psr = psrinfo[psrid]
-        print colour.cstring("Pulsar ID:", underline=True, bold=True) + \
-            colour.cstring(" %d" % psrid, bold=True)
-        print "Pulsar Name: %s" % psr['name'] 
-        print "Aliases:"
+        print(colour.cstring("Pulsar ID:", underline=True, bold=True) + \
+            colour.cstring(" %d" % psrid, bold=True))
+        print("Pulsar Name: %s" % psr['name'])
+        print("Aliases:")
         for alias in psr['aliases']:
             if alias == psr['name']:
                 continue
-            print "    %s" % alias
+            print("    %s" % alias)
         if psr['parfile_id'] is None:
-            print "No parfile loaded!"
+            print("No parfile loaded!")
         else:
             if psr['period'] > 1:
-                print "Period: %.3f s" % psr['period']
+                print("Period: %.3f s" % psr['period'])
             else:
-                print "Period: %.2f ms" % (1000.0*psr['period'])
-            print "DM: %.2f pc/cc" % psr['dm']
-            print "R.A. (J2000): %s" % psr['raj']
-            print "Dec. (J2000): %s" % psr['decj']
-            print "Binary model: %s" % psr['binary']
+                print("Period: %.2f ms" % (1000.0*psr['period']))
+            print("DM: %.2f pc/cc" % psr['dm'])
+            print("R.A. (J2000): %s" % psr['raj'])
+            print("Dec. (J2000): %s" % psr['decj'])
+            print("Binary model: %s" % psr['binary'])
 
         lines = ["Number of observations: %d" % psr['numobs']]
         if psr['numobs'] > 0:
@@ -214,7 +214,7 @@ def show_pulsars(psrinfo):
         else:
             lines.append("Curators: None")
         notify.print_info("\n".join(lines), 1)
-        print "--"*25
+        print("--"*25)
 
 
 def dump_pulsars(pulsar_ids=None):
@@ -233,11 +233,11 @@ def dump_pulsars(pulsar_ids=None):
         pulsar_ids = sorted(pulsaralias_cache.keys())
     for psrid in sorted(pulsar_ids):
         psrname = cache.get_pulsarname(psrid)
-        print psrname
+        print(psrname)
         for alias in pulsaralias_cache[psrid]:
             if alias == psrname:
                 continue
-            print alias
+            print(alias)
 
 
 def main(args):

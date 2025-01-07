@@ -185,8 +185,8 @@ def main(args):
                     fn = customargs.parfile
                     parfile_id = load_parfile(customargs.parfile,
                                               customargs.is_master, db)
-                    print "%s has been loaded to the DB. parfile_id: %d" % \
-                        (fn, parfile_id)
+                    print("%s has been loaded to the DB. parfile_id: %d" % \
+                        (fn, parfile_id))
                     numloaded += 1
                 except errors.ToasterError:
                     numfails += 1
@@ -207,8 +207,8 @@ def main(args):
         else:
             fn = args.parfile
             parfile_id = load_parfile(fn)
-            print "%s has been loaded to the DB. parfile_id: %d" % \
-                (fn, parfile_id)
+            print("%s has been loaded to the DB. parfile_id: %d" % \
+                (fn, parfile_id))
     finally:
         # Close DB connection
         db.close()

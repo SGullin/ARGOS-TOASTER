@@ -73,7 +73,7 @@ def access_token_ready(request, identifier='default'):
     
     """
 
-    print "access_token_ready"
+    print("access_token_ready")
     if not (identifier+'_request_token' and identifier+'_request_token_secret'
             in request.session):
         raise Exception('%s_request_token and %s_request_token_secret are not' \
@@ -100,8 +100,8 @@ def access_token_ready(request, identifier='default'):
     # test if access token is valid. 
     if not ('oauth_token' and 'oauth_token_secret' in access_token):
         raise Exception('oauth_token and oauth_token_secret must be present in the OAuth server response')
-    print "Access Token:"
-    print access_token
+    print("Access Token:")
+    print(access_token)
     request.session[identifier + '_oauth_token'] = access_token['oauth_token']
     request.session[identifier + '_oauth_token_secret'] = access_token['oauth_token_secret']
     request.session[identifier + '_username'] = access_token['username']

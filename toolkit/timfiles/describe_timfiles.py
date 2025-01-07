@@ -152,33 +152,33 @@ def get_timfiles(psr='%', timfile_id=None):
 
 
 def show_timfiles(timfiles):
-    if len(timfiles):
-        print "--"*25
-        for timfile in timfiles:
-            print colour.cstring("Timfile ID:", underline=True, bold=True) + \
-                colour.cstring(" %d" % timfile['timfile_id'], bold=True)
-            print "Pulsar name: %s" % timfile['pulsar_name']
-            print "Master timfile? %s" % \
-                        (((timfile['mtimid'] is not None) and "Yes") or "No")
-            print "Last edited by: %s (%s)" % (timfile['real_name'],
-                                               timfile['email_address'])
-            print "Comments: %s" % timfile['comments']
-            print "Date and time timfile was last edited: %s" % \
-                timfile['add_time'].isoformat(' ')
-            print "Number of TOAs: %d" % timfile['numtoas']
-            if timfile['any_replaced'] is not None:
-                colour.cprint("Some TOAs are from rawfiles that been "
-                              "superseded", 'warning')
-
-            # Show extra information if verbosity is >= 1
-            lines = ["First TOA (MJD): %s" % timfile['startmjd'],
-                     "Last TOA (MJD): %s" % timfile['endmjd'],
-                     "Number of telescopes used: %d" % timfile['numtelescopes'],
-                     "Number of observing systems used: %d" % timfile['numobsys']]
-            notify.print_info("\n".join(lines), 1)
-            print "--"*25
-    else:
+    if not len(timfiles):
         raise errors.ToasterError("No timfiles match parameters provided!")
+
+    print("--"*25)
+    for timfile in timfiles:
+        print(colour.cstring("Timfile ID:", underline=True, bold=True) + \
+            colour.cstring(" %d" % timfile['timfile_id'], bold=True))
+        print("Pulsar name: %s" % timfile['pulsar_name'])
+        print("Master timfile? %s" % \
+                    (((timfile['mtimid'] is not None) and "Yes") or "No"))
+        print("Last edited by: %s (%s)" % (timfile['real_name'],
+                                            timfile['email_address']))
+        print("Comments: %s" % timfile['comments'])
+        print("Date and time timfile was last edited: %s" % \
+            timfile['add_time'].isoformat(' '))
+        print("Number of TOAs: %d" % timfile['numtoas'])
+        if timfile['any_replaced'] is not None:
+            colour.cprint("Some TOAs are from rawfiles that been "
+                            "superseded", 'warning')
+
+        # Show extra information if verbosity is >= 1
+        lines = ["First TOA (MJD): %s" % timfile['startmjd'],
+                    "Last TOA (MJD): %s" % timfile['endmjd'],
+                    "Number of telescopes used: %d" % timfile['numtelescopes'],
+                    "Number of observing systems used: %d" % timfile['numobsys']]
+        notify.print_info("\n".join(lines), 1)
+        print("--"*25)
 
 
 def plot_timfile(timfile):

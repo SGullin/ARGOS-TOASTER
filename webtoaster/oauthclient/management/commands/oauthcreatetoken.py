@@ -82,4 +82,4 @@ class Command(BaseCommand):
 
         token = ConsumerToken(identifier=identifier, key=key, secret=secret, server=server)
         token.save()
-        print "Consumer Token and Server successfully configured"
+        print("Consumer Token and Server successfully configured")

@@ -204,8 +204,8 @@ def main(args):
                     fn = customargs.template
                     template_id = load_template(fn, customargs.comments,
                                                 customargs.is_master, db)
-                    print "%s has been loaded to the DB. template_id: %d" % \
-                        (fn, template_id)
+                    print("%s has been loaded to the DB. template_id: %d" % \
+                        (fn, template_id))
                     numloaded += 1
                 except errors.ToasterError:
                     numfails += 1
@@ -226,8 +226,8 @@ def main(args):
         else:
             fn = args.template
             template_id = load_template(fn, args.comments, args.is_master, db)
-            print "%s has been loaded to the DB. template_id: %d" % \
-                  (fn, template_id)
+            print("%s has been loaded to the DB. template_id: %d" % \
+                  (fn, template_id))
     finally:
         # Close DB connection
         db.close()

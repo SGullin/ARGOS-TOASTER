@@ -256,7 +256,7 @@ class RawfileParams(datafile.FancyParams):
 
 def custom_show_rawfiles(rawfiles, fmt="%(rawfile_id)d"):
     for rawfile in rawfiles:
-        print fmt.decode('string-escape') % rawfile
+        print(fmt.decode('string-escape') % rawfile)
 
 
 def summarize_rawfiles(rawfiles):
@@ -267,7 +267,7 @@ def summarize_rawfiles(rawfiles):
         numfiles += 1
         size += rawfile['filesize']
         length += rawfile['length']
-    print "Total number of matching raw files in archive: %d" % numfiles
+    print("Total number of matching raw files in archive: %d" % numfiles)
     unit = 's'
     thresh = 60.0
     other_thresh = [365.0, 24.0, 60.0]
@@ -276,13 +276,13 @@ def summarize_rawfiles(rawfiles):
         length /= thresh
         thresh = other_thresh.pop()
         unit = other_units.pop()
-    print "Total integration time: %.2g %s" % (length, unit)
+    print("Total integration time: %.2g %s" % (length, unit))
     unit = 'bytes'
     other_units = ['TB', 'GB', 'MB', 'KB']
     while size >= 1024.0 and len(other_units) > 1:
         size /= 1024.0
         unit = other_units.pop()
-    print "Total disk space used: %.2f %s" % (size, unit)
+    print("Total disk space used: %.2f %s" % (size, unit))
 
 
 def plot_rawfiles(rawfiles):
@@ -463,16 +463,16 @@ def plot_rawfiles(rawfiles):
     
 
 def show_rawfiles(rawfiles):
-    print "--"*25
+    print("--"*25)
     for rawdict in rawfiles:
-        print colour.cstring("Rawfile ID:", underline=True, bold=True) + \
-                colour.cstring(" %d" % rawdict.rawfile_id, bold=True)
+        print(colour.cstring("Rawfile ID:", underline=True, bold=True) + \
+                colour.cstring(" %d" % rawdict.rawfile_id, bold=True))
         fn = os.path.join(rawdict['filepath'], rawdict['filename'])
-        print "\nRawfile: %s" % fn
-        print "Pulsar name: %s" % rawdict['pulsar_name']
-        print "Uploaded by: %s (%s)" % \
-                    (rawdict['real_name'], rawdict['email_address'])
-        print "Date and time rawfile was added: %s" % rawdict['add_time'].isoformat(' ')
+        print("\nRawfile: %s" % fn)
+        print("Pulsar name: %s" % rawdict['pulsar_name'])
+        print("Uploaded by: %s (%s)" % \
+                    (rawdict['real_name'], rawdict['email_address']))
+        print("Date and time rawfile was added: %s" % rawdict['add_time'].isoformat(' '))
         if rawdict['replacement_rawfile_id'] is not None:
             colour.cprint("Rawfile has been superseded by rawfile_id=%d" % \
                     rawdict['replacement_rawfile_id'], 'warning')
@@ -504,7 +504,7 @@ def show_rawfiles(rawfiles):
             for diag in rawdict['diags']:
                 lines.append("    %s: %s" % (diag, rawdict['diag_%s' % diag.lower()]))
             notify.print_info("\n".join(lines), 3)
-        print "--"*25
+        print("--"*25)
 
 
 if __name__ == '__main__':

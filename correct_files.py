@@ -61,7 +61,7 @@ def main():
     infiles = list(infiles)
 
     for fn in sorted(infiles):
-        print "%s:" % fn
+        print("%s:" % fn)
         made_changes = False
         
         # Get header parameters we may want to change
@@ -71,7 +71,7 @@ def main():
         if (args.receiver is not None) and \
                 (args.force or (params['rcvr'].lower() == args.old_receiver.lower())):
             new_receiver = args.receiver
-            print "    rcvr -- %s -> %s" % (params['rcvr'], args.receiver)
+            print("    rcvr -- %s -> %s" % (params['rcvr'], args.receiver))
         else:
             new_receiver = None
         
@@ -79,7 +79,7 @@ def main():
         if (args.backend is not None) and \
                 (args.force or (params['backend'].lower() == args.old_backend.lower())):
             new_backend = args.backend
-            print "    backend -- %s -> %s" % (params['backend'], args.backend)
+            print("    backend -- %s -> %s" % (params['backend'], args.backend))
         else:
             new_backend = None
         
@@ -90,9 +90,9 @@ def main():
         # Print a msg if no changes
         if not made_changes:
             if args.dry_run:
-                print "    No changes were made (dry run)"
+                print("    No changes were made (dry run)")
             else:
-                print "    No changes to be made"
+                print("    No changes to be made")
             
 
 if __name__ == '__main__':

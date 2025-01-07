@@ -69,13 +69,13 @@ def make_proc_diagnostics_dir(fn, proc_id):
     if not os.path.isdir(diagdir):
         # Create directory
         notify.print_info("Making diagnostic directory: %s" % diagdir, 2)
-        os.makedirs(diagdir, 0770)
+        os.makedirs(diagdir, 0o770)
 
     crossrefdir = os.path.join(diagnostics_location, "processing")
     if not os.path.isdir(crossrefdir):
         # Create directory
         notify.print_info("Making diagnostic crossref diagdir: %s" % crossrefdir, 2)
-        os.makedirs(crossrefdir, 0770)
+        os.makedirs(crossrefdir, 0o770)
 
     crossref = os.path.join(crossrefdir, "procid_%d" % proc_id)
     if not os.path.islink(crossref):
@@ -136,10 +136,10 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id,
     adjustfn = ''
 
     #Start pipeline
-    print "###################################################"
-    print "Starting to toast data"
-    print "Start time: %s" % utils.give_utc_now()
-    print "###################################################"
+    print("###################################################")
+    print("Starting to toast data")
+    print("Start time: %s" % utils.give_utc_now())
+    print("###################################################")
     
     db = existdb or database.Database()
     db.connect()
@@ -237,7 +237,7 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id,
             diagcls = diagnostics.get_diagnostic_class(diagname)
             try:
                 diags.append(diagcls(manipfn))
-            except errors.DiagnosticNotApplicable, e:
+            except (errors.DiagnosticNotApplicable, e):
                 notify.print_info("Diagnostic isn't applicable: %s. "
                                   "Skipping..." % str(e), 1)
         if diags:
@@ -281,10 +281,10 @@ def pipeline_core(manip, rawfile_id, parfile_id, template_id,
             if os.path.isfile(fn):
                 os.remove(fn)
         # End pipeline
-        print "###################################################"
-        print random.choice(SUCCESSMSGS)
-        print "End time: %s" % utils.give_utc_now()
-        print "###################################################"    
+        print("###################################################")
+        print(random.choice(SUCCESSMSGS))
+        print("End time: %s" % utils.give_utc_now())
+        print("###################################################")
         
         # Close DB connection
         if not existdb:

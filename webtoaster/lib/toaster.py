@@ -68,7 +68,7 @@ class Pulsars:
   @classmethod
   def execute(cls,command="show", options=""):
     command_str = "%s/pulsar.py %s %s" % ( TOASTER_PYTHON_PATH, command, options )
-    print command_str
+    print(command_str)
     command = subprocess.Popen( "/bin/bash -l -c '"+command_str+"'" , stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
     out,err = command.communicate()
     return { 'out': out.replace("\n","<br/>"), 'err': err }
@@ -109,7 +109,7 @@ class Parfiles:
       parfiles = get_parfiles('%')
     else:
       parfiles = get_parfiles('%', parid=parfile_id)
-    print parfiles
+    print(parfiles)
     return parfiles
 
   @classmethod
@@ -192,7 +192,7 @@ class RawFiles:
     else:
       args = parser.parse_args()
     rawfiles = get_rawfiles(args)
-    print rawfiles
+    print(rawfiles)
     return rawfiles
 
   @classmethod

@@ -63,10 +63,10 @@ class ListDiagnosticsAction(argparse.Action):
         for key in sorted(diagnostics.registered_diagnostics):
             diagcls = diagnostics.get_diagnostic_class(key)
             wrapper = textwrap.TextWrapper(subsequent_indent=" "*(len(key)+4))
-            print "%s -- %s" % (colour.cstring(key, bold=True), 
-                                    wrapper.fill(diagcls.name))
+            print("%s -- %s" % (colour.cstring(key, bold=True), 
+                                    wrapper.fill(diagcls.name)))
             if diagcls.description is not None:
-                print descwrapper.fill(diagcls.description)
+                print(descwrapper.fill(diagcls.description))
         sys.exit(1)
 
 
@@ -221,7 +221,7 @@ def insert_rawfile_diagnostics(rawfile_id, diags, existdb=None):
                     trans.rollback()
                     raise ValueError("Diagnostic is not a valid type (%s)!" % \
                                         type(diag))
-            except errors.DiagnosticAlreadyExists, e:
+            except (errors.DiagnosticAlreadyExists, e):
                 notify.print_info("Diagnostic already exists: %s. Skipping..." % \
                                 str(e), 2)
                 trans.rollback()
@@ -325,7 +325,7 @@ def main(args):
     db = database.Database()
     db.connect()
 
-    print args.from_file
+    print(args.from_file)
 
     try:
         if args.from_file is not None:
@@ -365,7 +365,7 @@ def main(args):
                         insert_rawfile_diagnostics(customargs.rawfile_id, \
                                                 [diag], existdb=db)
                     else:
-                        print str(diag)
+                        print(str(diag))
                 except errors.ToasterError:
                     numfails += 1
                     traceback.print_exc()
@@ -392,7 +392,7 @@ def main(args):
                 insert_rawfile_diagnostics(args.rawfile_id, \
                                         [diag], existdb=db)
             else:
-                print str(diag)
+                print(str(diag))
     finally:
         db.close()
 

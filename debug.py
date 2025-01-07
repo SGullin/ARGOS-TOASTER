@@ -62,12 +62,12 @@ def is_on(mode):
     
 def print_debug_status():
     on_modes = get_on_modes()
-    print "The following debugging modes are turned on:"
+    print("The following debugging modes are turned on:")
     if on_modes:
         for mode in on_modes:
-            print "    %s" % mode
+            print("    %s" % mode)
     else:
-        print "    None"
+        print("    None")
 
 
 def get_modes_and_descriptions():

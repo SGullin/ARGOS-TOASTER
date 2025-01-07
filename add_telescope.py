@@ -166,8 +166,8 @@ def main():
                                         customargs.itrf_x, customargs.itrf_y, \
                                         customargs.itrf_x, customargs.abbrev, \
                                         customargs.code, customargs.aliases)
-                    print "Successfully inserted new telescope. " \
-                               "Returned telescope_id: %d" % telescope_id
+                    print("Successfully inserted new telescope. " \
+                               "Returned telescope_id: %d" % telescope_id)
                     numadded += 1
                 except errors.ToasterError:
                     numfails += 1
@@ -196,8 +196,8 @@ def main():
                                 args.itrf_x, args.itrf_y, \
                                 args.itrf_x, args.abbrev, \
                                 args.code, args.aliases)
-            print "Successfully inserted new telescope. " \
-                       "Returned telescope_id: %d" % telescope_id
+            print("Successfully inserted new telescope. " \
+                       "Returned telescope_id: %d" % telescope_id)
     finally:
         db.close()
 

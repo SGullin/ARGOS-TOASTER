@@ -175,8 +175,8 @@ def main(args):
                     obssystem_id = add_obssystem(db, customargs.name, telescope_id, \
                                     customargs.frontend, customargs.backend, \
                                     customargs.band, customargs.clock)
-                    print "Successfully inserted new observing system. " \
-                            "Returned obssystem_id: %d" % obssystem_id
+                    print("Successfully inserted new observing system. " \
+                            "Returned obssystem_id: %d" % obssystem_id)
                     numadded += 1
                 except errors.ToasterError:
                     numfails += 1
@@ -211,8 +211,8 @@ def main(args):
                              args.frontend.upper())
             obssystem_id = add_obssystem(db, args.name, telescope_id, \
                         args.frontend, args.backend, args.band, args.clock)
-            print "Successfully inserted new observing system. " \
-                        "Returned obssystem_id: %d" % obssystem_id
+            print("Successfully inserted new observing system. " \
+                        "Returned obssystem_id: %d" % obssystem_id)
     finally:
         db.close()
 

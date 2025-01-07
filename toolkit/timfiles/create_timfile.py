@@ -229,10 +229,10 @@ def print_summary(toas, comments):
         # Manipulators
         nman = manipulators.get(toa['manipulator'], 0) + 1
         manipulators[toa['manipulator']] = nman
-    print "Number of TOAs: %d" % len(toas)
-    print "Number of telescopes: %d" % len(telescopes)
-    print "Number of obssystems: %d" % len(obssystems)
-    print "Number of manipulators: %d" % len(manipulators)
+    print("Number of TOAs: %d" % len(toas))
+    print("Number of telescopes: %d" % len(telescopes))
+    print("Number of obssystems: %d" % len(obssystems))
+    print("Number of manipulators: %d" % len(manipulators))
 
 
 def add_timfile_entry(toas, cmdline, comments, conflict_handler, existdb=None):

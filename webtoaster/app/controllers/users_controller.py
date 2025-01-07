@@ -71,7 +71,7 @@ def destroy_session(request):
   return redirect(settings.ROOT_URL)
 
 def login_user_with_cyberska(request):  
-  print dict(request.session)
+  print(dict(request.session))
   token = request.GET.get('access_token')
   secret = request.GET.get('secret')
   username = request.GET.get('username')
@@ -97,7 +97,7 @@ def profile(request):
       user.first_name = profile_form.cleaned_data['first_name']
       user.last_name = profile_form.cleaned_data['last_name']
       user.email = profile_form.cleaned_data['email']
-      print profile_form.cleaned_data
+      print(profile_form.cleaned_data)
       if profile_form.cleaned_data['password'] != u'':
         user.set_password( profile_form.cleaned_data['password'] )
       user.save()
@@ -107,7 +107,7 @@ def profile(request):
     form_dict = {'first_name': user.first_name,
                 'last_name': user.last_name,
                 'email': user.email }
-    print form_dict
+    print(form_dict)
     profile_form = ProfileForm(form_dict)
 
   t = loader.get_template('users/profile.html')

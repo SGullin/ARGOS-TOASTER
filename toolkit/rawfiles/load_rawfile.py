@@ -94,7 +94,7 @@ def populate_rawfiles_table(db, archivefn, params):
             diagcls = diagnostics.get_diagnostic_class(diagname)
             try:
                 diags.append(diagcls(archivefn))
-            except errors.DiagnosticNotApplicable, e:
+            except (errors.DiagnosticNotApplicable, e):
                 notify.print_info("Diagnostic isn't applicable: %s. "
                                   "Skipping..." % str(e), 1)
         if diags:
@@ -186,8 +186,8 @@ def main(args):
                  
                     fn = customargs.rawfile
                     rawfile_id = load_rawfile(fn, db)
-                    print "%s has been loaded to the DB. rawfile_id: %d" % \
-                          (fn, rawfile_id)
+                    print("%s has been loaded to the DB. rawfile_id: %d" % \
+                          (fn, rawfile_id))
                     numloaded += 1
                 except errors.ToasterError:
                     numfails += 1
@@ -208,8 +208,8 @@ def main(args):
         else:
             fn = args.rawfile
             rawfile_id = load_rawfile(fn, db)
-            print "%s has been loaded to the DB. rawfile_id: %d" % \
-                (fn, rawfile_id)
+            print("%s has been loaded to the DB. rawfile_id: %d" % \
+                (fn, rawfile_id))
     finally:
         # Close DB connection
         db.close()

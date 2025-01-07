@@ -140,8 +140,8 @@ class ManipulatorArguments(utils.DefaultArguments):
             for name in sorted(registered_manipulators):
                 manip = load_manipulator(name)
                 wrapper = textwrap.TextWrapper(subsequent_indent=" "*(len(name)+4))
-                print "%s -- %s" % (colour.cstring(name, bold=True), 
-                                    wrapper.fill(manip.description))
+                print("%s -- %s" % (colour.cstring(name, bold=True), 
+                                    wrapper.fill(manip.description)))
             sys.exit(1)
         
 

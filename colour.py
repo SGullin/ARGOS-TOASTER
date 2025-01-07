@@ -69,7 +69,7 @@ def cset(preset=None, fg='default', bg='default', **attr):
         if preset in preset_codes:
             current_code = preset_codes[preset]
         else:
-            print "Unrecognized preset color code:", preset
+            print("Unrecognized preset color code:", preset)
     else:
         set_attr = []
         for a in attr.keys():
@@ -139,7 +139,7 @@ def cprint(s, *override, **kwoverride):
     Keyword is optional. It will override the current
     colour code.
     """
-    print cstring(s, *override, **kwoverride)
+    print(cstring(s, *override, **kwoverride))
 
 
 def show_dictionary():
@@ -155,8 +155,8 @@ def show_status():
         Print global variables.
     """
     # Should we set colour to default?
-    print "DEFAULT_CODE:", repr(DEFAULT_CODE)
-    print "current_code:", repr(current_code)
+    print("DEFAULT_CODE:", repr(DEFAULT_CODE))
+    print("current_code:", repr(current_code))
     # Should we print a list of all keywords that
     # match the current code?
 
@@ -182,7 +182,7 @@ class ColourizedOutput(object):
         return getattr(self.fileobject, name)
 
     def write(self, s):
-        print "Writing"
+        printz("Writing")
         self.fileobject.write(cstring(s), self.cargs, self.ckwargs)
 
 

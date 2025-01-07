@@ -29,7 +29,7 @@ class ParfileForm(forms.Form):
 
 def index(request):
   toas = Toas.show()
-  print toas != list()
+  print(toas != list())
   t = loader.get_template('toas/index.html')
   c = RequestContext(request, {
     'toas': toas,
@@ -40,11 +40,11 @@ def new(request):
   import os
   pulsars = Pulsars.show()
   obs_sys = ObsSystems.show()
-  print "---"
-  print obs_sys.__class__
-  print "---"
+  print("---")
+  print(obs_sys.__class__)
+  print("---")
   for key, info in obs_sys.iteritems():
-    print "%s : %s" % (id, info.name)
+    print("%s : %s" % (id, info.name))
 
   if request.method == 'POST':
     if request.POST['pulsar_select'] == "-1":
